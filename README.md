@@ -10,7 +10,12 @@ Il utilise principalement Ansible pour l'automatisation, avec des rôles et des 
 À venir
 
 ## Installation
-3. `https://github.com/alexandre-Maury/hyprland.git`
+
+Tout d'abord, démarrez dans l'environnement réel de votre choix. Je recommande d'utiliser un live ISO d'Arch Linux, car l'installateur sera alors en mesure de télécharger automatiquement les programmes nécessaires ou de configurer le support ZFS à la volée. Ensuite, procédez aux étapes suivantes :
+
+1. `Télécharger le support d'installation : https://archlinux.org/download/`
+3. `pacman -Sy git wget`
+3. `git clone https://github.com/alexandre-Maury/hyprland.git`
 
 
 ## Feuille de route
