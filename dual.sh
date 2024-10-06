@@ -13,8 +13,8 @@ clean_disk_if_needed() {
 
 # Détection automatique du disque principal (en excluant les périphériques amovibles)
 echo "Détection du disque principal..."
-DISK=$(lsblk -dno NAME,TYPE | grep disk | grep -v "loop" | head -n 1)
-echo "Disque détecté : /dev/$DISK"  # Vérifiez la valeur ici
+DISK=$(lsblk -dno NAME,TYPE | awk '$2 == "disk" {print $1}' | head -n 1)  # Récupère uniquement le nom du disque
+echo "Disque détecté : /dev/$DISK"
 if [ -z "$DISK" ]; then
     echo "Aucun disque principal trouvé."
     exit 1
@@ -25,6 +25,7 @@ if [ ! -b "/dev/$DISK" ]; then
     echo "Le disque /dev/$DISK n'existe pas."
     exit 1
 fi
+
 
 
 # Nettoyage du disque si nécessaire
