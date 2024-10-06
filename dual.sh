@@ -65,38 +65,38 @@ parted /dev/$DISK --script mkpart primary 8e00 1100MiB 100%
 # Mise à jour des partitions
 echo "Création des partitions terminée."
 
-# Formattage des partitions
-echo "Formatage de la partition EFI..."
-mkfs.fat -F32 /dev/${DISK}1
+# # Formattage des partitions
+# echo "Formatage de la partition EFI..."
+# mkfs.fat -F32 /dev/${DISK}1
 
-echo "Formatage de la partition Linux filesystem..."
-mkfs.ext4 /dev/${DISK}2
+# echo "Formatage de la partition Linux filesystem..."
+# mkfs.ext4 /dev/${DISK}2
 
-echo "Création du volume physique LVM..."
-pvcreate /dev/${DISK}3
+# echo "Création du volume physique LVM..."
+# pvcreate /dev/${DISK}3
 
-# Création d'un groupe de volumes
-echo "Création du groupe de volumes 'vg0'..."
-vgcreate vg0 /dev/${DISK}3
+# # Création d'un groupe de volumes
+# echo "Création du groupe de volumes 'vg0'..."
+# vgcreate vg0 /dev/${DISK}3
 
-# Création des volumes logiques
-echo "Création du volume logique 'rootlv' de 50 Go..."
-lvcreate -n rootlv -L 50G vg0
+# # Création des volumes logiques
+# echo "Création du volume logique 'rootlv' de 50 Go..."
+# lvcreate -n rootlv -L 50G vg0
 
-echo "Création du volume logique 'swaplv' de 2 Go..."
-lvcreate -n swaplv -L 2G vg0
+# echo "Création du volume logique 'swaplv' de 2 Go..."
+# lvcreate -n swaplv -L 2G vg0
 
-echo "Création du volume logique 'homelv' pour le reste du disque..."
-lvcreate -n homelv -l +100%FREE vg0
+# echo "Création du volume logique 'homelv' pour le reste du disque..."
+# lvcreate -n homelv -l +100%FREE vg0
 
-# Formatage des volumes logiques
-echo "Formatage du volume logique 'rootlv'..."
-mkfs.ext4 /dev/vg0/rootlv
+# # Formatage des volumes logiques
+# echo "Formatage du volume logique 'rootlv'..."
+# mkfs.ext4 /dev/vg0/rootlv
 
-echo "Formatage du volume logique 'swaplv'..."
-mkswap /dev/vg0/swaplv
+# echo "Formatage du volume logique 'swaplv'..."
+# mkswap /dev/vg0/swaplv
 
-echo "Création et formatage des partitions terminés."
+# echo "Création et formatage des partitions terminés."
 
 
 ############################### Montage des partitions et volumes logique ###############################
