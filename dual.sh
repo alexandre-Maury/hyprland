@@ -1,155 +1,221 @@
 #!/bin/bash
 
-# Vérifier si le script est exécuté avec des privilèges root
-if [[ $EUID -ne 0 ]]; then
-   echo "Ce script doit être exécuté en tant que root." 
-   exit 1
+# Détection automatique du dual boot (Windows ou autre OS)
+detect_dual_boot() {
+    echo "Vérification de la présence d'un autre système d'exploitation (Windows ou autre Linux)..."
+    if os-prober | grep -q "Windows"; then
+        echo "Windows détecté sur le disque."
+        DUAL_BOOT="yes"
+    elif os-prober | grep -q "Linux"; then
+        echo "Un autre système Linux est détecté."
+        DUAL_BOOT="yes"
+    else
+        echo "Aucun autre système d'exploitation détecté."
+        DUAL_BOOT="no"
+    fi
+}
+
+# Nettoyage du disque si aucun système d'exploitation détecté
+clean_disk_if_needed() {
+    if [[ $DUAL_BOOT == "no" ]]; then
+        echo "Aucun autre système détecté, nettoyage complet du disque."
+        wipefs -a $DISK || { echo "Erreur lors du nettoyage du disque"; exit 1; }
+    fi
+}
+
+# Afficher les disques disponibles (en excluant les loop devices et disques externes)
+echo "Disques disponibles :"
+lsblk -nd --output NAME,SIZE,TYPE | grep "disk"
+
+# Demander à l'utilisateur de choisir un disque pour l'installation
+read -p "Entrez le nom du disque sur lequel installer Gentoo (ex : sda) : " DISK
+DISK="/dev/$DISK"
+
+# Détection du dual boot avant de commencer le partitionnement
+detect_dual_boot
+
+# Confirmation avant de nettoyer le disque sélectionné
+echo "Vous avez sélectionné le disque : $DISK"
+read -p "Voulez-vous continuer et effacer le disque $DISK ? [o/N] " confirm
+if [[ $confirm != "o" ]]; then
+    echo "Annulation de l'opération."
+    exit 1
 fi
 
-# Détection automatique du disque principal (en excluant les périphériques amovibles)
-DISK=$(lsblk -nd --output NAME,SIZE,TYPE | grep "disk" | sort -k2 -h | tail -n 1 | awk '{print "/dev/" $1}')
-echo "Disque détecté : $DISK"
+# Nettoyage du disque si nécessaire (si pas de dual boot)
+clean_disk_if_needed
 
+# Création d'une nouvelle table de partitions GPT
+echo "Création d'une nouvelle table de partitions GPT sur $DISK..."
+parted $DISK mklabel gpt || { echo "Erreur lors de la création du label GPT"; exit 1; }
 
 # Demander à l'utilisateur de définir les tailles des partitions
-read -p "Entrez la taille de la partition EFI - La partition EFI contient les fichiers nécessaires au démarrage du système. Taille recommandée -> 512 MiB. : " EFI_SIZE  
-read -p "Entrez la taille de la partition swap - La partition swap est utilisée pour étendre la RAM virtuelle. Elle doit généralement être égale ou supérieure à la taille de la RAM physique. : " SWAP_SIZE  
+read -p "Entrez la taille de la partition EFI (ex : 512MiB) : " EFI_SIZE  # Partition EFI pour le bootloader.
+read -p "Entrez la taille de la partition swap (ex : 8GiB) : " SWAP_SIZE  # Partition swap pour la RAM virtuelle.
 
-# Demander à l'utilisateur s'il souhaite spécifier la taille de la partition racine ou utiliser tout l'espace disponible
+# Demander à l'utilisateur s'il souhaite spécifier la taille de la partition racine ou utiliser tout l'espace restant
 read -p "Souhaitez-vous spécifier la taille de la partition racine ? (o/n) : " specify_root_size
 
 if [[ $specify_root_size == "o" ]]; then
-    # Si l'utilisateur souhaite spécifier la taille
-    read -p "Entrez la taille de la partition racine (ex : 40GiB) : " ROOT_SIZE  # L'utilisateur spécifie la taille de la partition racine.
+    # Si l'utilisateur souhaite spécifier la taille de la partition racine
+    read -p "Entrez la taille de la partition racine (ex : 40GiB) : " ROOT_SIZE  # Taille personnalisée pour la partition racine.
 else
-    # Si l'utilisateur veut utiliser tout l'espace restant pour la partition racine
+    # Utiliser tout l'espace disque restant pour la partition racine
     echo "La partition racine utilisera tout l'espace disque restant après la création des autres partitions."
-    ROOT_SIZE="100%"  # Utiliser tout l'espace disque restant pour la partition racine.
+    ROOT_SIZE="100%"
 fi
 
-# Confirmation du formatage du disque détecté
-read -p "Le disque $DISK sera formaté. Voulez-vous continuer ? [o/N] " confirm
-if [[ $confirm != "o" ]]; then
-    echo "Annulation du formatage."
-    exit 1
+# Partitionnement du disque
+echo "Partitionnement du disque $DISK..."
+parted $DISK mkpart primary fat32 1MiB ${EFI_SIZE} || { echo "Erreur lors de la création de la partition EFI"; exit 1; }
+parted $DISK mkpart primary ${EFI_SIZE} $((${EFI_SIZE%%MiB} + ${SWAP_SIZE%%GiB} * 1024))MiB || { echo "Erreur lors de la création de la partition LVM"; exit 1; }
+
+# Activer LVM sur la deuxième partition
+pvcreate ${DISK}2 || { echo "Erreur lors de la création du volume physique LVM"; exit 1; }
+vgcreate vg_gentoo ${DISK}2 || { echo "Erreur lors de la création du groupe de volumes LVM"; exit 1; }
+
+# Création des volumes logiques pour le swap et la racine
+lvcreate -L ${SWAP_SIZE} -n swap vg_gentoo || { echo "Erreur lors de la création du volume logique swap"; exit 1; }
+if [[ $specify_root_size == "o" ]]; then
+    lvcreate -L ${ROOT_SIZE} -n root vg_gentoo || { echo "Erreur lors de la création du volume logique root"; exit 1; }
+else
+    lvcreate -l 100%FREE -n root vg_gentoo || { echo "Erreur lors de l'utilisation de tout l'espace disque pour la partition racine"; exit 1; }
 fi
+
+# Formater les partitions
+EFI_PART="${DISK}1"      # Partition EFI pour le bootloader
+SWAP_PART="/dev/vg_gentoo/swap"  # Volume logique pour la partition swap
+ROOT_PART="/dev/vg_gentoo/root"  # Volume logique pour la partition racine
+
+echo "Formatage des partitions..."
+mkfs.fat -F32 $EFI_PART || { echo "Échec du formatage de la partition EFI"; exit 1; }  # Formatage en FAT32 pour la partition EFI
+mkswap $SWAP_PART || { echo "Échec du formatage de la partition swap"; exit 1; }  # Formatage en swap pour le volume swap
+swapon $SWAP_PART || { echo "Échec de l'activation du swap"; exit 1; }  # Activation de la partition swap
+mkfs.ext4 $ROOT_PART || { echo "Échec du formatage de la partition racine"; exit 1; }  # Formatage en ext4 pour la partition racine
 
 # Mise à jour de l'horloge système
 echo "Synchronisation de l'horloge système..."
 timedatectl set-ntp true || { echo "Échec de la synchronisation de l'horloge"; exit 1; }
 
-# Partitionnement du disque
-echo "Partitionnement du disque $DISK..."
-parted $DISK mklabel gpt || { echo "Erreur lors de la création du label GPT"; exit 1; }
-parted $DISK mkpart primary fat32 1MiB ${EFI_SIZE} || { echo "Erreur lors de la création de la partition EFI"; exit 1; }
-parted $DISK mkpart primary linux-swap ${EFI_SIZE} $((${EFI_SIZE%%MiB} + ${SWAP_SIZE%%GiB} * 1024))MiB || { echo "Erreur lors de la création de la partition swap"; exit 1; }
+# Monter les partitions pour l'installation de Gentoo
+echo "Montage des partitions..."
+mount $ROOT_PART /mnt/gentoo || { echo "Erreur lors du montage de la partition racine"; exit 1; }
+mkdir -p /mnt/gentoo/boot/efi || { echo "Erreur lors de la création du point de montage EFI"; exit 1; }
+mount $EFI_PART /mnt/gentoo/boot/efi || { echo "Erreur lors du montage de la partition EFI"; exit 1; }
 
-# Calcul de la taille de la partition racine
-if [[ $ROOT_SIZE == "100%" ]]; then
-    ROOT_START=$((${EFI_SIZE%%MiB} + ${SWAP_SIZE%%GiB} * 1024))  # Commence après la partition EFI et swap
-    parted $DISK mkpart primary ext4 ${ROOT_START}MiB 100% || { echo "Erreur lors de la création de la partition racine"; exit 1; }
-else
-    ROOT_START=$((${EFI_SIZE%%MiB} + ${SWAP_SIZE%%GiB} * 1024))  # Commence après la partition EFI et swap
-    parted $DISK mkpart primary ext4 ${ROOT_START}MiB $((${ROOT_START} + ${ROOT_SIZE%%GiB} * 1024))MiB || { echo "Erreur lors de la création de la partition racine"; exit 1; }
-fi
+# Téléchargement et extraction de l'archive Gentoo
+echo "Téléchargement et extraction de Gentoo..."
+wget https://bouncer.gentoo.org/fetch/root/all/releases/amd64/autobuilds/latest-stage3-amd64-systemd.txt -O stage3-amd64.txt
+STAGE3_URL=$(grep -v '^#' stage3-amd64.txt | awk '{print $1}')
+wget https://bouncer.gentoo.org/fetch/root/all/releases/amd64/autobuilds/${STAGE3_URL} -O stage3-amd64.tar.xz
+tar xpvf stage3-amd64.tar.xz --xattrs-include='*.*' --numeric-owner -C /mnt/gentoo
 
-# Formater les partitions
-EFI_PART="${DISK}1"
-SWAP_PART="${DISK}2"
-ROOT_PART="${DISK}3"
+# Monter les partitions nécessaires
+echo "Montage des partitions pour l'installation..."
+mount --types proc /proc /mnt/gentoo/proc || { echo "Erreur lors du montage de /proc"; exit 1; }
+mount --rbind /sys /mnt/gentoo/sys || { echo "Erreur lors du montage de /sys"; exit 1; }
+mount --make-rslave /mnt/gentoo/sys || { echo "Erreur lors de la mise à jour de /sys"; exit 1; }
+mount --rbind /dev /mnt/gentoo/dev || { echo "Erreur lors du montage de /dev"; exit 1; }
+mount --make-rslave /mnt/gentoo/dev || { echo "Erreur lors de la mise à jour de /dev"; exit 1; }
 
-echo "Formatage des partitions..."
-mkfs.fat -F32 $EFI_PART || { echo "Échec du formatage de la partition EFI"; exit 1; }
-mkswap $SWAP_PART || { echo "Échec du formatage de la partition swap"; exit 1; }
-swapon $SWAP_PART || { echo "Échec de l'activation du swap"; exit 1; }
-mkfs.ext4 $ROOT_PART || { echo "Échec du formatage de la partition racine"; exit 1; }
+# Copie de la configuration réseau pour qu'elle soit disponible dans le chroot
+cp /etc/resolv.conf /mnt/gentoo/etc/
 
+# Entrée dans l'environnement chroot
+echo "Entrée dans l'environnement chroot..."
+chroot /mnt/gentoo /bin/bash << "EOL"
 
-# Monter la partition racine
-echo "Montage de la partition racine..."
-mount $ROOT_PART /mnt || { echo "Échec du montage de la partition racine"; exit 1; }
+# Mise à jour des variables d'environnement
+source /etc/profile
+export PS1="(chroot) ${PS1}"
 
-# Si UEFI, monter la partition EFI
-if [ -b $EFI_PART ]; then
-    mkdir -p /mnt/boot/efi
-    mount $EFI_PART /mnt/boot/efi || { echo "Échec du montage de la partition EFI"; exit 1; }
-fi
+# Monter le boot
+mkdir -p /boot/efi
 
-# Téléchargement et extraction du stage3
-echo "Téléchargement et extraction du stage3..."
-wget https://distfiles.gentoo.org/releases/amd64/autobuilds/20240929T163611Z/stage3-amd64-systemd-20240929T163611Z.tar.xz -O /mnt/stage3.tar.xz || { echo "Échec du téléchargement de stage3"; exit 1; }
-tar xpvf /mnt/stage3.tar.xz -C /mnt || { echo "Échec de l'extraction de stage3"; exit 1; }
+# Configurer le fuseau horaire
+echo "Europe/Paris" > /etc/timezone
+emerge --config sys-libs/timezone-data
 
-# Chroot dans le système installé
-echo "Préparation du chroot..."
-mount --bind /dev /mnt/dev
-mount --bind /proc /mnt/proc
-mount --bind /sys /mnt/sys
-
-# Exécuter les commandes dans le chroot
-echo "Chroot dans le système installé..."
-chroot /mnt /bin/bash <<EOF
-
-# Configuration du système
-echo "Configuration de Portage et des locales..."
-echo "GRP=notfound" >> /etc/portage/make.conf
-echo "L10N=\"fr_FR.UTF-8\"" >> /etc/portage/make.conf
-echo "USE=\"minimal X wayland networkmanager pulseaudio\"" >> /etc/portage/make.conf
-
-# Générer les locales
-echo "fr_FR.UTF-8 UTF-8" > /etc/locale.gen
+# Configuration des locales
+echo "fr_FR.UTF-8 UTF-8" >> /etc/locale.gen
 locale-gen
+eselect locale set fr_FR.utf8
+env-update && source /etc/profile
 
-# Mise à jour de Portage
-emerge-webrsync || { echo "Échec de la mise à jour de Portage"; exit 1; }
+# Mettre à jour l'environnement
+env-update && source /etc/profile
 
-# Installer le noyau et les outils de base
-emerge sys-kernel/gentoo-sources sys-kernel/genkernel || { echo "Échec de l'installation du noyau"; exit 1; }
-genkernel all || { echo "Échec de la génération du noyau"; exit 1; }
+# Synchroniser le système Portage
+echo "Synchronisation du dépôt Portage..."
+emerge --sync
 
-# Installation des pilotes vidéo en fonction du matériel détecté
-if lspci | grep -i vga | grep -i nvidia; then
-    emerge x11-drivers/nvidia-drivers || { echo "Échec de l'installation des pilotes NVIDIA"; exit 1; }
-elif lspci | grep -i vga | grep -i intel; then
-    emerge x11-drivers/xf86-video-intel || { echo "Échec de l'installation des pilotes Intel"; exit 1; }
-elif lspci | grep -i vga | grep -i amd; then
-    emerge x11-drivers/xf86-video-amdgpu || { echo "Échec de l'installation des pilotes AMD"; exit 1; }
-else
-    emerge x11-drivers/xf86-video-vesa || { echo "Échec de l'installation des pilotes par défaut"; exit 1; }
-fi
+# Mise à jour du profil
+eselect profile list
+eselect profile set 1  # Choix du profil par défaut (par exemple, profil desktop)
 
-# Installation de Hyprland et des dépendances
-eselect repository enable guru
-emaint sync -r guru
-emerge gui-wm/hyprland gui-apps/hyprlock gui-apps/hypridle gui-libs/xdg-desktop-portal-hyprland gui-apps/hyprland-plugins gui-apps/hyprpaper gui-apps/hyprpicker || { echo "Échec de l'installation de Hyprland"; exit 1; }
+# Mise à jour du système de base (optionnel)
+emerge --ask --verbose --update --deep --newuse @world
 
-# Installer NetworkManager pour la gestion réseau
-emerge net-misc/networkmanager || { echo "Échec de l'installation de NetworkManager"; exit 1; }
-systemctl enable NetworkManager
+# Installation du noyau Linux
+echo "Installation du noyau Linux..."
+emerge sys-kernel/gentoo-sources
+cd /usr/src/linux
+make menuconfig  # Configurer le noyau selon tes besoins ou utiliser une configuration par défaut
 
-# Installer PulseAudio pour le son
-emerge media-sound/pulseaudio || { echo "Échec de l'installation de PulseAudio"; exit 1; }
+# Compilation et installation du noyau
+make -j$(nproc)
+make modules_install
+make install
 
-# Créer un utilisateur
-read -p "Entrez le nom d'utilisateur à créer : " username
-read -s -p "Entrez le mot de passe pour l'utilisateur : " password
-echo
-useradd -m -G users,wheel -s /bin/bash "\$username" || { echo "Échec de la création de l'utilisateur"; exit 1; }
-echo "\$username:\$password" | chpasswd
+# Installation d'initramfs pour LVM
+emerge sys-kernel/genkernel
+genkernel --lvm initramfs
 
-# Installer sudo et configurer pour l'utilisateur
-emerge app-admin/sudo || { echo "Échec de l'installation de sudo"; exit 1; }
-echo "\$username ALL=(ALL) ALL" >> /etc/sudoers
-
-# Installer pipx, Ansible, et autres outils
-emerge dev-python/pipx dev-python/ansible app-editors/nano app-editors/vim dev-vcs/git net-misc/curl || { echo "Échec de l'installation des outils"; exit 1; }
-
-# Configurer le fichier fstab
-echo "UUID=\$(blkid -s UUID -o value $ROOT_PART) / ext4 defaults 0 1" >> /etc/fstab
-echo "UUID=\$(blkid -s UUID -o value $SWAP_PART) none swap sw 0 0" >> /etc/fstab
-echo "UUID=\$(blkid -s UUID -o value $EFI_PART) /boot/efi vfat defaults 0 1" >> /etc/fstab
-
+# Configuration du fichier fstab
+echo "Création du fichier fstab..."
+cat <<EOF > /etc/fstab
+/dev/mapper/vg_gentoo-root / ext4 defaults 0 1
+/dev/mapper/vg_gentoo-swap none swap sw 0 0
+/dev/sda1 /boot/efi vfat defaults 0 2
 EOF
 
-# Fin de la configuration
-echo "Installation de Gentoo terminée. Redémarrez votre système."
+# Configuration du réseau
+echo "hostname=\"gentoo\"" > /etc/conf.d/hostname
+
+# Configurer le fichier réseau pour DHCP (par exemple)
+cat <<EOF > /etc/conf.d/net
+config_eth0="dhcp"
+EOF
+ln -s /etc/init.d/net.lo /etc/init.d/net.eth0
+rc-update add net.eth0 default
+
+# Installer le système de gestion des fichiers système
+emerge sys-fs/lvm2
+rc-update add lvm boot
+
+# Installer GRUB avec support LVM et EFI
+echo "Installation de GRUB pour gérer le dual boot..."
+emerge sys-boot/grub:2
+grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=gentoo --recheck
+grub-mkconfig -o /boot/grub/grub.cfg
+
+# Sortir de l'environnement chroot
+exit
+EOL
+
+# Finalisation de l'installation
+echo "Finalisation de l'installation Gentoo..."
+umount -l /mnt/gentoo/dev{/shm,/pts,}
+umount -R /mnt/gentoo/sys
+umount -R /mnt/gentoo/proc
+umount /mnt/gentoo/boot/efi
+umount /mnt/gentoo
+
+echo "Installation terminée. Vous pouvez redémarrer votre machine."
+
+# Redémarrer le système
+read -p "Voulez-vous redémarrer maintenant ? (o/n) : " reboot_choice
+if [[ $reboot_choice == "o" ]]; then
+    reboot
+fi
+
