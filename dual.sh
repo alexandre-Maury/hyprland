@@ -1,19 +1,6 @@
 #!/bin/bash
 
-# Détection automatique du dual boot (Windows ou autre OS)
-detect_dual_boot() {
-    echo "Vérification de la présence d'un autre système d'exploitation (Windows ou autre Linux)..."
-    if os-prober | grep -q "Windows"; then
-        echo "Windows détecté sur le disque."
-        DUAL_BOOT="yes"
-    elif os-prober | grep -q "Linux"; then
-        echo "Un autre système Linux est détecté."
-        DUAL_BOOT="yes"
-    else
-        echo "Aucun autre système d'exploitation détecté."
-        DUAL_BOOT="no"
-    fi
-}
+DUAL_BOOT="no"
 
 # Nettoyage du disque si aucun système d'exploitation détecté
 clean_disk_if_needed() {
@@ -23,85 +10,80 @@ clean_disk_if_needed() {
     fi
 }
 
-# Afficher les disques disponibles (en excluant les loop devices et disques externes)
-echo "Disques disponibles :"
-lsblk -nd --output NAME,SIZE,TYPE | grep "disk"
-
-# Demander à l'utilisateur de choisir un disque pour l'installation
-read -p "Entrez le nom du disque sur lequel installer Gentoo (ex : sda) : " DISK
-DISK="/dev/$DISK"
-
-# Détection du dual boot avant de commencer le partitionnement
-detect_dual_boot
-
-# Confirmation avant de nettoyer le disque sélectionné
-echo "Vous avez sélectionné le disque : $DISK"
-read -p "Voulez-vous continuer et effacer le disque $DISK ? [o/N] " confirm
-if [[ $confirm != "o" ]]; then
-    echo "Annulation de l'opération."
+# Détection automatique du disque principal (en excluant les périphériques amovibles)
+echo "Détection du disque principal..."
+DISK=$(lsblk -dno NAME,TYPE | grep disk | grep -v "loop" | head -n 1)
+if [ -z "$DISK" ]; then
+    echo "Aucun disque principal trouvé."
     exit 1
 fi
+
+echo "Disque détecté : /dev/$DISK"
 
 # Nettoyage du disque si nécessaire (si pas de dual boot)
 clean_disk_if_needed
 
-# Création d'une nouvelle table de partitions GPT
-echo "Création d'une nouvelle table de partitions GPT sur $DISK..."
-parted $DISK mklabel gpt || { echo "Erreur lors de la création du label GPT"; exit 1; }
-
 # Demander à l'utilisateur de définir les tailles des partitions
-read -p "Entrez la taille de la partition EFI (ex : 512MiB) : " EFI_SIZE  # Partition EFI pour le bootloader.
-read -p "Entrez la taille de la partition swap (ex : 8GiB) : " SWAP_SIZE  # Partition swap pour la RAM virtuelle.
-
-# Demander à l'utilisateur s'il souhaite spécifier la taille de la partition racine ou utiliser tout l'espace restant
+read -p "Entrez la taille de la partition EFI (ex : 100MiB) : " EFI_SIZE  # La partition EFI contient les fichiers nécessaires au démarrage du système.
+read -p "Entrez la taille de la partition boot (ex : 1GiB) : " BOOT_SIZE  # La partition boot est utilisée pour stocker les fichiers de démarrage.
 read -p "Souhaitez-vous spécifier la taille de la partition racine ? (o/n) : " specify_root_size
 
 if [[ $specify_root_size == "o" ]]; then
-    # Si l'utilisateur souhaite spécifier la taille de la partition racine
-    read -p "Entrez la taille de la partition racine (ex : 40GiB) : " ROOT_SIZE  # Taille personnalisée pour la partition racine.
+    read -p "Entrez la taille de la partition racine (ex : 50GiB) : " ROOT_SIZE  # L'utilisateur spécifie la taille de la partition racine.
 else
-    # Utiliser tout l'espace disque restant pour la partition racine
     echo "La partition racine utilisera tout l'espace disque restant après la création des autres partitions."
-    ROOT_SIZE="100%"
+    ROOT_SIZE="100%"  # Utiliser tout l'espace disque restant pour la partition racine.
 fi
 
-# Partitionnement du disque
-echo "Partitionnement du disque $DISK..."
-parted $DISK mkpart primary fat32 1MiB ${EFI_SIZE} || { echo "Erreur lors de la création de la partition EFI"; exit 1; }
-parted $DISK mkpart primary ${EFI_SIZE} $((${EFI_SIZE%%MiB} + ${SWAP_SIZE%%GiB} * 1024))MiB || { echo "Erreur lors de la création de la partition LVM"; exit 1; }
-
-# Activer LVM sur la deuxième partition
-pvcreate ${DISK}2 || { echo "Erreur lors de la création du volume physique LVM"; exit 1; }
-vgcreate vg_gentoo ${DISK}2 || { echo "Erreur lors de la création du groupe de volumes LVM"; exit 1; }
-
-# Création des volumes logiques pour le swap et la racine
-lvcreate -L ${SWAP_SIZE} -n swap vg_gentoo || { echo "Erreur lors de la création du volume logique swap"; exit 1; }
-if [[ $specify_root_size == "o" ]]; then
-    lvcreate -L ${ROOT_SIZE} -n root vg_gentoo || { echo "Erreur lors de la création du volume logique root"; exit 1; }
-else
-    lvcreate -l 100%FREE -n root vg_gentoo || { echo "Erreur lors de l'utilisation de tout l'espace disque pour la partition racine"; exit 1; }
+# Confirmation du formatage du disque détecté
+read -p "Le disque $DISK sera formaté. Voulez-vous continuer ? [o/N] " confirm
+if [[ $confirm != "o" ]]; then
+    echo "Annulation du formatage."
+    exit 1
 fi
-
-# Formater les partitions
-EFI_PART="${DISK}1"      # Partition EFI pour le bootloader
-SWAP_PART="/dev/vg_gentoo/swap"  # Volume logique pour la partition swap
-ROOT_PART="/dev/vg_gentoo/root"  # Volume logique pour la partition racine
-
-echo "Formatage des partitions..."
-mkfs.fat -F32 $EFI_PART || { echo "Échec du formatage de la partition EFI"; exit 1; }  # Formatage en FAT32 pour la partition EFI
-mkswap $SWAP_PART || { echo "Échec du formatage de la partition swap"; exit 1; }  # Formatage en swap pour le volume swap
-swapon $SWAP_PART || { echo "Échec de l'activation du swap"; exit 1; }  # Activation de la partition swap
-mkfs.ext4 $ROOT_PART || { echo "Échec du formatage de la partition racine"; exit 1; }  # Formatage en ext4 pour la partition racine
 
 # Mise à jour de l'horloge système
 echo "Synchronisation de l'horloge système..."
 timedatectl set-ntp true || { echo "Échec de la synchronisation de l'horloge"; exit 1; }
 
-# Monter les partitions pour l'installation de Gentoo
-echo "Montage des partitions..."
-mount $ROOT_PART /mnt/gentoo || { echo "Erreur lors du montage de la partition racine"; exit 1; }
-mkdir -p /mnt/gentoo/boot/efi || { echo "Erreur lors de la création du point de montage EFI"; exit 1; }
-mount $EFI_PART /mnt/gentoo/boot/efi || { echo "Erreur lors du montage de la partition EFI"; exit 1; }
+# Partitionnement du disque
+echo "Partitionnement du disque $DISK..."
+parted /dev/$DISK mklabel gpt || { echo "Erreur lors de la création du label GPT"; exit 1; }
+parted /dev/$DISK mkpart primary fat32 1MiB ${EFI_SIZE} || { echo "Erreur lors de la création de la partition EFI"; exit 1; }
+parted /dev/$DISK mkpart primary ext4 ${EFI_SIZE} ${BOOT_SIZE} || { echo "Erreur lors de la création de la partition boot"; exit 1; }
+parted /dev/$DISK mkpart primary lvm ${BOOT_SIZE} 100% || { echo "Erreur lors de la création de la partition LVM"; exit 1; }
+
+# Formater les partitions
+EFI_PART="/dev/${DISK}1"
+BOOT_PART="/dev/${DISK}2"
+LVM_PART="/dev/${DISK}3"
+
+echo "Formatage des partitions..."
+mkfs.fat -F32 $EFI_PART || { echo "Échec du formatage de la partition EFI"; exit 1; }
+mkfs.ext4 $BOOT_PART || { echo "Échec du formatage de la partition boot"; exit 1; }
+
+# Création de la partie LVM
+pvcreate $LVM_PART || { echo "Erreur lors de la création du volume physique LVM"; exit 1; }
+vgcreate rootvg $LVM_PART || { echo "Erreur lors de la création du groupe de volumes LVM"; exit 1; }
+lvcreate -n rootlv -L $ROOT_SIZE rootvg || { echo "Erreur lors de la création du volume logique racine"; exit 1; }
+lvcreate -n swaplv -L 2G rootvg || { echo "Erreur lors de la création du volume logique swap"; exit 1; }
+lvcreate -n homelv -l +100%FREE rootvg || { echo "Erreur lors de la création du volume logique home"; exit 1; }
+
+# Formater les volumes logiques
+mkfs.ext4 /dev/rootvg/rootlv || { echo "Erreur lors du formatage de la partition racine"; exit 1; }
+mkfs.ext4 /dev/rootvg/homelv || { echo "Erreur lors du formatage de la partition home"; exit 1; }
+mkswap /dev/rootvg/swaplv || { echo "Erreur lors de la création de la partition swap"; exit 1; }
+
+# Montage des partitions
+mount /dev/rootvg/rootlv /mnt/gentoo || { echo "Erreur lors du montage de la partition racine"; exit 1; }
+mkdir -p /mnt/gentoo/boot || { echo "Erreur lors de la création du point de montage pour boot"; exit 1; }
+mount $BOOT_PART /mnt/gentoo/boot || { echo "Erreur lors du montage de la partition boot"; exit 1; }
+mkdir -p /mnt/gentoo/boot/EFI || { echo "Erreur lors de la création du point de montage pour EFI"; exit 1; }
+mount $EFI_PART /mnt/gentoo/boot/EFI || { echo "Erreur lors du montage de la partition EFI"; exit 1; }
+mkdir -p /mnt/gentoo/home || { echo "Erreur lors de la création du point de montage pour home"; exit 1; }
+mount /dev/rootvg/homelv /mnt/gentoo/home || { echo "Erreur lors du montage de la partition home"; exit 1; }
+swapon /dev/rootvg/swaplv || { echo "Erreur lors de l'activation de la partition swap"; exit 1; }
+
 
 # Téléchargement et extraction de l'archive Gentoo
 echo "Téléchargement et extraction de Gentoo..."
