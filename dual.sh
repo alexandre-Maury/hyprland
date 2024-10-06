@@ -26,22 +26,20 @@ if [ ! -b "/dev/$DISK" ]; then
     exit 1
 fi
 
-
-
 # Nettoyage du disque si nécessaire
 clean_disk_if_needed
 
 # Demander à l'utilisateur de définir les tailles des partitions
-read -p "Entrez la taille de la partition EFI (ex : 100MiB) : " EFI_SIZE  # La partition EFI contient les fichiers nécessaires au démarrage du système.
-read -p "Entrez la taille de la partition boot (ex : 1GiB) : " BOOT_SIZE  # La partition boot est utilisée pour stocker les fichiers de démarrage.
-read -p "Souhaitez-vous spécifier la taille de la partition racine ? (o/n) : " specify_root_size
+read -p "Entrez la taille de la partition EFI (ex : 100MiB) [défaut: 100MiB] : " EFI_SIZE
+EFI_SIZE=${EFI_SIZE:-100MiB}  # Valeur par défaut si aucune entrée.
 
-if [[ $specify_root_size == "o" ]]; then
-    read -p "Entrez la taille de la partition racine (ex : 50GiB) : " ROOT_SIZE  # L'utilisateur spécifie la taille de la partition racine.
-else
-    echo "La partition racine utilisera tout l'espace disque restant après la création des autres partitions."
-    ROOT_SIZE="100%"  # Utiliser tout l'espace disque restant pour la partition racine.
-fi
+read -p "Entrez la taille de la partition boot (ex : 1GiB) [défaut: 1GiB] : " BOOT_SIZE
+BOOT_SIZE=${BOOT_SIZE:-1GiB}  # Valeur par défaut si aucune entrée.
+
+
+read -p "Entrez la taille de la partition racine (ex : 50GiB) [défaut: 100%] : " ROOT_SIZE
+ROOT_SIZE=${ROOT_SIZE:-100%} # Utiliser tout l'espace disque restant pour la partition racine.
+
 
 # Confirmation du formatage du disque détecté
 read -p "Le disque $DISK sera formaté. Voulez-vous continuer ? [o/N] " confirm
