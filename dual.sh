@@ -36,10 +36,8 @@ EFI_SIZE=${EFI_SIZE:-100MiB}  # Valeur par défaut si aucune entrée.
 read -p "Entrez la taille de la partition boot (ex : 1GiB) [défaut: 1GiB] : " BOOT_SIZE
 BOOT_SIZE=${BOOT_SIZE:-1GiB}  # Valeur par défaut si aucune entrée.
 
-
 read -p "Entrez la taille de la partition racine (ex : 50GiB) [défaut: 100%] : " ROOT_SIZE
-ROOT_SIZE=${ROOT_SIZE:-100%} # Utiliser tout l'espace disque restant pour la partition racine.
-
+ROOT_SIZE=${ROOT_SIZE:-100%}  # Utiliser tout l'espace disque restant pour la partition racine.
 
 # Confirmation du formatage du disque détecté
 read -p "Le disque $DISK sera formaté. Voulez-vous continuer ? [o/N] " confirm
@@ -57,7 +55,12 @@ echo "Partitionnement du disque $DISK..."
 parted /dev/$DISK mklabel gpt || { echo "Erreur lors de la création du label GPT"; exit 1; }
 parted /dev/$DISK mkpart primary fat32 1MiB ${EFI_SIZE} || { echo "Erreur lors de la création de la partition EFI"; exit 1; }
 parted /dev/$DISK mkpart primary ext4 ${EFI_SIZE} ${BOOT_SIZE} || { echo "Erreur lors de la création de la partition boot"; exit 1; }
-parted /dev/$DISK mkpart primary lvm ${BOOT_SIZE} 100% || { echo "Erreur lors de la création de la partition LVM"; exit 1; }
+
+# Calcul de l'endroit où commence la partition LVM
+BOOT_END=$(expr $(numfmt --from=iec ${EFI_SIZE}) + $(numfmt --from=iec ${BOOT_SIZE}))  # Calcul de la fin de la partition boot
+
+# Création de la partition LVM
+parted /dev/$DISK mkpart primary lvm ${BOOT_END} 100% || { echo "Erreur lors de la création de la partition LVM"; exit 1; }
 
 # Formater les partitions
 EFI_PART="/dev/${DISK}1"
@@ -145,38 +148,32 @@ emerge --ask --verbose --update --deep --newuse @world
 
 # Installation du noyau Linux
 echo "Installation du noyau Linux..."
-emerge sys-kernel/gentoo-sources
+emerge --ask sys-kernel/gentoo-sources
+
+# Configuration du noyau
 cd /usr/src/linux
-make menuconfig  # Configurer le noyau selon tes besoins ou utiliser une configuration par défaut
+make menuconfig  # Configuration du noyau à la main
 
 # Compilation et installation du noyau
-make -j$(nproc)
-make modules_install
+make && make modules_install
 make install
 
-# Installation d'initramfs pour LVM
-emerge sys-kernel/genkernel
-genkernel --lvm initramfs
+# Installation des outils de base
+emerge --ask sys-apps/util-linux sys-apps/net-tools
 
-# Configuration du fichier fstab
-echo "Création du fichier fstab..."
-cat <<EOF >> /etc/fstab
-/dev/mapper/rootvg-rootlv /               ext4    noatime         0 1
-/dev/mapper/rootvg-homelv /home           ext4    noatime         0 2
-/dev/mapper/rootvg-swaplv none            swap    sw              0 0
-EOF
+# Installation de GRUB
+emerge --ask sys-boot/grub
 
-# Sortie de l'environnement chroot
+# Configuration de GRUB
+grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=Gentoo
+grub-mkconfig -o /boot/grub/grub.cfg
+
+# Sortir de l'environnement chroot
+exit
 EOL
 
-# Nettoyage des montages
-echo "Nettoyage des montages..."
-umount -R /mnt/gentoo/dev
-umount -R /mnt/gentoo/sys
-umount -R /mnt/gentoo/proc
-umount -R /mnt/gentoo/boot/EFI
-umount -R /mnt/gentoo/boot
-umount -R /mnt/gentoo/home
-umount -R /mnt/gentoo
+# Démontage des partitions
+echo "Démontage des partitions..."
+umount -R /mnt/gentoo || { echo "Erreur lors du démontage des partitions"; exit 1; }
 
-echo "Installation de Gentoo terminée !"
+echo "Installation terminée. Vous pouvez maintenant redémarrer votre système."
