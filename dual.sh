@@ -20,6 +20,13 @@ if [ -z "$DISK" ]; then
     exit 1
 fi
 
+# Ajoutez une vérification pour vous assurer que le disque existe avant de l'utiliser
+if [ ! -b "/dev/$DISK" ]; then
+    echo "Le disque /dev/$DISK n'existe pas."
+    exit 1
+fi
+
+
 # Nettoyage du disque si nécessaire
 clean_disk_if_needed
 
