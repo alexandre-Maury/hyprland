@@ -52,8 +52,9 @@ fi
 
 # Installation du système de base
 echo "Téléchargement et extraction du stage3..."
-wget http://distfiles.gentoo.org/releases/amd64/autobuilds/latest-stage3-amd64.tar.xz -O /mnt/stage3.tar.xz || { echo "Échec du téléchargement de stage3"; exit 1; }
-tar xpvf /mnt/stage3.tar.xz --xattrs-include='*.*' -C /mnt || { echo "Échec de l'extraction de stage3"; exit 1; }
+wget http://distfiles.gentoo.org/releases/amd64/autobuilds/current-stage3-amd64-systemd.tar.xz -O /mnt/stage3.tar.xz || { echo "Échec du téléchargement de stage3"; exit 1; }
+# Extraire le système de base
+tar xpvf /mnt/stage3.tar.xz -C /mnt || { echo "Échec de l'extraction de stage3"; exit 1; }
 
 # Chroot dans le système installé
 echo "Préparation du chroot..."
@@ -106,12 +107,15 @@ systemctl enable NetworkManager
 emerge media-sound/pulseaudio || { echo "Échec de l'installation de PulseAudio"; exit 1; }
 
 # Créer un utilisateur
-useradd -m -G users,wheel -s /bin/bash alexandre || { echo "Échec de la création de l'utilisateur"; exit 1; }
-echo "alexandre:password" | chpasswd
+read -p "Entrez le nom d'utilisateur à créer : " username
+read -s -p "Entrez le mot de passe pour l'utilisateur : " password
+echo
+useradd -m -G users,wheel -s /bin/bash "$username" || { echo "Échec de la création de l'utilisateur"; exit 1; }
+echo "$username:$password" | chpasswd
 
 # Installer sudo et configurer pour l'utilisateur
 emerge app-admin/sudo || { echo "Échec de l'installation de sudo"; exit 1; }
-echo "alexandre ALL=(ALL) ALL" >> /etc/sudoers
+echo "$username ALL=(ALL) ALL" >> /etc/sudoers
 
 # Installer pipx, Ansible, et autres outils
 emerge dev-python/pipx dev-python/ansible app-editors/nano app-editors/vim dev-vcs/git net-misc/curl || { echo "Échec de l'installation des outils"; exit 1; }
@@ -120,6 +124,9 @@ emerge dev-python/pipx dev-python/ansible app-editors/nano app-editors/vim dev-v
 echo "UUID=$(blkid -s UUID -o value $ROOT_PART) / ext4 defaults 0 1" >> /etc/fstab
 echo "UUID=$(blkid -s UUID -o value $SWAP_PART) none swap sw 0 0" >> /etc/fstab
 echo "UUID=$(blkid -s UUID -o value $EFI_PART) /boot/efi vfat defaults 0 2" >> /etc/fstab
+
+# Nettoyer le fichier téléchargé
+rm /mnt/stage3.tar.xz || { echo "Échec de la suppression du fichier stage3"; exit 1; }
 
 EOF
 
