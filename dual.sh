@@ -10,19 +10,36 @@ fi
 DISK=$(lsblk -nd --output NAME,SIZE,TYPE | grep "disk" | sort -k2 -h | tail -n 1 | awk '{print "/dev/" $1}')
 echo "Disque détecté : $DISK"
 
-# Variables de partitionnement avec des tailles ajustables
+# Vérification de l'existence de Windows
+WIN_PART=$(lsblk -f | grep -i ntfs | awk '{print $1}')
+if [[ -n $WIN_PART ]]; then
+    echo "Partition Windows détectée : /dev/$WIN_PART"
+else
+    echo "Aucune partition Windows détectée. Continuer sans Windows ? [o/N]"
+    read confirm
+    if [[ $confirm != "o" ]]; then
+        echo "Annulation."
+        exit 1
+    fi
+fi
+
+# Variables de partitionnement pour Gentoo (sans toucher à la partition Windows)
 EFI_SIZE="512MiB"
 SWAP_SIZE="8GiB"
-ROOT_SIZE="100%" # Utiliser tout l'espace restant pour la partition racine
+ROOT_SIZE="100%" # Utiliser tout l'espace restant pour la partition racine Gentoo
 
 ROOT_PART="${DISK}1"
 SWAP_PART="${DISK}2"
 EFI_PART="${DISK}3" # Pour un système UEFI
 
-# Confirmation du formatage du disque détecté
-read -p "Le disque $DISK sera formaté. Voulez-vous continuer ? [o/N] " confirm
+# Confirmation du formatage des partitions pour Gentoo
+echo "Les partitions suivantes seront créées pour Gentoo sur le disque $DISK :"
+echo "- EFI : $EFI_SIZE"
+echo "- SWAP : $SWAP_SIZE"
+echo "- Root : Espace restant"
+read -p "Voulez-vous continuer ? [o/N] " confirm
 if [[ $confirm != "o" ]]; then
-    echo "Annulation du formatage."
+    echo "Annulation."
     exit 1
 fi
 
@@ -30,9 +47,8 @@ fi
 echo "Synchronisation de l'horloge système..."
 timedatectl set-ntp true || { echo "Échec de la synchronisation de l'horloge"; exit 1; }
 
-# Partitionnement du disque
-echo "Partitionnement du disque $DISK..."
-parted $DISK mklabel gpt || { echo "Erreur lors de la création du label GPT"; exit 1; }
+# Création des partitions pour Gentoo sans affecter les partitions Windows
+echo "Création des partitions pour Gentoo..."
 parted $DISK mkpart primary fat32 1MiB $EFI_SIZE || { echo "Erreur lors de la création de la partition EFI"; exit 1; }
 parted $DISK mkpart primary linux-swap $EFI_SIZE $SWAP_SIZE || { echo "Erreur lors de la création de la partition swap"; exit 1; }
 parted $DISK mkpart primary ext4 $SWAP_SIZE $ROOT_SIZE || { echo "Erreur lors de la création de la partition racine"; exit 1; }
@@ -56,7 +72,7 @@ fi
 
 # Téléchargement et extraction du stage3
 echo "Téléchargement et extraction du stage3..."
-wget https://distfiles.gentoo.org/releases/amd64/autobuilds/20240929T163611Z/stage3-amd64-systemd-20240929T163611Z.tar.xz -O /mnt/stage3.tar.xz || { echo "Échec du téléchargement de stage3"; exit 1; }
+wget http://distfiles.gentoo.org/releases/amd64/autobuilds/current-stage3-amd64-systemd.tar.xz -O /mnt/stage3.tar.xz || { echo "Échec du téléchargement de stage3"; exit 1; }
 tar xpvf /mnt/stage3.tar.xz -C /mnt || { echo "Échec de l'extraction de stage3"; exit 1; }
 
 # Préparation du chroot
@@ -88,48 +104,36 @@ emerge --sync || { echo "Échec de la synchronisation des paquets"; exit 1; }
 emerge sys-kernel/gentoo-sources sys-kernel/genkernel || { echo "Échec de l'installation du noyau"; exit 1; }
 genkernel all || { echo "Échec de la génération du noyau"; exit 1; }
 
-# Installation des pilotes vidéo en fonction du matériel détecté
-if lspci | grep -i vga | grep -i nvidia; then
-    emerge x11-drivers/nvidia-drivers || { echo "Échec de l'installation des pilotes NVIDIA"; exit 1; }
-elif lspci | grep -i vga | grep -i intel; then
-    emerge x11-drivers/xf86-video-intel || { echo "Échec de l'installation des pilotes Intel"; exit 1; }
-elif lspci | grep -i vga | grep -i amd; then
-    emerge x11-drivers/xf86-video-amdgpu || { echo "Échec de l'installation des pilotes AMD"; exit 1; }
+# Installation de GRUB avec détection de Windows
+emerge sys-boot/grub:2 || { echo "Échec de l'installation de GRUB"; exit 1; }
+
+# Si UEFI, installation de GRUB dans la partition EFI
+if [[ -d /sys/firmware/efi ]]; then
+    grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=Gentoo || { echo "Échec de l'installation de GRUB en mode UEFI"; exit 1; }
 else
-    emerge x11-drivers/xf86-video-vesa || { echo "Échec de l'installation des pilotes par défaut"; exit 1; }
+    grub-install $DISK || { echo "Échec de l'installation de GRUB en mode BIOS"; exit 1; }
 fi
 
-# Installation de Hyprland et des dépendances
-eselect repository enable guru
-emaint sync -r guru
-emerge gui-wm/hyprland gui-apps/hyprlock gui-apps/hypridle gui-libs/xdg-desktop-portal-hyprland gui-apps/hyprland-plugins gui-apps/hyprpaper gui-apps/hyprpicker || { echo "Échec de l'installation de Hyprland"; exit 1; }
+# Configurer GRUB pour détecter Windows
+echo "Génération du fichier de configuration de GRUB..."
+grub-mkconfig -o /boot/grub/grub.cfg || { echo "Échec de la génération du fichier de configuration de GRUB"; exit 1; }
 
-# Installer NetworkManager pour la gestion réseau
-emerge net-misc/networkmanager || { echo "Échec de l'installation de NetworkManager"; exit 1; }
-systemctl enable NetworkManager
-
-# Installer PulseAudio pour le son
-emerge media-sound/pulseaudio || { echo "Échec de l'installation de PulseAudio"; exit 1; }
-
-# Créer un utilisateur
+# Création de l'utilisateur
 read -p "Entrez le nom d'utilisateur à créer : " username
-passwd $username || { echo "Échec de la définition du mot de passe de l'utilisateur"; exit 1; }
 useradd -m -G users,wheel -s /bin/bash "$username" || { echo "Échec de la création de l'utilisateur"; exit 1; }
+passwd $username || { echo "Échec de la définition du mot de passe"; exit 1; }
 
-# Installer sudo et configurer pour l'utilisateur
+# Installer sudo
 emerge app-admin/sudo || { echo "Échec de l'installation de sudo"; exit 1; }
 echo "$username ALL=(ALL) ALL" >> /etc/sudoers
 
 # Installer pipx, Ansible, et autres outils
 emerge dev-python/pipx dev-python/ansible app-editors/nano app-editors/vim dev-vcs/git net-misc/curl || { echo "Échec de l'installation des outils"; exit 1; }
 
-# Configurer le fichier fstab
+# Configurer fstab
 echo "UUID=$(blkid -s UUID -o value $ROOT_PART) / ext4 defaults 0 1" >> /etc/fstab
 echo "UUID=$(blkid -s UUID -o value $SWAP_PART) none swap sw 0 0" >> /etc/fstab
 echo "UUID=$(blkid -s UUID -o value $EFI_PART) /boot/efi vfat defaults 0 2" >> /etc/fstab
-
-# Nettoyer le fichier téléchargé
-rm /mnt/stage3.tar.xz || { echo "Échec de la suppression du fichier stage3"; exit 1; }
 
 EOF
 
