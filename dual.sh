@@ -3,7 +3,12 @@
 # Nettoyage du disque si aucun système d'exploitation détecté
 clean_disk_if_needed() {
     echo "Aucun autre système détecté, nettoyage complet du disque."
-    wipefs -a $DISK || { echo "Erreur lors du nettoyage du disque"; exit 1; }
+    if [ ! -b "/dev/$DISK" ]; then
+        echo "Le disque /dev/$DISK n'existe pas."
+        exit 1
+    fi
+
+    wipefs -a /dev/$DISK || { echo "Erreur lors du nettoyage du disque"; exit 1; }
 }
 
 # Détection automatique du disque principal (en excluant les périphériques amovibles)
