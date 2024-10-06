@@ -1,13 +1,9 @@
 #!/bin/bash
 
-DUAL_BOOT="no"
-
 # Nettoyage du disque si aucun système d'exploitation détecté
 clean_disk_if_needed() {
-    if [[ $DUAL_BOOT == "no" ]]; then
-        echo "Aucun autre système détecté, nettoyage complet du disque."
-        wipefs -a $DISK || { echo "Erreur lors du nettoyage du disque"; exit 1; }
-    fi
+    echo "Aucun autre système détecté, nettoyage complet du disque."
+    wipefs -a $DISK || { echo "Erreur lors du nettoyage du disque"; exit 1; }
 }
 
 # Détection automatique du disque principal (en excluant les périphériques amovibles)
@@ -20,7 +16,7 @@ fi
 
 echo "Disque détecté : /dev/$DISK"
 
-# Nettoyage du disque si nécessaire (si pas de dual boot)
+# Nettoyage du disque si nécessaire
 clean_disk_if_needed
 
 # Demander à l'utilisateur de définir les tailles des partitions
@@ -83,7 +79,6 @@ mount $EFI_PART /mnt/gentoo/boot/EFI || { echo "Erreur lors du montage de la par
 mkdir -p /mnt/gentoo/home || { echo "Erreur lors de la création du point de montage pour home"; exit 1; }
 mount /dev/rootvg/homelv /mnt/gentoo/home || { echo "Erreur lors du montage de la partition home"; exit 1; }
 swapon /dev/rootvg/swaplv || { echo "Erreur lors de l'activation de la partition swap"; exit 1; }
-
 
 # Téléchargement et extraction de l'archive Gentoo
 echo "Téléchargement et extraction de Gentoo..."
@@ -155,49 +150,23 @@ genkernel --lvm initramfs
 
 # Configuration du fichier fstab
 echo "Création du fichier fstab..."
-cat <<EOF > /etc/fstab
-/dev/mapper/vg_gentoo-root / ext4 defaults 0 1
-/dev/mapper/vg_gentoo-swap none swap sw 0 0
-/dev/sda1 /boot/efi vfat defaults 0 2
+cat <<EOF >> /etc/fstab
+/dev/mapper/rootvg-rootlv /               ext4    noatime         0 1
+/dev/mapper/rootvg-homelv /home           ext4    noatime         0 2
+/dev/mapper/rootvg-swaplv none            swap    sw              0 0
 EOF
 
-# Configuration du réseau
-echo "hostname=\"gentoo\"" > /etc/conf.d/hostname
-
-# Configurer le fichier réseau pour DHCP (par exemple)
-cat <<EOF > /etc/conf.d/net
-config_eth0="dhcp"
-EOF
-ln -s /etc/init.d/net.lo /etc/init.d/net.eth0
-rc-update add net.eth0 default
-
-# Installer le système de gestion des fichiers système
-emerge sys-fs/lvm2
-rc-update add lvm boot
-
-# Installer GRUB avec support LVM et EFI
-echo "Installation de GRUB pour gérer le dual boot..."
-emerge sys-boot/grub:2
-grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=gentoo --recheck
-grub-mkconfig -o /boot/grub/grub.cfg
-
-# Sortir de l'environnement chroot
-exit
+# Sortie de l'environnement chroot
 EOL
 
-# Finalisation de l'installation
-echo "Finalisation de l'installation Gentoo..."
-umount -l /mnt/gentoo/dev{/shm,/pts,}
+# Nettoyage des montages
+echo "Nettoyage des montages..."
+umount -R /mnt/gentoo/dev
 umount -R /mnt/gentoo/sys
 umount -R /mnt/gentoo/proc
-umount /mnt/gentoo/boot/efi
-umount /mnt/gentoo
+umount -R /mnt/gentoo/boot/EFI
+umount -R /mnt/gentoo/boot
+umount -R /mnt/gentoo/home
+umount -R /mnt/gentoo
 
-echo "Installation terminée. Vous pouvez redémarrer votre machine."
-
-# Redémarrer le système
-read -p "Voulez-vous redémarrer maintenant ? (o/n) : " reboot_choice
-if [[ $reboot_choice == "o" ]]; then
-    reboot
-fi
-
+echo "Installation de Gentoo terminée !"
