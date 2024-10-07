@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-source funcs.sh
+source fonction.sh  # Charge les fonctions définies dans le fichier funcs.sh.
 
 #
 # Installation du stage 3
@@ -10,33 +10,34 @@ source funcs.sh
 # Synchronisation de l'heure
 # ntpd -q -g || true
 
-# Téléchargement et décompression de l'archive stage3
+log_msg INFO "=== Téléchargement et décompression de l'archive stage3 ==="
 links https://www.gentoo.org/downloads/mirrors/
 LINKS_RUNNING="true"
 while [[ $LINKS_RUNNING == "true" ]]; do
-  log_msg INFO "En attente que l'utilisateur quitte links ..."
   LINKS_RUNNING=$(ps -aux | (grep -o '[l]inks') || true)
-  sleep 5s
+  sleep 2s
 done
 tar xpvf stage3-*.tar.xz --xattrs-include="*.*" --numeric-owner
 rm stage3-*.tar.xz
 
-# Configuration de portage (COMMON/USE)
-PROMPT_PORTAGE=$(prompt_accept "Configurer /etc/portage/make.conf COMMON/USE/MAKE/etc flags")
+
+log_msg INFO "=== Configuration de portage (COMMON/USE) ==="
+PROMPT_PORTAGE=$(prompt_accept "Configurer /etc/portage/make.conf COMMON/USE/MAKE/etc flags - y/n")
 if [[ "$PROMPT_PORTAGE" == "y" ]]; then
   nano -w ./etc/portage/make.conf
   NANO_RUNNING="true"
   while [[ $NANO_RUNNING == "true" ]]; do
-    log_msg INFO "En attente que l'utilisateur quitte nano ..."
     NANO_RUNNING=$(ps -aux | (grep -o '[n]ano') || true)
-    sleep 5s
+    sleep 2s
   done
 fi
 
-# S'assurer que le DNS fonctionne après chroot
+
+log_msg INFO "=== S'assurer que le DNS fonctionne après chroot ==="
 cp --dereference /etc/resolv.conf /mnt/gentoo/etc/
 
-# Monter les systèmes de fichiers
+
+log_msg INFO "=== Monter les systèmes de fichiers ==="
 mount --types proc /proc /mnt/gentoo/proc
 mount --rbind /sys /mnt/gentoo/sys
 mount --make-rslave /mnt/gentoo/sys
@@ -45,11 +46,12 @@ mount --make-rslave /mnt/gentoo/dev
 mount --bind /run /mnt/gentoo/run
 mount --make-slave /mnt/gentoo/run 
 
-# Changement de racine (chroot)
+
+log_msg INFO "=== Changement de racine (chroot) ==="
 chroot /mnt/gentoo /bin/bash << EOF
 set -e
 
-source funcs.sh
+source fonction.sh
 source /etc/profile
 export PS1="(chroot) ${PS1}"
 
@@ -89,8 +91,7 @@ else
   emerge --ask n sys-libs/timezone-data
 
   log_msg INFO "Configuration des locales (glibc)" >> /var/log/installer.log
-  echo "fr_FR.UTF-8 UTF-8" >> /etc/locale.gen
-  echo "fr_FR ISO-8859-1" >> /etc/locale.gen
+  echo "${CFG_LOCALE}" >> /etc/locale.gen
   locale-gen
 fi
 
@@ -182,6 +183,16 @@ echo "127.0.0.1 ${CFG_HOSTNAME} localhost" >> /etc/hosts
 
 log_msg INFO "Définition du mot de passe root" >> /var/log/installer.log
 echo "root:${CFG_ROOT_PASSWORD}" | chpasswd
+
+
+emerge --ask n app-admin/sudo
+log_msg INFO "Création de l'utilisateur ${CFG_USER}" >> /var/log/installer.log
+useradd -m -G users,wheel -s /bin/bash "${CFG_USER}"
+log_msg INFO "Définition du mot de passe pour l'utilisateur ${CFG_USER}" >> /var/log/installer.log
+echo "${CFG_USER}:${CFG_USER_PASSWORD}" | chpasswd
+log_msg INFO "Ajout de ${CFG_USER} au groupe wheel pour sudo" >> /var/log/installer.log
+log_msg INFO "Configuration de sudo pour le groupe wheel" >> /var/log/installer.log
+sed -i 's/^# %wheel ALL=(ALL:ALL) ALL/%wheel ALL=(ALL:ALL) ALL/' /etc/sudoers
 
 log_msg INFO "Configuration de la carte clavier" >> /var/log/installer.log
 sed -i '/^keymap/s/=.*$/=$"'"${CFG_KEYMAP}"'"/' /etc/conf.d/keymaps

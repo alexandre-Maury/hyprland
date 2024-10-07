@@ -1,45 +1,24 @@
 #!/bin/bash
 set -e  # Quitte immédiatement en cas d'erreur.
 
-source funcs.sh  # Charge les fonctions définies dans le fichier funcs.sh.
+source config.sh # Inclure le fichier de configuration
+source fonction.sh  # Charge les fonctions définies dans le fichier funcs.sh.
 
+# S'assure que tous les scripts sont exécutables.
+chmod +x *.sh
 
 #
 # Installation initiale
 #
 
-# Vérifier les programmes
-if check_programs; then
-    log_msg INFO "Tous les programmes requis sont installés."
-else
-    log_msg WARN "Veuillez installer les programmes manquants avant de continuer."
-    exit 1
-fi
+for pkg in "${packages[@]}"; do
+    check_and_install "$pkg"
+done
+
+log_msg INFO "Tous les programmes requis sont installés."
 
 # Affiche un message de bienvenue pour l'utilisateur.
 log_msg INFO "Bienvenue dans le script d'installation de Gentoo !"
-
-# S'assure que tous les scripts sont exécutables.
-chmod +x *.sh
-
-# Récupération du nom du disque
-DISK=$(lsblk -dno NAME,TYPE | awk '$2 == "disk" {print $1}' | head -n 1)
-
-# Valeurs par défaut
-CFG_BLOCK_DEVICE="/dev/${DISK}"
-CFG_PART_PREFIX=""
-CFG_PART_UEFI="y"
-CFG_PART_BOOT_SIZE="256"
-CFG_PART_SWAP_SIZE="4096"
-CFG_PART_ROOT_SIZE="100%"
-CFG_MUSL="n"
-CFG_LLVM="n"
-CFG_TIMEZONE="Europe/Paris"
-CFG_LOCALE="fr_FR"
-CFG_HOSTNAME="gentoo"
-CFG_NETWORK_INTERFACE="enp0s3"
-CFG_KEYMAP="fr"
-
 
 # Configuration de l'installateur
 export CFG_BLOCK_DEVICE="$(prompt_value "Nom du périphérique cible -> par défaut :" "$CFG_BLOCK_DEVICE")"
@@ -56,7 +35,10 @@ export CFG_LOCALE="$(prompt_value "Locale du système -> par défaut :" "$CFG_LO
 export CFG_HOSTNAME="$(prompt_value "Nom d'hôte du système -> par défaut :" "$CFG_HOSTNAME")"
 export CFG_NETWORK_INTERFACE="$(prompt_value "Nom de l'interface réseau -> par défaut :" "$CFG_NETWORK_INTERFACE")"
 export CFG_KEYMAP="$(prompt_value "Disposition du clavier à utiliser -> par défaut :" "$CFG_KEYMAP")"
-export CFG_ROOT_PASSWORD="$(prompt_value "Créer votre Mot de passe utilisateur root" "")"
+export CFG_ROOT_PASSWORD="$(prompt_value "Créer votre Mot de passe root" "")"
+export CFG_USER="$(prompt_value "Saisir votre nom d'utilisateur -> par exemple :" "$CFG_USER")"
+export CFG_USER_PASSWORD="$(prompt_value "Saisir votre mot de passe -> par exemple :" "$CFG_USER_PASSWORD")"
+
 
 # Affiche la configuration pour que l'utilisateur la valide.
 log_msg INFO "$(cat <<END
@@ -76,6 +58,8 @@ Vérification de la configuration :
   - Interface réseau :         $CFG_NETWORK_INTERFACE
   - Disposition du clavier :   $CFG_KEYMAP
   - Mot de passe root :        $CFG_ROOT_PASSWORD
+  - Votre Utilisateur :        $CFG_USER
+  - Votre mot de passe :       $CFG_USER_PASSWORD
 END
 )"
 
