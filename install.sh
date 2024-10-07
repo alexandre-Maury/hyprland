@@ -22,10 +22,10 @@ END
 chmod +x *.sh
 
 # Configuration de l'installateur
-export CFG_BLOCK_DEVICE="$(prompt_value "Nom du périphérique cible" "")"
+export CFG_BLOCK_DEVICE="$(prompt_value "Nom du périphérique cible : Ex - /dev/sda" "")"
 export CFG_PART_PREFIX="$(prompt_value "Préfixe de la partition (ex : 'p' pour NVMe, '' pour HDD/SSD)" "")"
 export CFG_BLOCK_PART="${CFG_BLOCK_DEVICE}${CFG_PART_PREFIX}"
-export CFG_PART_UEFI="$(prompt_accept "Utiliser UEFI au lieu de MBR")"
+export CFG_PART_UEFI="$(prompt_accept "Utiliser UEFI au lieu de MBR - y/n")"
 export CFG_PART_BOOT_SIZE="$(prompt_value "Taille de la partition boot (en Mo)" "256")"
 export CFG_PART_SWAP_SIZE="$(prompt_value "Taille de la partition swap (en Mo)" "4096")"
 export CFG_PART_ROOT_SIZE="$(prompt_value "Taille de la partition root (en %)" "100")%"
@@ -60,7 +60,7 @@ END
 )"
 
 # Demande à l'utilisateur de confirmer la configuration.
-PROMPT_PROCEED=$(prompt_accept "Vérifiez que les informations ci-dessus sont correctes et continuez à vos risques et périls")
+PROMPT_PROCEED=$(prompt_accept "Vérifiez que les informations ci-dessus sont correctes - y/n")
 if [[ "$PROMPT_PROCEED" == "n" ]]; then
   log_msg WARN "Quitter l'installateur en toute sécurité, rien n'a été fait..."
   exit 0
