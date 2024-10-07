@@ -85,11 +85,9 @@ mount /dev/vg0/home /mnt/gentoo/home
 
 # Télécharger et extraire le stage 3
 cd /mnt/gentoo
-STAGE3_URL=$(curl -s https://www.gentoo.org/downloads/mirrors/ | grep -m1 "autobuilds/current-stage3" | awk -F'"' '{print $2}')
-wget "$STAGE3_URL"
-tar xpvf stage3-*.tar.xz --xattrs-include='*.*' --numeric-owner
 
-echo "$STAGE3_URL"
+wget https://distfiles.gentoo.org/releases/amd64/autobuilds/20240929T163611Z/stage3-amd64-systemd-20240929T163611Z.tar.xz -O stage3-amd64.tar.xz
+tar xpvf stage3-amd64.tar.xz --xattrs-include='*.*' --numeric-owner || { echo "Échec de l'extraction de stage3"; exit 1; }
 
 # # Configurer make.conf
 # echo "CFLAGS=\"-O2 -pipe\"" >> /mnt/gentoo/etc/portage/make.conf
