@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Liste des programmes à vérifier
+programs=("git" "tar" "links" "curl" "wget")
+
 # Vérifie si le nombre d'arguments fournis à une fonction est correct.
 check_args() {
   if [[ "$1" -ne "$2" ]]; then
@@ -35,4 +38,15 @@ prompt_value() {
     local default_value="$2"
     read -p "$prompt [$default_value]: " value
     echo "${value:-$default_value}"
+}
+
+# Fonction pour vérifier l'installation des programmes
+check_programs() {
+    for program in "${programs[@]}"; do
+        if ! command -v "$program" &> /dev/null; then
+            echo "Erreur : Le programme '$program' n'est pas installé."
+            return 1
+        fi
+    done
+    return 0
 }

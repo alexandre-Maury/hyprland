@@ -3,20 +3,21 @@ set -e  # Quitte immédiatement en cas d'erreur.
 
 source funcs.sh  # Charge les fonctions définies dans le fichier funcs.sh.
 
-# Affiche un message de bienvenue pour l'utilisateur.
-log_msg INFO "Bienvenue dans le script d'installation simple de Gentoo !"
-log_msg INFO "$(cat <<-END
-Ce script suppose les éléments suivants :
-  - le réseau fonctionne
-  - GPT et UEFI sont utilisés
-  - des systèmes de fichiers ext4
-  - OpenRC est le gestionnaire de services
-END
-)"
 
 #
 # Installation initiale
 #
+
+# Vérifier les programmes
+if check_programs; then
+    log_msg INFO "Tous les programmes requis sont installés."
+else
+    log_msg WARN "Veuillez installer les programmes manquants avant de continuer."
+    exit 1
+fi
+
+# Affiche un message de bienvenue pour l'utilisateur.
+log_msg INFO "Bienvenue dans le script d'installation de Gentoo !"
 
 # S'assure que tous les scripts sont exécutables.
 chmod +x *.sh
@@ -38,7 +39,6 @@ CFG_LOCALE="fr_FR"
 CFG_HOSTNAME="gentoo"
 CFG_NETWORK_INTERFACE="enp0s3"
 CFG_KEYMAP="fr"
-
 
 
 # Configuration de l'installateur
