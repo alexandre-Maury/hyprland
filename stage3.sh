@@ -184,7 +184,7 @@ log_msg INFO "Définition du mot de passe root" >> /var/log/installer.log
 echo "root:${CFG_ROOT_PASSWORD}" | chpasswd
 
 log_msg INFO "Configuration de la carte clavier" >> /var/log/installer.log
-sed -i '/^keymap/s/=.*$/=$"'"fr"'"/' /etc/conf.d/keymaps
+sed -i '/^keymap/s/=.*$/=$"'"${CFG_KEYMAP}"'"/' /etc/conf.d/keymaps
 rc-update add keymaps boot
 rc-service keymaps restart
 
