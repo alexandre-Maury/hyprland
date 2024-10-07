@@ -28,7 +28,7 @@ sgdisk --zap-all /dev/$DISK
 # PARTITIONNEMENT
 # ---------------------------------------------------
 echo "=== Partitionnement du disque $DISK ==="
-parted -a optimal "$DISK" <<EOF
+parted -a optimal "/dev/$DISK" <<EOF
 mklabel gpt
 unit mib
 mkpart primary 1 3
@@ -47,8 +47,8 @@ EOF
 # ---------------------------------------------------
 echo "=== Chiffrement de la partition LVM (/dev/sda3) ==="
 modprobe dm-crypt  # Charger le module dm-crypt, si ce n'est pas déjà fait
-cryptsetup -c aes-cbc-essiv:sha256 -v luksFormat -s 256 "${DISK}3"
-cryptsetup luksOpen "${DISK}3" lvmcrypt
+cryptsetup -c aes-cbc-essiv:sha256 -v luksFormat -s 256 "/dev/${DISK}3"
+cryptsetup luksOpen "/dev/${DISK}3" lvmcrypt
 
 # ---------------------------------------------------
 # CONFIGURATION LVM
@@ -65,7 +65,7 @@ lvcreate -l 100%FREE -n home vg0
 
 # Formater les partitions
 echo "=== Formatage des partitions ==="
-mkfs.ext2 "${DISK}2"  # /boot
+mkfs.ext2 "/dev/${DISK}2"  # /boot
 mkfs.ext4 /dev/vg0/root  # /
 mkfs.ext4 /dev/vg0/home  # /home
 mkswap /dev/vg0/swap  # swap
