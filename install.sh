@@ -89,7 +89,7 @@ STAGE3_URL=$(curl -s https://www.gentoo.org/downloads/mirrors/ | grep -m1 "autob
 # wget "$STAGE3_URL"
 # tar xpvf stage3-*.tar.xz --xattrs-include='*.*' --numeric-owner
 
-echo $STAGE3_URL
+echo "$STAGE3_URL"
 
 # # Configurer make.conf
 # echo "CFLAGS=\"-O2 -pipe\"" >> /mnt/gentoo/etc/portage/make.conf
