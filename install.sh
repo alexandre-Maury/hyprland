@@ -86,8 +86,8 @@ mount /dev/vg0/home /mnt/gentoo/home
 # Télécharger et extraire le stage 3
 cd /mnt/gentoo
 STAGE3_URL=$(curl -s https://www.gentoo.org/downloads/mirrors/ | grep -m1 "autobuilds/current-stage3" | awk -F'"' '{print $2}')
-# wget "$STAGE3_URL"
-# tar xpvf stage3-*.tar.xz --xattrs-include='*.*' --numeric-owner
+wget "$STAGE3_URL"
+tar xpvf stage3-*.tar.xz --xattrs-include='*.*' --numeric-owner
 
 echo "$STAGE3_URL"
 
