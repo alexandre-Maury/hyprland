@@ -74,19 +74,21 @@ swapon /dev/vg0/swap
 # ---------------------------------------------------
 # INSTALLATION GENTOO
 # ---------------------------------------------------
-# echo "=== Installation de Gentoo ==="
-# # Monter les systèmes de fichiers
-# mount /dev/vg0/root /mnt/gentoo
-# mkdir /mnt/gentoo/boot
-# mount "${DISK}2" /mnt/gentoo/boot
-# mkdir /mnt/gentoo/home
-# mount /dev/vg0/home /mnt/gentoo/home
+echo "=== Installation de Gentoo ==="
+# Monter les systèmes de fichiers
+mount /dev/vg0/root /mnt/gentoo
+mkdir /mnt/gentoo/boot
+mount "/dev/${DISK}2" /mnt/gentoo/boot
+mkdir /mnt/gentoo/home
+mount /dev/vg0/home /mnt/gentoo/home
 
-# # Télécharger et extraire le stage 3
-# cd /mnt/gentoo
-# STAGE3_URL=$(curl -s https://www.gentoo.org/downloads/mirrors/ | grep -m1 "autobuilds/current-stage3" | awk -F'"' '{print $2}')
+# Télécharger et extraire le stage 3
+cd /mnt/gentoo
+STAGE3_URL=$(curl -s https://www.gentoo.org/downloads/mirrors/ | grep -m1 "autobuilds/current-stage3" | awk -F'"' '{print $2}')
 # wget "$STAGE3_URL"
 # tar xpvf stage3-*.tar.xz --xattrs-include='*.*' --numeric-owner
+
+echo $STAGE3_URL
 
 # # Configurer make.conf
 # echo "CFLAGS=\"-O2 -pipe\"" >> /mnt/gentoo/etc/portage/make.conf
