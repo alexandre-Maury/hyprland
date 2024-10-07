@@ -1,111 +1,114 @@
 #!/bin/bash
-set -e
+set -e  # Quitte immédiatement en cas d'erreur.
 
-source funcs.sh
+source funcs.sh  # Charge les fonctions définies dans le fichier funcs.sh.
 
-log_msg INFO "Welcome to the simple Gentoo installer script!"
+# Affiche un message de bienvenue pour l'utilisateur.
+log_msg INFO "Bienvenue dans le script d'installation simple de Gentoo !"
 log_msg INFO "$(cat <<-END
-This script assumes the following things:
-  - networking works
-  - gpt & uefi
-  - ext4 filesystems
-  - openrc
+Ce script suppose les éléments suivants :
+  - le réseau fonctionne
+  - GPT et UEFI sont utilisés
+  - des systèmes de fichiers ext4
+  - OpenRC est le gestionnaire de services
 END
 )"
 
 #
-# initial install
+# Installation initiale
 #
 
-# make sure all scripts are executable
+# S'assure que tous les scripts sont exécutables.
 chmod +x *.sh
 
-# configure installer
-export CFG_BLOCK_DEVICE="$(prompt_value "Target block device handle" "")"
-export CFG_PART_PREFIX="$(prompt_value "Partition number prefix (eg. 'p' for NVMe, '' for HDD/SSD)" "")"
+# Configuration de l'installateur
+export CFG_BLOCK_DEVICE="$(prompt_value "Nom du périphérique cible" "")"
+export CFG_PART_PREFIX="$(prompt_value "Préfixe de la partition (ex : 'p' pour NVMe, '' pour HDD/SSD)" "")"
 export CFG_BLOCK_PART="${CFG_BLOCK_DEVICE}${CFG_PART_PREFIX}"
-export CFG_PART_UEFI="$(prompt_accept "Use UEFI instead of MBR")"
-export CFG_PART_BOOT_SIZE="$(prompt_value "Boot partition size (in MB)" "256")"
-export CFG_PART_SWAP_SIZE="$(prompt_value "Swap partition size (in MB)" "4096")"
-export CFG_PART_ROOT_SIZE="$(prompt_value "Root partition size (in %)" "100")%"
-export CFG_MUSL="$(prompt_accept "Use MUSL instead of GNU C library")"
-export CFG_LLVM="$(prompt_accept "Use LLVM instead of GNU CC")"
-export CFG_TIMEZONE="$(prompt_value "System timezone" "Europe/Helsinki")"
-export CFG_LOCALE="$(prompt_value "System locale" "fi_FI")"
-export CFG_HOSTNAME="$(prompt_value "System hostname" "gentoo")"
-export CFG_NETWORK_INTERFACE="$(prompt_value "Network interface name" "enp0s3")"
-export CFG_KEYMAP="$(prompt_value "Keymap to use" "fi")"
-export CFG_ROOT_PASSWORD="$(prompt_value "Root user password" "")"
+export CFG_PART_UEFI="$(prompt_accept "Utiliser UEFI au lieu de MBR")"
+export CFG_PART_BOOT_SIZE="$(prompt_value "Taille de la partition boot (en Mo)" "256")"
+export CFG_PART_SWAP_SIZE="$(prompt_value "Taille de la partition swap (en Mo)" "4096")"
+export CFG_PART_ROOT_SIZE="$(prompt_value "Taille de la partition root (en %)" "100")%"
+export CFG_MUSL="$(prompt_accept "Utiliser MUSL au lieu de la bibliothèque C GNU")"
+export CFG_LLVM="$(prompt_accept "Utiliser LLVM au lieu de GCC")"
+export CFG_TIMEZONE="$(prompt_value "Fuseau horaire du système" "Europe/Helsinki")"
+export CFG_LOCALE="$(prompt_value "Locale du système" "fi_FI")"
+export CFG_HOSTNAME="$(prompt_value "Nom d'hôte du système" "gentoo")"
+export CFG_NETWORK_INTERFACE="$(prompt_value "Nom de l'interface réseau" "enp0s3")"
+export CFG_KEYMAP="$(prompt_value "Disposition du clavier à utiliser" "fi")"
+export CFG_ROOT_PASSWORD="$(prompt_value "Mot de passe utilisateur root" "")"
 
+# Affiche la configuration pour que l'utilisateur la valide.
 log_msg INFO "$(cat <<END
-Verify configuration:
-  - CFG_BLOCK_DEVICE:       $CFG_BLOCK_DEVICE
-  - CFG_PART_PREFIX:        $CFG_PART_PREFIX
-  - CFG_BLOCK_PART:         $CFG_BLOCK_PART
-  - CFG_PART_UEFI:          $CFG_PART_UEFI
-  - CFG_PART_BOOT_SIZE:     $CFG_PART_BOOT_SIZE
-  - CFG_PART_SWAP_SIZE:     $CFG_PART_SWAP_SIZE
-  - CFG_PART_ROOT_SIZE:     $CFG_PART_ROOT_SIZE
-  - CFG_MUSL:               $CFG_MUSL
-  - CFG_LLVM:               $CFG_LLVM
-  - CFG_TIMEZONE:           $CFG_TIMEZONE
-  - CFG_LOCALE:             $CFG_LOCALE
-  - CFG_HOSTNAME:           $CFG_HOSTNAME
-  - CFG_NETWORK_INTERFACE:  $CFG_NETWORK_INTERFACE
-  - CFG_KEYMAP:             $CFG_KEYMAP
-  - CFG_ROOT_PASSWORD:      $CFG_ROOT_PASSWORD
+Vérification de la configuration :
+  - Périphérique cible :       $CFG_BLOCK_DEVICE
+  - Préfixe de partition :     $CFG_PART_PREFIX
+  - Partition :                $CFG_BLOCK_PART
+  - UEFI utilisé :             $CFG_PART_UEFI
+  - Taille de boot :           $CFG_PART_BOOT_SIZE
+  - Taille du swap :           $CFG_PART_SWAP_SIZE
+  - Taille du root :           $CFG_PART_ROOT_SIZE
+  - MUSL utilisé :             $CFG_MUSL
+  - LLVM utilisé :             $CFG_LLVM
+  - Fuseau horaire :           $CFG_TIMEZONE
+  - Locale :                   $CFG_LOCALE
+  - Nom d'hôte :               $CFG_HOSTNAME
+  - Interface réseau :         $CFG_NETWORK_INTERFACE
+  - Disposition du clavier :   $CFG_KEYMAP
+  - Mot de passe root :        $CFG_ROOT_PASSWORD
 END
 )"
 
-PROMPT_PROCEED=$(prompt_accept "Verify that the above info is correct and proceed at your own risk")
+# Demande à l'utilisateur de confirmer la configuration.
+PROMPT_PROCEED=$(prompt_accept "Vérifiez que les informations ci-dessus sont correctes et continuez à vos risques et périls")
 if [[ "$PROMPT_PROCEED" == "n" ]]; then
-  log_msg WARN "Exiting installer safely, nothing was done..."
+  log_msg WARN "Quitter l'installateur en toute sécurité, rien n'a été fait..."
   exit 0
 fi
 
-# wipe old fs
-PROMPT_WIPEFS=$(prompt_accept "Wipe all from target filesystem")
+# Effacement des anciens systèmes de fichiers
+PROMPT_WIPEFS=$(prompt_accept "Effacer tout sur le système de fichiers cible")
 if [[ "$PROMPT_WIPEFS" == "y" ]]; then
-  log_msg WARN "Executing 'wipefs -a $CFG_BLOCK_DEVICE' ..."
+  log_msg WARN "Exécution de 'wipefs -a $CFG_BLOCK_DEVICE' ..."
   wipefs -a $CFG_BLOCK_DEVICE
 fi
 
-# setup disklabel
+# Configuration de l'étiquette du disque
 if [[ "${CFG_PART_UEFI}" == "y" ]]; then
-  parted -a optimal $CFG_BLOCK_DEVICE mklabel gpt
+  parted -a optimal $CFG_BLOCK_DEVICE mklabel gpt  # Utilise GPT si UEFI est sélectionné.
 else
-  parted -a optimal $CFG_BLOCK_DEVICE mklabel msdos
+  parted -a optimal $CFG_BLOCK_DEVICE mklabel msdos  # Utilise MBR sinon.
 fi
 
-# setup partitions
-parted -s $CFG_BLOCK_DEVICE mkpart primary 0% $CFG_PART_BOOT_SIZE
-parted -s $CFG_BLOCK_DEVICE mkpart primary $CFG_PART_BOOT_SIZE $CFG_PART_SWAP_SIZE
-parted -s $CFG_BLOCK_DEVICE mkpart primary $(($CFG_PART_BOOT_SIZE+$CFG_PART_SWAP_SIZE)) $CFG_PART_ROOT_SIZE
-parted -s $CFG_BLOCK_DEVICE print
+# Création des partitions
+parted -s $CFG_BLOCK_DEVICE mkpart primary 0% $CFG_PART_BOOT_SIZE  # Partition de boot.
+parted -s $CFG_BLOCK_DEVICE mkpart primary $CFG_PART_BOOT_SIZE $CFG_PART_SWAP_SIZE  # Partition swap.
+parted -s $CFG_BLOCK_DEVICE mkpart primary $(($CFG_PART_BOOT_SIZE+$CFG_PART_SWAP_SIZE)) $CFG_PART_ROOT_SIZE  # Partition root.
+parted -s $CFG_BLOCK_DEVICE print  # Affiche la table de partitionnement.
 
-# setup filesystems
+# Configuration des systèmes de fichiers
 if [[ "${CFG_PART_UEFI}" == "y" ]]; then
-  mkfs.fat -F 32 ${CFG_BLOCK_PART}1
+  mkfs.fat -F 32 ${CFG_BLOCK_PART}1  # Crée un système de fichiers FAT32 pour UEFI.
 else
-  mkfs.ext4 ${CFG_BLOCK_PART}1
+  mkfs.ext4 ${CFG_BLOCK_PART}1  # Crée un système de fichiers ext4 pour le boot.
 fi
-mkswap ${CFG_BLOCK_PART}2
-mkfs.ext4 ${CFG_BLOCK_PART}3
+mkswap ${CFG_BLOCK_PART}2  # Crée le swap.
+mkfs.ext4 ${CFG_BLOCK_PART}3  # Crée un système de fichiers ext4 pour la partition root.
 
-# activate swap partition
+# Active la partition swap
 swapon ${CFG_BLOCK_PART}2
 
-# mount root parition
+# Monte la partition root
 mkdir -p /mnt/gentoo
 mount ${CFG_BLOCK_PART}3 /mnt/gentoo
 
-# execute stage3 install
+# Exécute l'installation du stage3
 cp stage3.sh /mnt/gentoo/
 cp funcs.sh /mnt/gentoo/
 (cd /mnt/gentoo ; bash stage3.sh)
 
-# finalize installation
-umount -l /mnt/gentoo/dev{/shm,/pts,} 
-umount -R /mnt/gentoo
+# Finalise l'installation
+umount -l /mnt/gentoo/dev{/shm,/pts,}  # Démontage des périphériques.
+umount -R /mnt/gentoo  # Démontage récursif.
 
-log_msg INFO "All is done! You can execute 'reboot' now!"
+log_msg INFO "Tout est terminé ! Vous pouvez exécuter 'reboot' maintenant !"  # Message final.
