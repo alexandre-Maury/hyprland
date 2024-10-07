@@ -1,158 +1,111 @@
 #!/bin/bash
+set -e
 
-# Variables
-# DISK="/dev/sda"
-BOOT_SIZE="128M"  # Taille de la partition /boot
-LVM_SIZE="remaining"  # Taille de la partition LVM (tout l'espace restant)
-SWAP_SIZE="2G"  # Taille du swap
-ROOT_SIZE="50G"  # Taille du volume logique root
-HOSTNAME="gentoo-system"  # Nom du système
+source funcs.sh
 
-# Vérification des droits superutilisateur
-if [ "$EUID" -ne 0 ]; then
-  echo "Ce script doit être exécuté en tant que root."
-  exit 1
+log_msg INFO "Welcome to the simple Gentoo installer script!"
+log_msg INFO "$(cat <<-END
+This script assumes the following things:
+  - networking works
+  - gpt & uefi
+  - ext4 filesystems
+  - openrc
+END
+)"
+
+#
+# initial install
+#
+
+# make sure all scripts are executable
+chmod +x *.sh
+
+# configure installer
+export CFG_BLOCK_DEVICE="$(prompt_value "Target block device handle" "")"
+export CFG_PART_PREFIX="$(prompt_value "Partition number prefix (eg. 'p' for NVMe, '' for HDD/SSD)" "")"
+export CFG_BLOCK_PART="${CFG_BLOCK_DEVICE}${CFG_PART_PREFIX}"
+export CFG_PART_UEFI="$(prompt_accept "Use UEFI instead of MBR")"
+export CFG_PART_BOOT_SIZE="$(prompt_value "Boot partition size (in MB)" "256")"
+export CFG_PART_SWAP_SIZE="$(prompt_value "Swap partition size (in MB)" "4096")"
+export CFG_PART_ROOT_SIZE="$(prompt_value "Root partition size (in %)" "100")%"
+export CFG_MUSL="$(prompt_accept "Use MUSL instead of GNU C library")"
+export CFG_LLVM="$(prompt_accept "Use LLVM instead of GNU CC")"
+export CFG_TIMEZONE="$(prompt_value "System timezone" "Europe/Helsinki")"
+export CFG_LOCALE="$(prompt_value "System locale" "fi_FI")"
+export CFG_HOSTNAME="$(prompt_value "System hostname" "gentoo")"
+export CFG_NETWORK_INTERFACE="$(prompt_value "Network interface name" "enp0s3")"
+export CFG_KEYMAP="$(prompt_value "Keymap to use" "fi")"
+export CFG_ROOT_PASSWORD="$(prompt_value "Root user password" "")"
+
+log_msg INFO "$(cat <<END
+Verify configuration:
+  - CFG_BLOCK_DEVICE:       $CFG_BLOCK_DEVICE
+  - CFG_PART_PREFIX:        $CFG_PART_PREFIX
+  - CFG_BLOCK_PART:         $CFG_BLOCK_PART
+  - CFG_PART_UEFI:          $CFG_PART_UEFI
+  - CFG_PART_BOOT_SIZE:     $CFG_PART_BOOT_SIZE
+  - CFG_PART_SWAP_SIZE:     $CFG_PART_SWAP_SIZE
+  - CFG_PART_ROOT_SIZE:     $CFG_PART_ROOT_SIZE
+  - CFG_MUSL:               $CFG_MUSL
+  - CFG_LLVM:               $CFG_LLVM
+  - CFG_TIMEZONE:           $CFG_TIMEZONE
+  - CFG_LOCALE:             $CFG_LOCALE
+  - CFG_HOSTNAME:           $CFG_HOSTNAME
+  - CFG_NETWORK_INTERFACE:  $CFG_NETWORK_INTERFACE
+  - CFG_KEYMAP:             $CFG_KEYMAP
+  - CFG_ROOT_PASSWORD:      $CFG_ROOT_PASSWORD
+END
+)"
+
+PROMPT_PROCEED=$(prompt_accept "Verify that the above info is correct and proceed at your own risk")
+if [[ "$PROMPT_PROCEED" == "n" ]]; then
+  log_msg WARN "Exiting installer safely, nothing was done..."
+  exit 0
 fi
 
-# Détection automatique du disque principal (en excluant les périphériques amovibles)
-echo "=== Détection du disque principal ==="
-DISK=$(lsblk -dno NAME,TYPE | awk '$2 == "disk" {print $1}' | head -n 1)  # Récupère uniquement le nom du disque
-echo "Disque détecté : /dev/$DISK"
+# wipe old fs
+PROMPT_WIPEFS=$(prompt_accept "Wipe all from target filesystem")
+if [[ "$PROMPT_WIPEFS" == "y" ]]; then
+  log_msg WARN "Executing 'wipefs -a $CFG_BLOCK_DEVICE' ..."
+  wipefs -a $CFG_BLOCK_DEVICE
+fi
 
-# Nettoyage du disque si nécessaire
-echo "=== Nettoyage du disque ==="
-# wipefs --force --all /dev/$DISK || { echo "Erreur lors du nettoyage du disque"; exit 1; }
-sgdisk --zap-all /dev/$DISK
+# setup disklabel
+if [[ "${CFG_PART_UEFI}" == "y" ]]; then
+  parted -a optimal $CFG_BLOCK_DEVICE mklabel gpt
+else
+  parted -a optimal $CFG_BLOCK_DEVICE mklabel msdos
+fi
 
-# ---------------------------------------------------
-# PARTITIONNEMENT
-# ---------------------------------------------------
-echo "=== Partitionnement du disque $DISK ==="
-parted -a optimal "/dev/$DISK" <<EOF
-mklabel gpt
-unit mib
-mkpart primary 1 3
-name 1 grub
-set 1 bios_grub on
-mkpart primary 3 131
-name 2 boot
-set 2 boot on
-mkpart primary 131 -1
-name 3 lvm
-quit
-EOF
+# setup partitions
+parted -s $CFG_BLOCK_DEVICE mkpart primary 0% $CFG_PART_BOOT_SIZE
+parted -s $CFG_BLOCK_DEVICE mkpart primary $CFG_PART_BOOT_SIZE $CFG_PART_SWAP_SIZE
+parted -s $CFG_BLOCK_DEVICE mkpart primary $(($CFG_PART_BOOT_SIZE+$CFG_PART_SWAP_SIZE)) $CFG_PART_ROOT_SIZE
+parted -s $CFG_BLOCK_DEVICE print
 
-# ---------------------------------------------------
-# CHIFFREMENT LUKS
-# ---------------------------------------------------
-echo "=== Chiffrement de la partition LVM (/dev/sda3) ==="
-modprobe dm-crypt  # Charger le module dm-crypt, si ce n'est pas déjà fait
-cryptsetup -c aes-cbc-essiv:sha256 -v luksFormat -s 256 "/dev/${DISK}3"
-cryptsetup luksOpen "/dev/${DISK}3" lvmcrypt
+# setup filesystems
+if [[ "${CFG_PART_UEFI}" == "y" ]]; then
+  mkfs.fat -F 32 ${CFG_BLOCK_PART}1
+else
+  mkfs.ext4 ${CFG_BLOCK_PART}1
+fi
+mkswap ${CFG_BLOCK_PART}2
+mkfs.ext4 ${CFG_BLOCK_PART}3
 
-# ---------------------------------------------------
-# CONFIGURATION LVM
-# ---------------------------------------------------
-echo "=== Configuration de LVM sur le disque chiffré ==="
-# Initialiser LVM sur le volume chiffré
-pvcreate /dev/mapper/lvmcrypt
-vgcreate vg0 /dev/mapper/lvmcrypt
+# activate swap partition
+swapon ${CFG_BLOCK_PART}2
 
-# Créer les volumes logiques
-lvcreate -L "$SWAP_SIZE" -n swap vg0
-lvcreate -L "$ROOT_SIZE" -n root vg0
-lvcreate -l 100%FREE -n home vg0
-
-# Formater les partitions
-echo "=== Formatage des partitions ==="
-mkfs.ext2 "/dev/${DISK}2"  # /boot
-mkfs.ext4 /dev/vg0/root  # /
-mkfs.ext4 /dev/vg0/home  # /home
-mkswap /dev/vg0/swap  # swap
-swapon /dev/vg0/swap
-
-# ---------------------------------------------------
-# INSTALLATION GENTOO
-# ---------------------------------------------------
-echo "=== Installation de Gentoo ==="
-# Monter les systèmes de fichiers
+# mount root parition
 mkdir -p /mnt/gentoo
-mount /dev/vg0/root /mnt/gentoo
-mkdir -p /mnt/gentoo/boot
-mount "/dev/${DISK}2" /mnt/gentoo/boot
-mkdir -p /mnt/gentoo/home
-mount /dev/vg0/home /mnt/gentoo/home
+mount ${CFG_BLOCK_PART}3 /mnt/gentoo
 
-# Télécharger et extraire le stage 3
-cd /mnt/gentoo
+# execute stage3 install
+cp stage3.sh /mnt/gentoo/
+cp funcs.sh /mnt/gentoo/
+(cd /mnt/gentoo ; bash stage3.sh)
 
-wget https://distfiles.gentoo.org/releases/amd64/autobuilds/20240929T163611Z/stage3-amd64-systemd-20240929T163611Z.tar.xz -O stage3-amd64.tar.xz
-tar xpvf stage3-amd64.tar.xz --xattrs-include='*.*' --numeric-owner || { echo "Échec de l'extraction de stage3"; exit 1; }
+# finalize installation
+umount -l /mnt/gentoo/dev{/shm,/pts,} 
+umount -R /mnt/gentoo
 
-# Configurer make.conf
-echo "CFLAGS=\"-O2 -pipe\"" >> /mnt/gentoo/etc/portage/make.conf
-echo "CXXFLAGS=\"\${CFLAGS}\"" >> /mnt/gentoo/etc/portage/make.conf
-echo "MAKEOPTS=\"-j$(nproc)\"" >> /mnt/gentoo/etc/portage/make.conf
-
-
-
-# # Monter les pseudo-filesystems
-# mount -t proc /proc /mnt/gentoo/proc
-# mount --rbind /sys /mnt/gentoo/sys
-# mount --make-rslave /mnt/gentoo/sys
-# mount --rbind /dev /mnt/gentoo/dev
-# mount --make-rslave /mnt/gentoo/dev
-
-# # Copier les informations de résolution DNS
-# cp /etc/resolv.conf /mnt/gentoo/etc/
-
-# # Chroot dans l'environnement Gentoo
-# chroot /mnt/gentoo /bin/bash <<'EOF'
-# source /etc/profile
-# export PS1="(chroot) $PS1"
-
-# # Mettre à jour l'environnement
-# emerge-webrsync
-# emerge --sync
-
-# # Configurer le système de fichiers
-# echo "LABEL=boot /boot ext2 defaults 0 2" >> /etc/fstab
-# echo "/dev/vg0/root / ext4 defaults 0 1" >> /etc/fstab
-# echo "/dev/vg0/home /home ext4 defaults 0 2" >> /etc/fstab
-# echo "/dev/vg0/swap none swap sw 0 0" >> /etc/fstab
-
-# # Configurer le réseau et le hostname
-# echo "$HOSTNAME" > /etc/conf.d/hostname
-# echo "127.0.0.1 $HOSTNAME localhost" >> /etc/hosts
-
-# # Configurer les locales (exemple : fr_FR.UTF-8)
-# echo "en_US.UTF-8 UTF-8" > /etc/locale.gen
-# locale-gen
-# eselect locale set en_US.UTF-8
-# env-update && source /etc/profile
-
-# # Configurer le fuseau horaire
-# echo "Europe/Paris" > /etc/timezone
-# emerge --config sys-libs/timezone-data
-
-# # Installer les outils de base
-# emerge sys-kernel/gentoo-sources sys-kernel/genkernel sys-fs/lvm2 sys-apps/util-linux sys-boot/grub sys-fs/cryptsetup
-
-# # Compilation du noyau avec le support LUKS et LVM
-# genkernel --luks --lvm --busybox --menuconfig all
-
-# # Installer GRUB
-# grub-install "$DISK"
-# echo "GRUB_CMDLINE_LINUX=\"crypt_root=UUID=$(blkid -s UUID -o value ${DISK}3) dolvm\"" >> /etc/default/grub
-# grub-mkconfig -o /boot/grub/grub.cfg
-
-# # Finaliser l'installation
-# passwd  # Définir un mot de passe pour root
-# EOF
-
-# # Démonter les systèmes de fichiers
-# umount -l /mnt/gentoo/dev{/shm,/pts,}
-# umount -R /mnt/gentoo
-# swapoff /dev/vg0/swap
-
-# echo "Installation terminée ! Vous pouvez redémarrer."
+log_msg INFO "All is done! You can execute 'reboot' now!"
