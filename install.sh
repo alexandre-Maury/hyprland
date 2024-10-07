@@ -76,11 +76,11 @@ swapon /dev/vg0/swap
 # ---------------------------------------------------
 echo "=== Installation de Gentoo ==="
 # Monter les systèmes de fichiers
-mkdir /mnt/gentoo
+mkdir -p /mnt/gentoo
 mount /dev/vg0/root /mnt/gentoo
-mkdir /mnt/gentoo/boot
+mkdir -p /mnt/gentoo/boot
 mount "/dev/${DISK}2" /mnt/gentoo/boot
-mkdir /mnt/gentoo/home
+mkdir -p /mnt/gentoo/home
 mount /dev/vg0/home /mnt/gentoo/home
 
 # Télécharger et extraire le stage 3
