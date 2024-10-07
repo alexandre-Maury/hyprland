@@ -184,15 +184,16 @@ echo "127.0.0.1 ${CFG_HOSTNAME} localhost" >> /etc/hosts
 log_msg INFO "Définition du mot de passe root" >> /var/log/installer.log
 echo "root:${CFG_ROOT_PASSWORD}" | chpasswd
 
-
+log_msg INFO "Installation de sudo" >> /var/log/installer.log
 emerge --ask n app-admin/sudo
+
 log_msg INFO "Création de l'utilisateur ${CFG_USER}" >> /var/log/installer.log
 useradd -m -G users,wheel -s /bin/bash "${CFG_USER}"
 log_msg INFO "Définition du mot de passe pour l'utilisateur ${CFG_USER}" >> /var/log/installer.log
 echo "${CFG_USER}:${CFG_USER_PASSWORD}" | chpasswd
-log_msg INFO "Ajout de ${CFG_USER} au groupe wheel pour sudo" >> /var/log/installer.log
-log_msg INFO "Configuration de sudo pour le groupe wheel" >> /var/log/installer.log
-sed -i 's/^# %wheel ALL=(ALL:ALL) ALL/%wheel ALL=(ALL:ALL) ALL/' /etc/sudoers
+log_msg INFO "Ajout de ${CFG_USER} au fichier sudoers" >> /var/log/installer.log
+echo "${CFG_USER} ALL=(ALL) ALL" > /etc/sudoers.d/${CFG_USER}
+chmod 440 /etc/sudoers.d/${CFG_USER}
 
 log_msg INFO "Configuration de la carte clavier" >> /var/log/installer.log
 sed -i '/^keymap/s/=.*$/=$"'"${CFG_KEYMAP}"'"/' /etc/conf.d/keymaps
