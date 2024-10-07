@@ -29,19 +29,6 @@ prompt_accept() {
   esac
 }
 
-# Demande à l'utilisateur une valeur avec une valeur par défaut.
-# prompt_value() {
-#   check_args "$#" "2"  # Vérifie que la fonction reçoit bien 2 arguments.
-
-#   # Demande une valeur à l'utilisateur, affiche la valeur par défaut entre parenthèses si l'utilisateur saisit '.'.
-#   read -p "$1 ('.' pour défaut : '$2'): " value
-
-#   if [[ "$value" == "." ]]; then
-#     echo $2  # Si l'utilisateur entre '.', retourne la valeur par défaut.
-#   else
-#     echo $value  # Sinon, retourne la valeur saisie par l'utilisateur.
-#   fi
-# }
 
 prompt_value() {
     local prompt="$1"
