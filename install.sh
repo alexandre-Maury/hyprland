@@ -21,22 +21,26 @@ END
 # S'assure que tous les scripts sont exécutables.
 chmod +x *.sh
 
+DISK=$(lsblk -dno NAME,TYPE | awk '$2 == "disk" {print $1}' | head -n 1)  # Récupère uniquement le nom du disque
+
+
+
 # Configuration de l'installateur
-export CFG_BLOCK_DEVICE="$(prompt_value "Nom du périphérique cible : Ex - /dev/sda" "")"
-export CFG_PART_PREFIX="$(prompt_value "Préfixe de la partition (ex : 'p' pour NVMe, '' pour HDD/SSD)" "")"
+export CFG_BLOCK_DEVICE="$(prompt_value "Nom du périphérique cible (par défaut : /dev/${DISK})" "${CFG_BLOCK_DEVICE:-/dev/$DISK}")"
+export CFG_PART_PREFIX="$(prompt_value "Préfixe de la partition (ex : 'p' pour les disques NVMe, rien pour les HDD/SSD)" "")"
 export CFG_BLOCK_PART="${CFG_BLOCK_DEVICE}${CFG_PART_PREFIX}"
-export CFG_PART_UEFI="$(prompt_accept "Utiliser UEFI au lieu de MBR - y/n")"
-export CFG_PART_BOOT_SIZE="$(prompt_value "Taille de la partition boot (en Mo)" "256")"
-export CFG_PART_SWAP_SIZE="$(prompt_value "Taille de la partition swap (en Mo)" "4096")"
-export CFG_PART_ROOT_SIZE="$(prompt_value "Taille de la partition root (en %)" "100")%"
-export CFG_MUSL="$(prompt_accept "Utiliser MUSL au lieu de la bibliothèque C GNU")"
-export CFG_LLVM="$(prompt_accept "Utiliser LLVM au lieu de GCC")"
-export CFG_TIMEZONE="$(prompt_value "Fuseau horaire du système" "Europe/Helsinki")"
-export CFG_LOCALE="$(prompt_value "Locale du système" "fi_FI")"
-export CFG_HOSTNAME="$(prompt_value "Nom d'hôte du système" "gentoo")"
-export CFG_NETWORK_INTERFACE="$(prompt_value "Nom de l'interface réseau" "enp0s3")"
-export CFG_KEYMAP="$(prompt_value "Disposition du clavier à utiliser" "fi")"
-export CFG_ROOT_PASSWORD="$(prompt_value "Mot de passe utilisateur root" "")"
+export CFG_PART_UEFI="$(prompt_value "Voulez-vous utiliser le mode UEFI ? (y/n, par défaut : y)" "${CFG_PART_UEFI:-y}")"
+export CFG_PART_BOOT_SIZE="$(prompt_value "Taille de la partition boot (en Mo, par défaut : 256)" "${CFG_PART_BOOT_SIZE:-256}")"
+export CFG_PART_SWAP_SIZE="$(prompt_value "Taille de la partition swap (en Mo, par défaut : 4096)" "${CFG_PART_SWAP_SIZE:-4096}")"
+export CFG_PART_ROOT_SIZE="$(prompt_value "Taille de la partition root (en %, par défaut : 100)" "${CFG_PART_ROOT_SIZE:-100}")%"
+export CFG_MUSL="$(prompt_value "Utiliser MUSL au lieu de la bibliothèque C GNU ? (y/n, par défaut : n)" "${CFG_MUSL:-n}")"
+export CFG_LLVM="$(prompt_value "Utiliser LLVM au lieu de GCC ? (y/n, par défaut : n)" "${CFG_LLVM:-n}")"
+export CFG_TIMEZONE="$(prompt_value "Fuseau horaire du système (par défaut : Europe/Paris)" "${CFG_TIMEZONE:-Europe/Paris}")"
+export CFG_LOCALE="$(prompt_value "Locale du système (par défaut : fr_FR)" "${CFG_LOCALE:-fr_FR}")"
+export CFG_HOSTNAME="$(prompt_value "Nom d'hôte du système (par défaut : gentoo-system)" "${CFG_HOSTNAME:-gentoo-system}")"
+export CFG_NETWORK_INTERFACE="$(echo -e "Interfaces réseau disponibles :\n$(ip -o link show | awk -F': ' '{print $2}')\n" && prompt_value "Nom de l'interface réseau (par défaut : enp0s3)" "${CFG_NETWORK_INTERFACE:-enp0s3}")"
+export CFG_KEYMAP="$(prompt_value "Disposition du clavier à utiliser" "${CFG_KEYMAP:-fr}")"
+export CFG_ROOT_PASSWORD="$(prompt_value "Créer votre Mot de passe utilisateur root" "")"
 
 # Affiche la configuration pour que l'utilisateur la valide.
 log_msg INFO "$(cat <<END
