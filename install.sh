@@ -43,7 +43,7 @@ CFG_KEYMAP="fr"
 
 # Configuration de l'installateur
 export CFG_BLOCK_DEVICE="$(prompt_value "Nom du périphérique cible -> par défaut :" "$CFG_BLOCK_DEVICE")"
-export CFG_PART_PREFIX="$(prompt_value "Préfixe de la partition -> 'p' pour les disques NVMe - rien pour les HDD/SSD" "$CFG_PART_PREFIX")"
+export CFG_PART_PREFIX="$(prompt_value "Préfixe de la partition -> [p] pour les disques NVMe - [] pour les HDD/SSD" "$CFG_PART_PREFIX")"
 export CFG_BLOCK_PART="${CFG_BLOCK_DEVICE}${CFG_PART_PREFIX}"
 export CFG_PART_UEFI="$(prompt_value "Voulez-vous utiliser le mode UEFI -> par défaut :" "$CFG_PART_UEFI")"
 export CFG_PART_BOOT_SIZE="$(prompt_value "Taille de la partition boot en Mo -> par défaut :" "$CFG_PART_BOOT_SIZE")"
@@ -87,7 +87,7 @@ if [[ "$PROMPT_PROCEED" == "n" ]]; then
 fi
 
 # Effacement des anciens systèmes de fichiers
-PROMPT_WIPEFS=$(prompt_accept "Effacer tout sur le système de fichiers cible")
+PROMPT_WIPEFS=$(prompt_accept "Effacer tout sur le système de fichiers cible - y/n")
 if [[ "$PROMPT_WIPEFS" == "y" ]]; then
   log_msg WARN "Exécution de 'wipefs -a $CFG_BLOCK_DEVICE' ..."
   wipefs -a $CFG_BLOCK_DEVICE

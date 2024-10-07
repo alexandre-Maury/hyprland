@@ -8,7 +8,7 @@ source funcs.sh
 #
 
 # Synchronisation de l'heure
-ntpd -q -g || true
+# ntpd -q -g || true
 
 # Téléchargement et décompression de l'archive stage3
 links https://www.gentoo.org/downloads/mirrors/
