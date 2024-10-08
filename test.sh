@@ -2,7 +2,7 @@
 
 # Variables
 CFG_BLOCK_DEVICE="/dev/sda"
-CFG_PART_UEFI="y"            # "y" pour GPT/UEFI, "n" pour MBR/BIOS
+CFG_PART_UEFI="n"            # "y" pour GPT/UEFI, "n" pour MBR/BIOS
 CFG_PART_EFI_SIZE="100"      # Taille de la partition EFI en Mo
 CFG_PART_SWAP_SIZE="4096"    # Taille de la partition SWAP en Mo
 CFG_PART_ROOT_SIZE="100%"    # Taille de la partition ROOT (le reste du disque)
