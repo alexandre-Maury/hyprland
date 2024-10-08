@@ -24,22 +24,22 @@ prompt_confirm() {
 }
 
 # Saisie avec valeur par défaut
-# prompt_value() {
-#     local prompt="$1"
-#     local default_value="$2"
-
-#     read -p "$prompt [$default_value]: " value
-#     echo "${value:-$default_value}"
-# }
-
 prompt_value() {
     local prompt="$1"
-    local var_name="$2"
+    local default_value="$2"
 
-    read -p "$prompt" input
-    export "${var_name=$input:-$var_name}"
-
+    read -p "$prompt [$default_value]: " value
+    echo "${value:-$default_value}"
 }
+
+# prompt_value() {
+#     local prompt="$1"
+#     local var_name="$2"
+
+#     read -p "$prompt" input
+#     export "${var_name=$input:-$var_name}"
+
+# }
 
 # Vérifie et installe un package si absent
 check_and_install() {
