@@ -6,9 +6,11 @@
 packages=("git" "tar" "links" "curl" "wget")
 
 # DISK=$(lsblk -dno NAME,TYPE | awk '$2 == "disk"' | head -n 1)
+# lsblk -nd -o NAME,TYPE | awk '$2 == "disk" {print "/dev/" $1}'
+
 
 # Détection automatique du périphérique de bloc (premier disque trouvé)
-export CFG_BLOCK_DEVICE="${CFG_BLOCK_DEVICE:-$(lsblk -nd -o NAME | head -n 1 | sed 's/^/\/dev\//')}"
+export CFG_BLOCK_DEVICE="${CFG_BLOCK_DEVICE:-$(lsblk -nd -o NAME,TYPE | awk '$2 == "disk" {print "/dev/" $1}')}"
 # Préfixe pour les partitions
 export CFG_PART_PREFIX="${CFG_PART_PREFIX:-}"
 # Définition du chemin de la partition
