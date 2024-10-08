@@ -240,7 +240,3 @@ fi
 
 log_msg INFO "=== Installation terminée ==="
 EOF
-
-# Sortie du chroot
-log_msg INFO "=== Sortie du chroot ==="
-# exit
