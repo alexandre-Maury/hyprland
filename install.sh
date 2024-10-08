@@ -73,8 +73,9 @@ fi
 # Effacement des systèmes de fichiers existants
 if prompt_confirm "Effacer tout sur le périphérique cible ? (y/n)"; then
     log_msg WARN "Exécution de 'wipefs -a $CFG_BLOCK_DEVICE' ..."
-    wipefs -a "$CFG_BLOCK_DEVICE"
-fi
+    sgdisk --zap-all "$CFG_BLOCK_DEVICE"
+    wipefs --force --all "$CFG_BLOCK_DEVICE"
+    
 
 # Configuration de l'étiquette du disque
 if [[ "$CFG_PART_UEFI" == "y" ]]; then
