@@ -113,29 +113,30 @@ fi
 # Synchronisation du dépôt ebuild Gentoo
 log_msg INFO "Synchronisation du dépôt ebuild Gentoo"
 emerge-webrsync
-emerge --ask n --sync
+emerge --sync
 
 # Mise à jour de l'ensemble @world (@system et @selected)
 log_msg INFO "Mise à jour de l'ensemble @world"
-emerge --ask n --update --deep --newuse @world
+emerge --noreplace --update --deep --newuse @world
 
 # Installation de linux-firmware
 echo "sys-kernel/linux-firmware @BINARY-REDISTRIBUTABLE" >> /etc/portage/package.accept_keywords
+emerge --noreplace sys-kernel/linux-firmware
 
 # Configuration du fuseau horaire et des locales
 if [[ "\${CFG_MUSL}" == "y" ]]; then
     log_msg INFO "Configuration du fuseau horaire (musl)"
-    emerge --ask n --config sys-libs/timezone-data
+    emerge --noreplace --config sys-libs/timezone-data
     echo "TZ=\"/usr/share/zoneinfo/\${CFG_TIMEZONE}\"" >> /etc/env.d/00musl
 
     log_msg INFO "Configuration des locales (musl)"
     echo "sys-apps/musl-locales ~amd64" > /etc/portage/package.accept_keywords/sys-apps
-    emerge --ask n sys-apps/musl-locales
+    emerge --noreplace sys-apps/musl-locales
     echo "MUSL_LOCPATH=\"/usr/share/i18n/locales/musl\"" >> /etc/env.d/00musl
 else
     log_msg INFO "Configuration du fuseau horaire (glibc)"
     echo \${CFG_TIMEZONE} > /etc/timezone
-    emerge --ask n sys-libs/timezone-data
+    emerge --noreplace sys-libs/timezone-data
 
     log_msg INFO "Configuration des locales (glibc)" 
     echo "\${CFG_LOCALE}" >> /etc/locale.gen
@@ -147,7 +148,7 @@ env-update && source /etc/profile && export PS1="(chroot) \${PS1}"
 
 # Installation des sources du noyau
 log_msg INFO "Installation des sources du noyau"
-emerge --ask n sys-kernel/gentoo-sources
+emerge --noreplace sys-kernel/gentoo-sources
 
 log_msg INFO "Sélection des sources du noyau"
 eselect kernel list
@@ -155,7 +156,7 @@ eselect kernel set 1
 
 # Installation de genkernel
 log_msg INFO "Installation de genkernel"
-emerge --ask n sys-kernel/genkernel
+emerge --noreplace sys-kernel/genkernel
 
 # Configuration de fstab
 log_msg INFO "Configuration de fstab"
@@ -196,13 +197,13 @@ log_msg INFO "Configuration du nom d'hôte"
 echo "hostname=\"\${CFG_HOSTNAME}\"" > /etc/conf.d/hostname
 
 log_msg INFO "Installation de netifrc"
-emerge --ask n --noreplace net-misc/netifrc
+emerge --noreplace --noreplace net-misc/netifrc
 
 log_msg INFO "Installation de dhcpcd"
-emerge --ask n net-misc/dhcpcd
+emerge --noreplace net-misc/dhcpcd
 
 log_msg INFO "Installation du sans-fil"
-emerge --ask n net-wireless/iw net-wireless/wpa_supplicant
+emerge --noreplace net-wireless/iw net-wireless/wpa_supplicant
 
 log_msg INFO "Configuration du réseau"
 echo "config_\${CFG_NETWORK_INTERFACE}=\"dhcp\"" >> /etc/conf.d/net
@@ -217,7 +218,7 @@ log_msg INFO "Définition du mot de passe root"
 echo "root:\${CFG_ROOT_PASSWORD}" | chpasswd
 
 log_msg INFO "Installation de sudo"
-emerge --ask n app-admin/sudo
+emerge --noreplace app-admin/sudo
 
 log_msg INFO "Création de l'utilisateur \${CFG_USER}"
 useradd -m -G users,wheel -s /bin/bash \${CFG_USER}
@@ -227,12 +228,12 @@ echo "\${CFG_USER} ALL=(ALL) ALL" >> /etc/sudoers
 # Installation de GRUB
 if [[ "\${CFG_PART_UEFI}" == "y" ]]; then
     log_msg INFO "Installation de GRUB pour UEFI"
-    emerge --ask n sys-boot/grub
+    emerge --noreplace sys-boot/grub
     grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=GRUB
     grub-mkconfig -o /boot/grub/grub.cfg
 else
     log_msg INFO "Installation de GRUB pour MBR"
-    emerge --ask n sys-boot/grub
+    emerge --noreplace sys-boot/grub
     grub-install --target=i386-pc \${CFG_BLOCK_PART}
     grub-mkconfig -o /boot/grub/grub.cfg
 fi
