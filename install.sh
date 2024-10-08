@@ -109,10 +109,9 @@ mount ${CFG_BLOCK_PART}3 /mnt/gentoo
 # Copie et exécution de l'installation du stage3
 cp stage3.sh /mnt/gentoo/
 cp fonction.sh /mnt/gentoo/
-(cd /mnt/gentoo ; bash stage3.sh)
+# (cd /mnt/gentoo ; bash stage3.sh)
 
 log_msg INFO "Installation terminée. Vous pouvez redémarrer votre machine."
-
 # Finalisation et démontage
 umount -l /mnt/gentoo/dev{/shm,/pts,}  # Démontage des pseudo-fichiers
 umount -R /mnt/gentoo  # Démontage récursif
