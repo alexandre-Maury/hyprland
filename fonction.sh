@@ -37,7 +37,7 @@ prompt_value() {
     local var_name="$2"
 
     read -p "$prompt" input
-    export "$var_name=$input:-$var_name"
+    export "${var_name=$input:-$var_name}"
 
 }
 
