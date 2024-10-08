@@ -29,8 +29,6 @@ export CFG_PART_UEFI="$(prompt_value "Voulez-vous utiliser le mode UEFI -> par d
 export CFG_PART_BOOT_SIZE="$(prompt_value "Taille de la partition boot en Mo -> par défaut :" "$CFG_PART_BOOT_SIZE")"
 export CFG_PART_SWAP_SIZE="$(prompt_value "Taille de la partition swap en Mo -> par défaut :" "$CFG_PART_SWAP_SIZE")"
 export CFG_PART_ROOT_SIZE="$(prompt_value "Taille de la partition root en %  -> par défaut :" "$CFG_PART_ROOT_SIZE")"
-export CFG_MUSL="$(prompt_value "Utiliser MUSL au lieu de la bibliothèque C GNU -> par défaut :" "$CFG_MUSL")"
-export CFG_LLVM="$(prompt_value "Utiliser LLVM au lieu de GCC -> par défaut :" "$CFG_LLVM")"
 export CFG_TIMEZONE="$(prompt_value "Fuseau horaire du système -> par défaut :" "$CFG_TIMEZONE")"
 export CFG_LOCALE="$(prompt_value "Locale du système -> par défaut :" "$CFG_LOCALE")"
 export CFG_HOSTNAME="$(prompt_value "Nom d'hôte du système -> par défaut :" "$CFG_HOSTNAME")"
@@ -51,8 +49,6 @@ Vérification de la configuration :
   - Taille de boot :           $CFG_PART_BOOT_SIZE
   - Taille du swap :           $CFG_PART_SWAP_SIZE
   - Taille du root :           $CFG_PART_ROOT_SIZE
-  - MUSL utilisé :             $CFG_MUSL
-  - LLVM utilisé :             $CFG_LLVM
   - Fuseau horaire :           $CFG_TIMEZONE
   - Locale :                   $CFG_LOCALE
   - Nom d'hôte :               $CFG_HOSTNAME
@@ -112,7 +108,7 @@ cp fonction.sh /mnt/gentoo/
 cp config.sh /mnt/gentoo/
 (cd /mnt/gentoo ; bash stage3.sh)
 
-umount -l /mnt/gentoo/dev{/shm,/pts,}  # Démontage des périphériques.
-umount -R /mnt/gentoo  # Démontage récursif.
+# umount -l /mnt/gentoo/dev{/shm,/pts,}  # Démontage des périphériques.
+# umount -R /mnt/gentoo  # Démontage récursif.
 
 log_msg INFO "Installation terminée. Vous pouvez redémarrer votre machine."

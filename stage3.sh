@@ -124,24 +124,13 @@ echo "sys-kernel/linux-firmware @BINARY-REDISTRIBUTABLE" >> /etc/portage/package
 emerge --noreplace sys-kernel/linux-firmware
 
 # Configuration du fuseau horaire et des locales
-if [[ "\${CFG_MUSL}" == "y" ]]; then
-    log_msg INFO "Configuration du fuseau horaire (musl)"
-    emerge --noreplace --config sys-libs/timezone-data
-    echo "TZ=\"/usr/share/zoneinfo/\${CFG_TIMEZONE}\"" >> /etc/env.d/00musl
+log_msg INFO "Configuration du fuseau horaire (glibc)"
+echo \${CFG_TIMEZONE} > /etc/timezone
+emerge --noreplace sys-libs/timezone-data
 
-    log_msg INFO "Configuration des locales (musl)"
-    echo "sys-apps/musl-locales ~amd64" > /etc/portage/package.accept_keywords/sys-apps
-    emerge --noreplace sys-apps/musl-locales
-    echo "MUSL_LOCPATH=\"/usr/share/i18n/locales/musl\"" >> /etc/env.d/00musl
-else
-    log_msg INFO "Configuration du fuseau horaire (glibc)"
-    echo \${CFG_TIMEZONE} > /etc/timezone
-    emerge --noreplace sys-libs/timezone-data
-
-    log_msg INFO "Configuration des locales (glibc)" 
-    echo "\${CFG_LOCALE}" >> /etc/locale.gen
-    locale-gen
-fi
+log_msg INFO "Configuration des locales (glibc)" 
+echo "\${CFG_LOCALE}" >> /etc/locale.gen
+locale-gen
 
 log_msg INFO "Rechargement de l'environnement"
 env-update && source /etc/profile && export PS1="(chroot) \${PS1}"
@@ -173,24 +162,8 @@ log_msg INFO "Configuration de fstab"
 } >> /etc/fstab
 
 # Compilation du noyau
-if [[ "\${CFG_LLVM}" == "y" ]]; then
-    log_msg INFO "Compilation des sources du noyau (llvm)"
-    LLVM=1 LLVM_IAS=1 genkernel all \
-        --kernel-as=llvm-as \
-        --kernel-ar=llvm-ar \
-        --kernel-cc=clang \
-        --kernel-ld=ld.lld \
-        --kernel-nm=llvm-nm \
-        --utils-as=llvm-as \
-        --utils-ar=llvm-ar \
-        --utils-cc=clang \
-        --utils-cxx=clang++ \
-        --utils-ld=ld.lld \
-        --utils-nm=llvm-nm
-else
-    log_msg INFO "Compilation des sources du noyau (gcc)"
-    genkernel all
-fi
+log_msg INFO "Compilation des sources du noyau (gcc)"
+genkernel all
 
 # Configuration réseau
 log_msg INFO "Configuration du nom d'hôte"
