@@ -68,9 +68,7 @@ fi
 
 # Effacement des systèmes de fichiers existants
 if prompt_confirm "Effacer tout sur le périphérique cible ? (y/n)"; then
-    log_msg WARN "Exécution de 'wipefs -a $CFG_BLOCK_DEVICE' ..."
-    sgdisk --zap-all "$CFG_BLOCK_DEVICE"
-    wipefs --force --all "$CFG_BLOCK_DEVICE"
+  parted ${CFG_BLOCK_DEVICE} mklabel gpt 2>/dev/null || parted ${CFG_BLOCK_DEVICE} mklabel msdos 2>/dev/null
 fi    
 
 # Configuration de l'étiquette du disque
@@ -97,6 +95,27 @@ mkfs.ext4 "${CFG_BLOCK_PART}3"  # Root ext4
 
 # Activation de la partition swap
 swapon "${CFG_BLOCK_PART}2"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # Montage de la partition root
 mkdir -p /mnt/gentoo
