@@ -32,7 +32,7 @@ CXXFLAGS="\${COMMON_FLAGS}"
 FCFLAGS="\${COMMON_FLAGS}"
 FFLAGS="\${COMMON_FLAGS}"
 USE=""
-MAKEOPTS="-j\$(nproc)"
+MAKEOPTS="-j\$(nproc)" # A DETERMINER
 L10N="${CFG_LANGUAGE}"
 VIDEO_CARDS="fbdev vesa intel i915 nvidia nouveau radeon amdgpu radeonsi virtualbox vmware qxl"
 INPUT_DEVICES="libinput synaptics keyboard mouse joystick wacom"
@@ -58,7 +58,7 @@ else
     echo "CPU_FLAGS_X86=\"${CPU_FLAGS}\"" >> /mnt/gentoo/etc/portage/make.conf
 fi
 
-if [[ "\${CFG_PART_UEFI}" == "y" ]]; then
+if [[ "${CFG_PART_UEFI}" == "y" ]]; then
     log_msg INFO "Installation de GRUB pour UEFI"
     echo "GRUB_PLATFORMS="pc efi-64"" >> /mnt/gentoo/etc/portage/make.conf
 else
@@ -68,8 +68,8 @@ fi
 
 # Copie du repo.conf
 log_msg INFO "=== Copie du repo.conf ==="
-mkdir -p /mnt/gentoo/etc/portage/repo.conf
-cp /mnt/gentoo/usr/share/portage/config/repo.conf /mnt/gentoo/etc/portage/repo.conf/gentoo.conf
+mkdir -p /mnt/gentoo/etc/portage/repos.conf
+cp /mnt/gentoo/usr/share/portage/config/repos.conf /mnt/gentoo/etc/portage/repos.conf/gentoo.conf
 
 # Copie du DNS
 log_msg INFO "=== Copie du DNS ==="
@@ -124,18 +124,18 @@ log_msg INFO "Mise à jour de l'ensemble @world"
 emerge -avuDN @world --quiet
 
 log_msg INFO "Configuration des locales (glibc)" 
-echo "\${CFG_LOCALE}" >> /etc/locale.gen
+echo "${CFG_LOCALE}" >> /etc/locale.gen
 locale-gen
 
 # Configuration du fuseau horaire et des locales
 log_msg INFO "Configuration du fuseau horaire (glibc)"
-echo \${CFG_TIMEZONE} > /etc/timezone
+echo "${CFG_TIMEZONE}" > /etc/timezone
 emerge --config sys-libs/timezone-data
 
 
 log_msg INFO " Génération du fichier /etc/fstab"
 
-if [[ "$CFG_PART_UEFI" == "y" ]]; then
+if [[ "${CFG_PART_UEFI}" == "y" ]]; then
   # Partition EFI
   UUID=$(blkid -s UUID -o value ${CFG_BLOCK_DEVICE}1)
   echo "UUID=$UUID   /boot/efi      vfat    defaults      0  2" >> /etc/fstab
@@ -164,11 +164,11 @@ emerge --config sys-kernel/gentoo-kernel-bin
 
 # Configuration réseau
 log_msg INFO "Configuration du nom d'hôte"
-echo "hostname=\"\${CFG_HOSTNAME}\"" > /etc/conf.d/hostname
+echo "hostname="${CFG_HOSTNAME}" > /etc/conf.d/hostname
 
 log_msg INFO "Configuration des hôtes" 
-echo "127.0.0.1 localhost \${CFG_HOSTNAME} " >> /etc/hosts
-echo "::1       localhost \${CFG_HOSTNAME} " >> /etc/hosts
+echo "127.0.0.1 localhost "${CFG_HOSTNAME}" " >> /etc/hosts
+echo "::1       localhost "${CFG_HOSTNAME}" " >> /etc/hosts
 
 log_msg INFO "Installation de dhcpcd"
 emerge --quiet net-misc/dhcpcd
@@ -178,30 +178,30 @@ log_msg INFO "Installation du sans-fil"
 emerge --quiet net-wireless/iw net-wireless/wpa_supplicant
 
 log_msg INFO "Définition du mot de passe root" 
-echo "root:\${CFG_ROOT_PASSWORD}" | chpasswd
+echo "root:"${CFG_ROOT_PASSWORD}"" | chpasswd
 
 log_msg INFO "Installation de sudo"
 emerge --quiet app-admin/sudo
 
-log_msg INFO "Création de l'utilisateur \${CFG_USER}"
-# useradd -m -G users,wheel -s /bin/bash \${CFG_USER}
+log_msg INFO "Création de l'utilisateur "${CFG_USER}""
+# useradd -m -G users,wheel -s /bin/bash "${CFG_USER}"
 # echo "\${CFG_USER}:\${CFG_USER_PASSWORD}" | chpasswd
 # echo "\${CFG_USER} ALL=(ALL) ALL" >> /etc/sudoers
 
-useradd -m -G users,wheel,audio,cdrom,video,portage -s /bin/bash \${CFG_USER}
-echo "\${CFG_USER}:\${CFG_USER_PASSWORD}" | chpasswd
+useradd -m -G users,wheel,audio,cdrom,video,portage -s /bin/bash "${CFG_USER}"
+echo ""${CFG_USER}":"${CFG_USER_PASSWORD}"" | chpasswd
 
 
 # Installation de GRUB
 emerge --quiet sys-boot/grub
-if [[ "\${CFG_PART_UEFI}" == "y" ]]; then
+if [[ "${CFG_PART_UEFI}" == "y" ]]; then
     log_msg INFO "Installation de GRUB pour UEFI"
     grub-install --target=x86_64-efi --efi-directory=/boot/EFI 
     grub-mkconfig -o /boot/grub/grub.cfg
 
 else
     log_msg INFO "Installation de GRUB pour MBR"
-    grub-install \${CFG_BLOCK_DEVICE}1
+    grub-install "${CFG_BLOCK_DEVICE}1"
     grub-mkconfig -o /boot/grub/grub.cfg
 fi
 
