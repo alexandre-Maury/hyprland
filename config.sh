@@ -8,13 +8,12 @@ packages=("git" "tar" "links" "curl" "wget")
 # DISK=$(lsblk -dno NAME,TYPE | awk '$2 == "disk"' | head -n 1)
 
 CFG_BLOCK_DEVICE="$(lsblk -nd -o NAME,TYPE | awk '$2 == "disk" {print "/dev/" $1}')"
-CFG_PART_PREFIX=""
 CFG_PART_UEFI="y"
 CFG_PART_EFI_SIZE="100" # 100 mo
-CFG_PART_SWAP_SIZE="4096" # 4096 mo 
+CFG_FILE_SWAP_SIZE="2" 
 CFG_PART_ROOT_SIZE="100%" # Le reste 
 CFG_TIMEZONE="Europe/Paris"
-CFG_LOCALE="fr_FR.UTF-8"
+CFG_LOCALE="fr_FR.UTF-8 UTF-8"
 CFG_HOSTNAME="gentoo"
 CFG_NETWORK_INTERFACE="$(ip link show | awk -F': ' '/^[0-9]+: / && !/lo/ {print $2; exit}')"
 CFG_KEYMAP="fr"

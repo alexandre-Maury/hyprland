@@ -15,42 +15,12 @@ fi
 
 # Téléchargement du stage3
 log_msg INFO "=== Téléchargement de l'archive stage3 ==="
-links http://distfiles.gentoo.org/releases/amd64/autobuilds/ 
-
-# Attente de la fin du téléchargement
-while pgrep -x links > /dev/null; do
-    sleep 2
-done
+wget https://distfiles.gentoo.org/releases/amd64/autobuilds/20240929T163611Z/stage3-amd64-systemd-20240929T163611Z.tar.xz -O stage3-amd64.tar.xz
 
 # Extraction du stage3
 log_msg INFO "Extraction du stage3..."
-tar xpvf stage3-*.tar.xz --xattrs-include="*.*" --numeric-owner -C /mnt/gentoo 
-rm stage3-*.tar.xz
-
-# Montage des systèmes de fichiers
-log_msg INFO "=== Montage des systèmes de fichiers ==="
-
-# Montage de /dev
-mount --rbind /dev /mnt/gentoo/dev || { log_msg ERROR "Erreur lors du montage de /dev"; exit 1; }
-mount --make-rslave /mnt/gentoo/dev || { log_msg ERROR "Erreur lors de la mise à jour de l'esclavage de /dev"; exit 1; }
-# Montage de /proc
-mount -t proc /proc /mnt/gentoo/proc || { log_msg ERROR "Erreur lors du montage de /proc"; exit 1; }
-# Montage de /sys
-mount --rbind /sys /mnt/gentoo/sys || { log_msg ERROR "Erreur lors du montage de /sys"; exit 1; }
-mount --make-rslave /mnt/gentoo/sys || { log_msg ERROR "Erreur lors de la mise à jour de l'esclavage de /sys"; exit 1; }
-# Montage de /tmp
-mount --rbind /tmp /mnt/gentoo/tmp || { log_msg ERROR "Erreur lors du montage de /tmp"; exit 1; }
-# Montage de /run
-mount --types tmpfs tmpfs /mnt/gentoo/run || { log_msg ERROR "Erreur lors du montage de /run"; exit 1; }
-# Gestion de /dev/shm
-if [[ -L /dev/shm ]]; then
-    rm /dev/shm
-    mkdir /dev/shm
-    log_msg INFO "/dev/shm a été supprimé et recréé en tant que répertoire."
-fi
-# Monter /dev/shm en tant que tmpfs
-mount --types tmpfs --options nosuid,nodev,noexec shm /dev/shm || { log_msg ERROR "Erreur lors du montage de /dev/shm"; exit 1; }
-chmod 1777 /dev/shm
+tar xpvf stage3-amd64.tar.xz --xattrs-include='*.*' --numeric-owner || { echo "Échec de l'extraction de stage3"; exit 1; }
+rm stage3-amd64.tar.xz
 
 
 # Configuration de /mnt/gentoo/etc/portage/make.conf
@@ -61,13 +31,13 @@ CFLAGS="\${COMMON_FLAGS}"
 CXXFLAGS="\${COMMON_FLAGS}"
 FCFLAGS="\${COMMON_FLAGS}"
 FFLAGS="\${COMMON_FLAGS}"
+USE=""
 MAKEOPTS="-j\$(nproc)"
 L10N="${CFG_LANGUAGE}"
 VIDEO_CARDS="fbdev vesa intel i915 nvidia nouveau radeon amdgpu radeonsi virtualbox vmware qxl"
 INPUT_DEVICES="libinput synaptics keyboard mouse joystick wacom"
 EMERGE_DEFAULT_OPTS="--quiet-build=y"
 PORTAGE_SCHEDULING_POLICY="idle"
-USE=""
 ACCEPT_KEYWORDS="amd64"
 ACCEPT_LICENSE="*"
 SYNC="rsync://rsync.gentoo.org/gentoo-portage"
@@ -88,128 +58,153 @@ else
     echo "CPU_FLAGS_X86=\"${CPU_FLAGS}\"" >> /mnt/gentoo/etc/portage/make.conf
 fi
 
+if [[ "\${CFG_PART_UEFI}" == "y" ]]; then
+    log_msg INFO "Installation de GRUB pour UEFI"
+    echo "GRUB_PLATFORMS="pc efi-64"" >> /mnt/gentoo/etc/portage/make.conf
+else
+    log_msg INFO "Installation de GRUB pour MBR"
+    echo "GRUB_PLATFORMS="pc"" >> /mnt/gentoo/etc/portage/make.conf
+fi
+
+# Copie du repo.conf
+log_msg INFO "=== Copie du repo.conf ==="
+mkdir -p /mnt/gentoo/etc/portage/repo.conf
+cp /mnt/gentoo/usr/share/portage/config/repo.conf /mnt/gentoo/etc/portage/repo.conf/gentoo.conf
+
 # Copie du DNS
 log_msg INFO "=== Copie du DNS ==="
-cp --dereference /etc/resolv.conf /mnt/gentoo/etc
+cp -L /etc/resolv.conf /mnt/gentoo/etc
+
+# Montage des systèmes de fichiers
+log_msg INFO "=== Montage des systèmes de fichiers ==="
+mount --rbind /dev /mnt/gentoo/dev 
+mount --make-rslave /mnt/gentoo/dev 
+mount -t proc /proc /mnt/gentoo/proc 
+mount --rbind /sys /mnt/gentoo/sys 
+mount --make-rslave /mnt/gentoo/sys 
+mount --rbind /tmp /mnt/gentoo/tmp 
+mount --types tmpfs tmpfs /mnt/gentoo/run 
+
+if [[ -L /dev/shm ]]; then
+    rm /dev/shm
+    mkdir /dev/shm
+    log_msg INFO "/dev/shm a été supprimé et recréé en tant que répertoire."
+fi
+
+mount --types tmpfs --options nosuid,nodev,noexec shm /dev/shm || { log_msg ERROR "Erreur lors du montage de /dev/shm"; exit 1; }
+chmod 1777 /dev/shm
+
+# # Montage des systèmes de fichiers
+# mount -t proc /proc /mnt/gentoo/proc
+# mount --rbind /dev /mnt/gentoo/dev
+# mount --rbind /sys /mnt/gentoo/sys
 
 # Changement de racine (chroot)
 log_msg INFO "=== Changement de racine (chroot) ==="
 chroot /mnt/gentoo /bin/bash << EOF
-set -e
+
 source fonction.sh
 source config.sh  # Importation des configurations
-export PS1="(chroot) \${PS1}"
 
-# Montage des partitions boot
-if [[ "\${CFG_PART_UEFI}" == "y" ]]; then
-    log_msg INFO "Montage de la partition boot (EFI)"
-    mkdir -p /boot/efi
-    mount \${CFG_BLOCK_PART}1 /boot/efi
-else
-    log_msg INFO "Montage de la partition boot (MBR)"
-    mount \${CFG_BLOCK_PART}1 /boot
-fi
+env-update && source /etc/profile
+
+export PS1="[chroot] $PS1"
 
 # Synchronisation du dépôt ebuild Gentoo
 log_msg INFO "Synchronisation du dépôt ebuild Gentoo"
-emerge-webrsync
-emerge --sync
+emerge-webrsync --quiet
 
-# Mise à jour de l'ensemble @world (@system et @selected)
+eselect profile list
+
+mkdir /etc/portage/package.license
+echo "*/* *" >> /etc/portage/package.license/custom
+
+
 log_msg INFO "Mise à jour de l'ensemble @world"
-emerge --noreplace --update --deep --newuse @world
-
-# Installation de linux-firmware
-echo "sys-kernel/linux-firmware @BINARY-REDISTRIBUTABLE" >> /etc/portage/package.accept_keywords
-emerge --noreplace sys-kernel/linux-firmware
-
-# Configuration du fuseau horaire et des locales
-log_msg INFO "Configuration du fuseau horaire (glibc)"
-echo \${CFG_TIMEZONE} > /etc/timezone
-emerge --noreplace sys-libs/timezone-data
+emerge -avuDN @world --quiet
 
 log_msg INFO "Configuration des locales (glibc)" 
 echo "\${CFG_LOCALE}" >> /etc/locale.gen
 locale-gen
 
-log_msg INFO "Rechargement de l'environnement"
-env-update && source /etc/profile && export PS1="(chroot) \${PS1}"
+# Configuration du fuseau horaire et des locales
+log_msg INFO "Configuration du fuseau horaire (glibc)"
+echo \${CFG_TIMEZONE} > /etc/timezone
+emerge --config sys-libs/timezone-data
 
-# Installation des sources du noyau
-log_msg INFO "Installation des sources du noyau"
-emerge --noreplace sys-kernel/gentoo-sources
 
-log_msg INFO "Sélection des sources du noyau"
-eselect kernel list
-eselect kernel set 1
+log_msg INFO " Génération du fichier /etc/fstab"
 
-# Installation de genkernel
-log_msg INFO "Installation de genkernel"
-emerge --noreplace sys-kernel/genkernel
+if [[ "$CFG_PART_UEFI" == "y" ]]; then
+  # Partition EFI
+  UUID=$(blkid -s UUID -o value ${CFG_BLOCK_DEVICE}1)
+  echo "UUID=$UUID   /boot/efi      vfat    defaults      0  2" >> /etc/fstab
+else
+  # Partition BOOT en mode BIOS
+  UUID=$(blkid -s UUID -o value ${CFG_BLOCK_DEVICE}1)
+  echo "UUID=$UUID   /boot          ext4    defaults      0  2" >> /etc/fstab
+fi
 
-# Configuration de fstab
-log_msg INFO "Configuration de fstab"
-{
-    if [[ "\${CFG_PART_UEFI}" == "y" ]]; then
-        echo "\${CFG_BLOCK_PART}1 /boot/efi vfat defaults 0 2"
-    else
-        echo "\${CFG_BLOCK_PART}1 /boot ext4 defaults 0 2"
-    fi
+# Partition root
+UUID=$(blkid -s UUID -o value ${CFG_BLOCK_DEVICE}2)
+echo "UUID=$UUID   /              ext4    defaults      0  1" >> /etc/fstab
 
-    echo "\${CFG_BLOCK_PART}2 none swap sw 0 0"
-    echo "\${CFG_BLOCK_PART}3 / ext4 noatime 0 1"
-    echo /dev/cdrom /mnt/cdrom auto noauto,user 0 0
-} >> /etc/fstab
+# Fichier Swap
+echo "/swap   none   swap   sw    0   0" >> /etc/fstab
 
-# Compilation du noyau
-log_msg INFO "Compilation des sources du noyau (gcc)"
-genkernel all
+
+# Installation de linux-firmware
+emerge --quiet sys-kernel/linux-firmware
+
+# Installation du noyau binaire
+log_msg INFO "Installation du noyau binaire"
+emerge --quiet sys-kernel/gentoo-kernel-bin
+emerge --config sys-kernel/gentoo-kernel-bin
+
 
 # Configuration réseau
 log_msg INFO "Configuration du nom d'hôte"
 echo "hostname=\"\${CFG_HOSTNAME}\"" > /etc/conf.d/hostname
 
-log_msg INFO "Installation de netifrc"
-emerge --noreplace --noreplace net-misc/netifrc
+log_msg INFO "Configuration des hôtes" 
+echo "127.0.0.1 localhost \${CFG_HOSTNAME} " >> /etc/hosts
+echo "::1       localhost \${CFG_HOSTNAME} " >> /etc/hosts
 
 log_msg INFO "Installation de dhcpcd"
-emerge --noreplace net-misc/dhcpcd
+emerge --quiet net-misc/dhcpcd
+systemctl enable dhcpcd
 
 log_msg INFO "Installation du sans-fil"
-emerge --noreplace net-wireless/iw net-wireless/wpa_supplicant
+emerge --quiet net-wireless/iw net-wireless/wpa_supplicant
 
-log_msg INFO "Configuration du réseau"
-echo "config_\${CFG_NETWORK_INTERFACE}=\"dhcp\"" >> /etc/conf.d/net
-ln -s /etc/init.d/net.lo /etc/init.d/net.\${CFG_NETWORK_INTERFACE}
-rc-update add net.\${CFG_NETWORK_INTERFACE} default
-
-log_msg INFO "Configuration des hôtes" 
-echo "127.0.0.1 \${CFG_HOSTNAME} localhost" >> /etc/hosts
-
-# Installation du système
 log_msg INFO "Définition du mot de passe root" 
 echo "root:\${CFG_ROOT_PASSWORD}" | chpasswd
 
 log_msg INFO "Installation de sudo"
-emerge --noreplace app-admin/sudo
+emerge --quiet app-admin/sudo
 
 log_msg INFO "Création de l'utilisateur \${CFG_USER}"
-useradd -m -G users,wheel -s /bin/bash \${CFG_USER}
+# useradd -m -G users,wheel -s /bin/bash \${CFG_USER}
+# echo "\${CFG_USER}:\${CFG_USER_PASSWORD}" | chpasswd
+# echo "\${CFG_USER} ALL=(ALL) ALL" >> /etc/sudoers
+
+useradd -m -G users,wheel,audio,cdrom,video,portage -s /bin/bash \${CFG_USER}
 echo "\${CFG_USER}:\${CFG_USER_PASSWORD}" | chpasswd
-echo "\${CFG_USER} ALL=(ALL) ALL" >> /etc/sudoers
+
 
 # Installation de GRUB
+emerge --quiet sys-boot/grub
 if [[ "\${CFG_PART_UEFI}" == "y" ]]; then
     log_msg INFO "Installation de GRUB pour UEFI"
-    emerge --noreplace sys-boot/grub
-    grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=GRUB
+    grub-install --target=x86_64-efi --efi-directory=/boot/EFI 
     grub-mkconfig -o /boot/grub/grub.cfg
+
 else
     log_msg INFO "Installation de GRUB pour MBR"
-    emerge --noreplace sys-boot/grub
-    grub-install --target=i386-pc \${CFG_BLOCK_PART}
+    grub-install \${CFG_BLOCK_DEVICE}1
     grub-mkconfig -o /boot/grub/grub.cfg
 fi
 
 log_msg INFO "=== Installation terminée ==="
+exit
 EOF

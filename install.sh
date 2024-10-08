@@ -23,11 +23,9 @@ log_msg INFO "Bienvenue dans le script d'installation de Gentoo !"
 
 # Configuration de l'installateur
 export CFG_BLOCK_DEVICE="$(prompt_value "Nom du périphérique cible -> par défaut :" "$CFG_BLOCK_DEVICE")"
-export CFG_PART_PREFIX="$(prompt_value "Préfixe de la partition -> [p] pour les disques NVMe - [] pour les HDD/SSD" "$CFG_PART_PREFIX")"
-export CFG_BLOCK_PART="${CFG_BLOCK_DEVICE}${CFG_PART_PREFIX}"
 export CFG_PART_UEFI="$(prompt_value "Voulez-vous utiliser le mode UEFI -> par défaut :" "$CFG_PART_UEFI")"
 export CFG_PART_BOOT_SIZE="$(prompt_value "Taille de la partition boot en Mo -> par défaut :" "$CFG_PART_BOOT_SIZE")"
-export CFG_PART_SWAP_SIZE="$(prompt_value "Taille de la partition swap en Mo -> par défaut :" "$CFG_PART_SWAP_SIZE")"
+export CFG_FILE_SWAP_SIZE="$(prompt_value "Taille de la partition swap en Mo -> par défaut :" "$CFG_FILE_SWAP_SIZE")"
 export CFG_PART_ROOT_SIZE="$(prompt_value "Taille de la partition root en %  -> par défaut :" "$CFG_PART_ROOT_SIZE")"
 export CFG_TIMEZONE="$(prompt_value "Fuseau horaire du système -> par défaut :" "$CFG_TIMEZONE")"
 export CFG_LOCALE="$(prompt_value "Locale du système -> par défaut :" "$CFG_LOCALE")"
@@ -43,11 +41,9 @@ export CFG_USER_PASSWORD="$(prompt_value "Saisir votre mot de passe -> par exemp
 log_msg INFO "$(cat <<END
 Vérification de la configuration :
   - Périphérique cible :       $CFG_BLOCK_DEVICE
-  - Préfixe de partition :     $CFG_PART_PREFIX
-  - Partition :                $CFG_BLOCK_PART
   - UEFI utilisé :             $CFG_PART_UEFI
   - Taille de boot :           $CFG_PART_BOOT_SIZE
-  - Taille du swap :           $CFG_PART_SWAP_SIZE
+  - Taille du swap :           $CFG_FILE_SWAP_SIZE
   - Taille du root :           $CFG_PART_ROOT_SIZE
   - Fuseau horaire :           $CFG_TIMEZONE
   - Locale :                   $CFG_LOCALE
@@ -73,53 +69,49 @@ fi
 
 # Configuration de l'étiquette du disque
 if [[ "$CFG_PART_UEFI" == "y" ]]; then
-    parted -a optimal "$CFG_BLOCK_DEVICE" mklabel gpt  # GPT pour UEFI
+    parted -a optimal ${CFG_BLOCK_DEVICE} --script mklabel gpt
+    parted -a optimal ${CFG_BLOCK_DEVICE} --script mkpart primary fat32 1MiB ${CFG_PART_EFI_SIZE}MiB
+    parted -a optimal ${CFG_BLOCK_DEVICE} --script set 1 esp on  # Définir la partition EFI
 else
-    parted -a optimal "$CFG_BLOCK_DEVICE" mklabel msdos  # MBR pour BIOS
+    parted -a optimal ${CFG_BLOCK_DEVICE} --script mklabel msdos
+    parted -a optimal ${CFG_BLOCK_DEVICE} --script mkpart primary ext4 1MiB ${CFG_PART_EFI_SIZE}MiB # Partition Boot
+    parted -a optimal ${CFG_BLOCK_DEVICE} --script set 1 boot on # Définir la partition boot comme amorçable
 fi
 
+
 # Création des partitions
-parted -s "$CFG_BLOCK_DEVICE" mkpart primary 0% "$CFG_PART_BOOT_SIZE"  # Partition boot
-parted -s "$CFG_BLOCK_DEVICE" mkpart primary "$CFG_PART_BOOT_SIZE" "$CFG_PART_SWAP_SIZE"  # Partition swap
-parted -s "$CFG_BLOCK_DEVICE" mkpart primary "$(($CFG_PART_BOOT_SIZE + $CFG_PART_SWAP_SIZE))" "$CFG_PART_ROOT_SIZE"  # Partition root
-parted -s "$CFG_BLOCK_DEVICE" print  # Affiche la table de partitions
+parted -a optimal ${CFG_BLOCK_DEVICE} --script mkpart primary ext4 $((CFG_PART_EFI_SIZE))MiB ${CFG_PART_ROOT_SIZE}  # Partition ROOT
+
 
 # Configuration des systèmes de fichiers
 if [[ "$CFG_PART_UEFI" == "y" ]]; then
-    mkfs.fat -F32 "${CFG_BLOCK_PART}1"  # FAT32 pour UEFI
+    mkfs.vfat -F32 ${CFG_BLOCK_DEVICE}1      
 else
-    mkfs.ext4 "${CFG_BLOCK_PART}1"  # ext4 pour boot
+    mkfs.ext4 -L boot ${CFG_BLOCK_DEVICE}1    
 fi
-mkswap "${CFG_BLOCK_PART}2"  # Swap
-mkfs.ext4 "${CFG_BLOCK_PART}3"  # Root ext4
+           
+mkfs.ext4 -L root-home ${CFG_BLOCK_DEVICE}2
 
-# Activation de la partition swap
-swapon "${CFG_BLOCK_PART}2"
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# Montage de la partition root
 mkdir -p /mnt/gentoo
-mount ${CFG_BLOCK_PART}3 /mnt/gentoo
+mount ${CFG_BLOCK_DEVICE}2 /mnt/gentoo
+
+if [[ "$CFG_PART_UEFI" == "y" ]]; then
+    mkdir -p /mnt/gentoo/boot/EFI      
+    mount ${CFG_BLOCK_DEVICE}1 /mnt/gentoo/boot/EFI
+else
+    mkdir -p /mnt/gentoo/boot
+    mount ${CFG_BLOCK_DEVICE}1 /mnt/gentoo/boot
+fi
+
+# Formater et créer le fichier swap
+dd if=/dev/zero of=/mnt/gentoo/swap bs=1G count=${CFG_FILE_SWAP_SIZE}   # Créer un fichier swap de 4 Go
+chmod 600 /mnt/gentoo/swap                             # Configurer les droits
+mkswap /mnt/gentoo/swap                                # Formater le fichier swap
+swapon /mnt/gentoo/swap    
+
+
+log_msg INFO "Partitionnement et formatage du disque terminés avec succès."
+parted -s "$CFG_BLOCK_DEVICE" print  # Affiche la table de partitions
 
 # Copie et exécution de l'installation du stage3
 cp stage3.sh /mnt/gentoo/
@@ -127,7 +119,10 @@ cp fonction.sh /mnt/gentoo/
 cp config.sh /mnt/gentoo/
 (cd /mnt/gentoo ; bash stage3.sh)
 
-# umount -l /mnt/gentoo/dev{/shm,/pts,}  # Démontage des périphériques.
-# umount -R /mnt/gentoo  # Démontage récursif.
+umount -R /mnt/gentoo  # Démontage récursif.
 
 log_msg INFO "Installation terminée. Vous pouvez redémarrer votre machine."
+log_msg INFO "Aprés redémarrage -> eselect locale list"
+log_msg INFO "Aprés redémarrage -> hostnamectl"
+
+
