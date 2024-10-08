@@ -24,7 +24,7 @@ log_msg INFO "Bienvenue dans le script d'installation de Gentoo !"
 # Configuration de l'installateur
 export CFG_BLOCK_DEVICE="$(prompt_value "Nom du périphérique cible -> par défaut :" "$CFG_BLOCK_DEVICE")"
 export CFG_PART_UEFI="$(prompt_value "Voulez-vous utiliser le mode UEFI -> par défaut :" "$CFG_PART_UEFI")"
-export CFG_PART_BOOT_SIZE="$(prompt_value "Taille de la partition boot en Mo -> par défaut :" "$CFG_PART_BOOT_SIZE")"
+export CFG_PART_EFI_SIZE="$(prompt_value "Taille de la partition boot|EFI en Mo -> par défaut :" "$CFG_PART_EFI_SIZE")"
 export CFG_FILE_SWAP_SIZE="$(prompt_value "Taille de la partition swap en Mo -> par défaut :" "$CFG_FILE_SWAP_SIZE")"
 export CFG_PART_ROOT_SIZE="$(prompt_value "Taille de la partition root en %  -> par défaut :" "$CFG_PART_ROOT_SIZE")"
 export CFG_TIMEZONE="$(prompt_value "Fuseau horaire du système -> par défaut :" "$CFG_TIMEZONE")"
@@ -42,7 +42,7 @@ log_msg INFO "$(cat <<END
 Vérification de la configuration :
   - Périphérique cible :       $CFG_BLOCK_DEVICE
   - UEFI utilisé :             $CFG_PART_UEFI
-  - Taille de boot :           $CFG_PART_BOOT_SIZE
+  - Taille de boot :           $CFG_PART_EFI_SIZE
   - Taille du swap :           $CFG_FILE_SWAP_SIZE
   - Taille du root :           $CFG_PART_ROOT_SIZE
   - Fuseau horaire :           $CFG_TIMEZONE
