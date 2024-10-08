@@ -10,9 +10,10 @@ packages=("git" "tar" "links" "curl" "wget")
 CFG_BLOCK_DEVICE="$(lsblk -nd -o NAME,TYPE | awk '$2 == "disk" {print "/dev/" $1}')"
 CFG_PART_PREFIX=""
 CFG_PART_UEFI="y"
-CFG_PART_BOOT_SIZE="256"
-CFG_PART_SWAP_SIZE="4096"
-CFG_PART_ROOT_SIZE="100%"
+CFG_PART_EFI_SIZE="100" # 100 mo
+CFG_PART_SWAP_SIZE="4096" # 4096 mo 
+CFG_PART_ROOT_SIZE="71680" # 70 GO
+CFG_PART_HOME_SIZE="100%" # Le reste 
 CFG_TIMEZONE="Europe/Paris"
 CFG_LOCALE="fr_FR.UTF-8"
 CFG_HOSTNAME="gentoo"
