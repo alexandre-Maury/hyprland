@@ -111,12 +111,8 @@ cp stage3.sh /mnt/gentoo/
 cp fonction.sh /mnt/gentoo/
 (cd /mnt/gentoo ; bash stage3.sh)
 
+log_msg INFO "Installation terminée. Vous pouvez redémarrer votre machine."
 
 # Finalisation et démontage
 umount -l /mnt/gentoo/dev{/shm,/pts,}  # Démontage des pseudo-fichiers
 umount -R /mnt/gentoo  # Démontage récursif
-
-log_msg INFO "Installation terminée. Vous pouvez redémarrer votre machine."
-
-
-
