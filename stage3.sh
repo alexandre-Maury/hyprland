@@ -5,6 +5,7 @@
 set -e  # Quitte immédiatement en cas d'erreur.
 
 source fonction.sh 
+source config.sh  # Importation des configurations
 
 # Vérifier si le montage est correct
 if ! mountpoint -q /mnt/gentoo; then
@@ -15,10 +16,10 @@ fi
 # Téléchargement du stage3
 log_msg INFO "=== Téléchargement de l'archive stage3 ==="
 links http://distfiles.gentoo.org/releases/amd64/autobuilds/ 
-LINKS_RUNNING="true"
-while [[ $LINKS_RUNNING == "true" ]]; do
-    LINKS_RUNNING=$(ps -aux | grep -o '[l]inks' || true)
-    sleep 2s
+
+# Attente de la fin du téléchargement
+while pgrep -x links > /dev/null; do
+    sleep 2
 done
 
 # Extraction du stage3
@@ -28,13 +29,28 @@ rm stage3-*.tar.xz
 
 # Montage des systèmes de fichiers
 log_msg INFO "=== Montage des systèmes de fichiers ==="
-mount --rbind /dev /mnt/gentoo/dev
-mount --make-rslave /mnt/gentoo/dev
-mount -t proc /proc /mnt/gentoo/proc
-mount --rbind /sys /mnt/gentoo/sys
-mount --make-rslave /mnt/gentoo/sys
-mount --rbind /tmp /mnt/gentoo/tmp
-mount --bind /run /mnt/gentoo/run 
+
+# Montage de /dev
+mount --rbind /dev /mnt/gentoo/dev || { log_msg ERROR "Erreur lors du montage de /dev"; exit 1; }
+mount --make-rslave /mnt/gentoo/dev || { log_msg ERROR "Erreur lors de la mise à jour de l'esclavage de /dev"; exit 1; }
+# Montage de /proc
+mount -t proc /proc /mnt/gentoo/proc || { log_msg ERROR "Erreur lors du montage de /proc"; exit 1; }
+# Montage de /sys
+mount --rbind /sys /mnt/gentoo/sys || { log_msg ERROR "Erreur lors du montage de /sys"; exit 1; }
+mount --make-rslave /mnt/gentoo/sys || { log_msg ERROR "Erreur lors de la mise à jour de l'esclavage de /sys"; exit 1; }
+# Montage de /tmp
+mount --rbind /tmp /mnt/gentoo/tmp || { log_msg ERROR "Erreur lors du montage de /tmp"; exit 1; }
+# Montage de /run
+mount --types tmpfs tmpfs /mnt/gentoo/run || { log_msg ERROR "Erreur lors du montage de /run"; exit 1; }
+# Gestion de /dev/shm
+if [[ -L /dev/shm ]]; then
+    rm /dev/shm
+    mkdir /dev/shm
+    log_msg INFO "/dev/shm a été supprimé et recréé en tant que répertoire."
+fi
+# Monter /dev/shm en tant que tmpfs
+mount --types tmpfs --options nosuid,nodev,noexec shm /dev/shm || { log_msg ERROR "Erreur lors du montage de /dev/shm"; exit 1; }
+chmod 1777 /dev/shm
 
 
 # Configuration de /mnt/gentoo/etc/portage/make.conf
@@ -46,13 +62,14 @@ CXXFLAGS="\${COMMON_FLAGS}"
 FCFLAGS="\${COMMON_FLAGS}"
 FFLAGS="\${COMMON_FLAGS}"
 MAKEOPTS="-j\$(nproc)"
-L10N="${CFG_LOCALE}"
+L10N="${CFG_LANGUAGE}"
 VIDEO_CARDS="fbdev vesa intel i915 nvidia nouveau radeon amdgpu radeonsi virtualbox vmware qxl"
 INPUT_DEVICES="libinput synaptics keyboard mouse joystick wacom"
 EMERGE_DEFAULT_OPTS="--quiet-build=y"
 PORTAGE_SCHEDULING_POLICY="idle"
 USE=""
 ACCEPT_KEYWORDS="amd64"
+ACCEPT_LICENSE="*"
 SYNC="rsync://rsync.gentoo.org/gentoo-portage"
 FEATURES="buildpkg"
 PORTAGE_NICENESS=19
@@ -63,16 +80,24 @@ PKGDIR="/var/cache/binpkgs"
 CHOST="x86_64-pc-linux-gnu"
 EOF
 
+# Ajout des options CPU_FLAGS_* au fichier make.conf
+CPU_FLAGS=$(grep -m1 "flags" /proc/cpuinfo | cut -d' ' -f2-)
+if [[ "$(uname -m)" == "x86_64" ]]; then
+    echo "CPU_FLAGS_X86_64=\"${CPU_FLAGS}\"" >> /mnt/gentoo/etc/portage/make.conf
+else
+    echo "CPU_FLAGS_X86=\"${CPU_FLAGS}\"" >> /mnt/gentoo/etc/portage/make.conf
+fi
+
 # Copie du DNS
 log_msg INFO "=== Copie du DNS ==="
-cp /etc/resolv.conf /mnt/gentoo/etc
+cp --dereference /etc/resolv.conf /mnt/gentoo/etc
 
 # Changement de racine (chroot)
 log_msg INFO "=== Changement de racine (chroot) ==="
 chroot /mnt/gentoo /bin/bash << EOF
 set -e
 source fonction.sh
-source /etc/profile
+source config.sh  # Importation des configurations
 export PS1="(chroot) \${PS1}"
 
 # Montage des partitions boot
@@ -94,9 +119,7 @@ emerge --ask n --sync
 log_msg INFO "Mise à jour de l'ensemble @world"
 emerge --ask n --update --deep --newuse @world
 
-# Configuration des licences
-log_msg INFO "Configuration des licences"
-echo "ACCEPT_LICENSE=\"-* @FREE\"" >> /etc/portage/make.conf
+# Installation de linux-firmware
 echo "sys-kernel/linux-firmware @BINARY-REDISTRIBUTABLE" >> /etc/portage/package.accept_keywords
 
 # Configuration du fuseau horaire et des locales
@@ -135,13 +158,18 @@ log_msg INFO "Installation de genkernel"
 emerge --ask n sys-kernel/genkernel
 
 # Configuration de fstab
-if [[ "\${CFG_PART_UEFI}" == "y" ]]; then
-    log_msg INFO "Ajout de /boot/efi dans fstab"
-    echo "\${CFG_BLOCK_PART}1 /boot/efi vfat defaults 0 2" >> /etc/fstab
-else
-    log_msg INFO "Ajout de /boot dans fstab"
-    echo "\${CFG_BLOCK_PART}1 /boot ext4 defaults 0 2" >> /etc/fstab
-fi
+log_msg INFO "Configuration de fstab"
+{
+    if [[ "\${CFG_PART_UEFI}" == "y" ]]; then
+        echo "\${CFG_BLOCK_PART}1 /boot/efi vfat defaults 0 2"
+    else
+        echo "\${CFG_BLOCK_PART}1 /boot ext4 defaults 0 2"
+    fi
+
+    echo "\${CFG_BLOCK_PART}2 none swap sw 0 0"
+    echo "\${CFG_BLOCK_PART}3 / ext4 noatime 0 1"
+    echo /dev/cdrom /mnt/cdrom auto noauto,user 0 0
+} >> /etc/fstab
 
 # Compilation du noyau
 if [[ "\${CFG_LLVM}" == "y" ]]; then
@@ -162,13 +190,6 @@ else
     log_msg INFO "Compilation des sources du noyau (gcc)"
     genkernel all
 fi
-
-# Installation du système de fichiers
-log_msg INFO "Ajout du swap, / et du cdrom dans fstab"
-mkdir -p /mnt/cdrom
-echo "\${CFG_BLOCK_PART}2 none swap sw 0 0" >> /etc/fstab
-echo "\${CFG_BLOCK_PART}3 / ext4 noatime 0 1" >> /etc/fstab
-echo /dev/cdrom /mnt/cdrom auto noauto,user 0 0 >> /etc/fstab
 
 # Configuration réseau
 log_msg INFO "Configuration du nom d'hôte"

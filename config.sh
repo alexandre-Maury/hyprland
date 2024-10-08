@@ -42,7 +42,7 @@ export CFG_NETWORK_INTERFACE="${CFG_NETWORK_INTERFACE:-$(ip link show | awk -F':
 export CFG_KEYMAP="${CFG_KEYMAP:-fr}"
 
 # Configuration de la langue par défaut
-export CFG_LANGUAGE="${CFG_LANGUAGE:-fr_FR}"
+export CFG_LANGUAGE="${CFG_LANGUAGE:-fr}"
 
 # Configuration du mot de passe root par défaut
 export CFG_ROOT_PASSWORD="${CFG_ROOT_PASSWORD:-toor}"
@@ -54,19 +54,18 @@ export CFG_USER="${CFG_USER:-user}"
 export CFG_USER_PASSWORD="${CFG_USER_PASSWORD:-azerty}"
 
 
-
-# # Configuration des utilisateurs supplémentaires
-# export CFG_ADDITIONAL_USERS="${CFG_ADDITIONAL_USERS:-}"
-# # Configuration des groupes
-# export CFG_ADDITIONAL_GROUPS="${CFG_ADDITIONAL_GROUPS:-users, wheel}"
-# # Choix de l'environnement de bureau par défaut
-# export CFG_DESKTOP_ENV="${CFG_DESKTOP_ENV:-none}"
-# # Choix du gestionnaire de fenêtres par défaut
-# export CFG_WINDOW_MANAGER="${CFG_WINDOW_MANAGER:-i3}"
-# # Configuration de la gestion des paquets (portage ou autre)
-# export CFG_PACKAGE_MANAGER="${CFG_PACKAGE_MANAGER:-portage}"
-# # Autres options de configuration
-# export CFG_ENABLE_SSH="${CFG_ENABLE_SSH:-y}"
-# export CFG_ENABLE_FIREWALL="${CFG_ENABLE_FIREWALL:-y}"
+# Configuration des utilisateurs supplémentaires
+export CFG_ADDITIONAL_USERS="${CFG_ADDITIONAL_USERS:-}"
+# Configuration des groupes
+export CFG_ADDITIONAL_GROUPS="${CFG_ADDITIONAL_GROUPS:-users, wheel}"
+# Choix de l'environnement de bureau par défaut
+export CFG_DESKTOP_ENV="${CFG_DESKTOP_ENV:-none}"
+# Choix du gestionnaire de fenêtres par défaut
+export CFG_WINDOW_MANAGER="${CFG_WINDOW_MANAGER:-i3}"
+# Configuration de la gestion des paquets (portage ou autre)
+export CFG_PACKAGE_MANAGER="${CFG_PACKAGE_MANAGER:-portage}"
+# Autres options de configuration
+export CFG_ENABLE_SSH="${CFG_ENABLE_SSH:-y}"
+export CFG_ENABLE_FIREWALL="${CFG_ENABLE_FIREWALL:-y}"
 
 
