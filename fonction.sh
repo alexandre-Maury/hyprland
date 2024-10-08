@@ -32,15 +32,6 @@ prompt_value() {
     echo "${value:-$default_value}"
 }
 
-# prompt_value() {
-#     local prompt="$1"
-#     local var_name="$2"
-
-#     read -p "$prompt" input
-#     export "${var_name=$input:-$var_name}"
-
-# }
-
 # Vérifie et installe un package si absent
 check_and_install() {
     local package="$1"

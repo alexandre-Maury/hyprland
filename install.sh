@@ -21,23 +21,24 @@ log_msg INFO "Tous les programmes requis sont installés."
 log_msg INFO "Bienvenue dans le script d'installation de Gentoo !"
 
 
-# Demande à l'utilisateur de saisir ou d'accepter les valeurs par défaut
-prompt_value "Nom du périphérique cible -> par défaut : $CFG_BLOCK_DEVICE" "$CFG_BLOCK_DEVICE"
-prompt_value "Préfixe de la partition -> [p] pour les disques NVMe - [] pour les HDD/SSD : " "$CFG_PART_PREFIX"
-prompt_value "Voulez-vous utiliser le mode UEFI -> par défaut : $CFG_PART_UEFI" "$CFG_PART_UEFI"
-prompt_value "Taille de la partition boot en Mo -> par défaut : $CFG_PART_BOOT_SIZE" "$CFG_PART_BOOT_SIZE"
-prompt_value "Taille de la partition swap en Mo -> par défaut : $CFG_PART_SWAP_SIZE" "$CFG_PART_SWAP_SIZE"
-prompt_value "Taille de la partition root en %  -> par défaut : $CFG_PART_ROOT_SIZE" "$CFG_PART_ROOT_SIZE"
-prompt_value "Utiliser MUSL au lieu de la bibliothèque C GNU -> par défaut : $CFG_MUSL" "$CFG_MUSL"
-prompt_value "Utiliser LLVM au lieu de GCC -> par défaut : $CFG_LLVM" "$CFG_LLVM"
-prompt_value "Fuseau horaire du système -> par défaut : $CFG_TIMEZONE" "$CFG_TIMEZONE"
-prompt_value "Locale du système -> par défaut : $CFG_LOCALE" "$CFG_LOCALE"
-prompt_value "Nom d'hôte du système -> par défaut : $CFG_HOSTNAME" "$CFG_HOSTNAME"
-prompt_value "Nom de l'interface réseau -> par défaut : $CFG_NETWORK_INTERFACE" "$CFG_NETWORK_INTERFACE"
-prompt_value "Disposition du clavier à utiliser -> par défaut : $CFG_KEYMAP" "$CFG_KEYMAP"
-prompt_value "Créer votre mot de passe root -> par défaut : $CFG_ROOT_PASSWORD" "$CFG_ROOT_PASSWORD"
-prompt_value "Saisir votre nom d'utilisateur -> par exemple : $CFG_USER" "$CFG_USER"
-prompt_value "Saisir votre mot de passe -> par exemple : $CFG_USER_PASSWORD" "$CFG_USER_PASSWORD"
+# Configuration de l'installateur
+export CFG_BLOCK_DEVICE="$(prompt_value "Nom du périphérique cible -> par défaut :" "$CFG_BLOCK_DEVICE")"
+export CFG_PART_PREFIX="$(prompt_value "Préfixe de la partition -> [p] pour les disques NVMe - [] pour les HDD/SSD" "$CFG_PART_PREFIX")"
+export CFG_BLOCK_PART="${CFG_BLOCK_DEVICE}${CFG_PART_PREFIX}"
+export CFG_PART_UEFI="$(prompt_value "Voulez-vous utiliser le mode UEFI -> par défaut :" "$CFG_PART_UEFI")"
+export CFG_PART_BOOT_SIZE="$(prompt_value "Taille de la partition boot en Mo -> par défaut :" "$CFG_PART_BOOT_SIZE")"
+export CFG_PART_SWAP_SIZE="$(prompt_value "Taille de la partition swap en Mo -> par défaut :" "$CFG_PART_SWAP_SIZE")"
+export CFG_PART_ROOT_SIZE="$(prompt_value "Taille de la partition root en %  -> par défaut :" "$CFG_PART_ROOT_SIZE")"
+export CFG_MUSL="$(prompt_value "Utiliser MUSL au lieu de la bibliothèque C GNU -> par défaut :" "$CFG_MUSL")"
+export CFG_LLVM="$(prompt_value "Utiliser LLVM au lieu de GCC -> par défaut :" "$CFG_LLVM")"
+export CFG_TIMEZONE="$(prompt_value "Fuseau horaire du système -> par défaut :" "$CFG_TIMEZONE")"
+export CFG_LOCALE="$(prompt_value "Locale du système -> par défaut :" "$CFG_LOCALE")"
+export CFG_HOSTNAME="$(prompt_value "Nom d'hôte du système -> par défaut :" "$CFG_HOSTNAME")"
+export CFG_NETWORK_INTERFACE="$(prompt_value "Nom de l'interface réseau -> par défaut :" "$CFG_NETWORK_INTERFACE")"
+export CFG_KEYMAP="$(prompt_value "Disposition du clavier à utiliser -> par défaut :" "$CFG_KEYMAP")"
+export CFG_ROOT_PASSWORD="$(prompt_value "Créer votre mot de passe root -> par défaut : $CFG_ROOT_PASSWORD" "$CFG_ROOT_PASSWORD")"
+export CFG_USER="$(prompt_value "Saisir votre nom d'utilisateur -> par exemple :" "$CFG_USER")"
+export CFG_USER_PASSWORD="$(prompt_value "Saisir votre mot de passe -> par exemple :" "$CFG_USER_PASSWORD")"
 
 
 # Affiche la configuration pour validation
@@ -114,3 +115,6 @@ umount -l /mnt/gentoo/dev{/shm,/pts,}  # Démontage des pseudo-fichiers
 umount -R /mnt/gentoo  # Démontage récursif
 
 log_msg INFO "Installation terminée. Vous pouvez redémarrer votre machine."
+
+
+
