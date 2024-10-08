@@ -109,6 +109,7 @@ mount ${CFG_BLOCK_PART}3 /mnt/gentoo
 # Copie et exécution de l'installation du stage3
 cp stage3.sh /mnt/gentoo/
 cp fonction.sh /mnt/gentoo/
+cp config.sh /mnt/gentoo/
 (cd /mnt/gentoo ; bash stage3.sh)
 
 umount -l /mnt/gentoo/dev{/shm,/pts,}  # Démontage des périphériques.
