@@ -16,7 +16,7 @@ if [ "${CFG_PART_UEFI}" = "y" ]; then
     echo "Création de partitions en mode GPT pour UEFI..."
 
     # Créer une nouvelle table de partitions GPT
-    parted ${DISK} mklabel gpt
+    parted -a optimal ${DISK} mklabel gpt
 
     # Créer les partitions
     parted -a optimal ${DISK} mkpart primary fat32 1MiB ${CFG_PART_EFI_SIZE}
@@ -38,7 +38,7 @@ else
     echo "Création de partitions en mode MBR pour BIOS..."
 
     # Créer une nouvelle table de partitions MBR
-    parted ${DISK} mklabel msdos
+    parted -a optimal ${DISK} mklabel msdos
 
     # Créer les partitions
     parted -a optimal ${DISK} mkpart primary linux-swap 1MiB ${CFG_PART_SWAP_SIZE}
