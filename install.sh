@@ -102,13 +102,14 @@ mkfs.ext4 "${CFG_BLOCK_PART}3"  # Root ext4
 swapon "${CFG_BLOCK_PART}2"
 
 # Montage de la partition root
-mount "${CFG_BLOCK_PART}3" /mnt/gentoo
+mkdir -p /mnt/gentoo
+mount ${CFG_BLOCK_PART}3 /mnt/gentoo
 
 # Copie et exécution de l'installation du stage3
 cp stage3.sh /mnt/gentoo/
 cp fonction.sh /mnt/gentoo/
-# (cd /mnt/gentoo ; bash stage3.sh)
-chroot /mnt/gentoo /bin/bash stage3.sh
+(cd /mnt/gentoo ; bash stage3.sh)
+
 
 # Finalisation et démontage
 umount -l /mnt/gentoo/dev{/shm,/pts,}  # Démontage des pseudo-fichiers
