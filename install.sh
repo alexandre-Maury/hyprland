@@ -70,48 +70,48 @@ if ! prompt_confirm "Vérifiez que les informations ci-dessus sont correctes (y/
     exit 0
 fi
 
-# Effacement des systèmes de fichiers existants
-if prompt_confirm "Effacer tout sur le périphérique cible ? (y/n)"; then
-    log_msg WARN "Exécution de 'wipefs -a $CFG_BLOCK_DEVICE' ..."
-    sgdisk --zap-all "$CFG_BLOCK_DEVICE"
-    wipefs --force --all "$CFG_BLOCK_DEVICE"
+# # Effacement des systèmes de fichiers existants
+# if prompt_confirm "Effacer tout sur le périphérique cible ? (y/n)"; then
+#     log_msg WARN "Exécution de 'wipefs -a $CFG_BLOCK_DEVICE' ..."
+#     sgdisk --zap-all "$CFG_BLOCK_DEVICE"
+#     wipefs --force --all "$CFG_BLOCK_DEVICE"
     
 
-# Configuration de l'étiquette du disque
-if [[ "$CFG_PART_UEFI" == "y" ]]; then
-    parted -a optimal "$CFG_BLOCK_DEVICE" mklabel gpt  # GPT pour UEFI
-else
-    parted -a optimal "$CFG_BLOCK_DEVICE" mklabel msdos  # MBR pour BIOS
-fi
+# # Configuration de l'étiquette du disque
+# if [[ "$CFG_PART_UEFI" == "y" ]]; then
+#     parted -a optimal "$CFG_BLOCK_DEVICE" mklabel gpt  # GPT pour UEFI
+# else
+#     parted -a optimal "$CFG_BLOCK_DEVICE" mklabel msdos  # MBR pour BIOS
+# fi
 
-# Création des partitions
-parted -s "$CFG_BLOCK_DEVICE" mkpart primary 0% "$CFG_PART_BOOT_SIZE"  # Partition boot
-parted -s "$CFG_BLOCK_DEVICE" mkpart primary "$CFG_PART_BOOT_SIZE" "$CFG_PART_SWAP_SIZE"  # Partition swap
-parted -s "$CFG_BLOCK_DEVICE" mkpart primary "$(($CFG_PART_BOOT_SIZE + $CFG_PART_SWAP_SIZE))" "$CFG_PART_ROOT_SIZE"  # Partition root
-parted -s "$CFG_BLOCK_DEVICE" print  # Affiche la table de partitions
+# # Création des partitions
+# parted -s "$CFG_BLOCK_DEVICE" mkpart primary 0% "$CFG_PART_BOOT_SIZE"  # Partition boot
+# parted -s "$CFG_BLOCK_DEVICE" mkpart primary "$CFG_PART_BOOT_SIZE" "$CFG_PART_SWAP_SIZE"  # Partition swap
+# parted -s "$CFG_BLOCK_DEVICE" mkpart primary "$(($CFG_PART_BOOT_SIZE + $CFG_PART_SWAP_SIZE))" "$CFG_PART_ROOT_SIZE"  # Partition root
+# parted -s "$CFG_BLOCK_DEVICE" print  # Affiche la table de partitions
 
-# Configuration des systèmes de fichiers
-if [[ "$CFG_PART_UEFI" == "y" ]]; then
-    mkfs.fat -F32 "${CFG_BLOCK_PART}1"  # FAT32 pour UEFI
-else
-    mkfs.ext4 "${CFG_BLOCK_PART}1"  # ext4 pour boot
-fi
-mkswap "${CFG_BLOCK_PART}2"  # Swap
-mkfs.ext4 "${CFG_BLOCK_PART}3"  # Root ext4
+# # Configuration des systèmes de fichiers
+# if [[ "$CFG_PART_UEFI" == "y" ]]; then
+#     mkfs.fat -F32 "${CFG_BLOCK_PART}1"  # FAT32 pour UEFI
+# else
+#     mkfs.ext4 "${CFG_BLOCK_PART}1"  # ext4 pour boot
+# fi
+# mkswap "${CFG_BLOCK_PART}2"  # Swap
+# mkfs.ext4 "${CFG_BLOCK_PART}3"  # Root ext4
 
-# Activation de la partition swap
-swapon "${CFG_BLOCK_PART}2"
+# # Activation de la partition swap
+# swapon "${CFG_BLOCK_PART}2"
 
-# Montage de la partition root
-mkdir -p /mnt/gentoo
-mount ${CFG_BLOCK_PART}3 /mnt/gentoo
+# # Montage de la partition root
+# mkdir -p /mnt/gentoo
+# mount ${CFG_BLOCK_PART}3 /mnt/gentoo
 
-# Copie et exécution de l'installation du stage3
-cp stage3.sh /mnt/gentoo/
-cp fonction.sh /mnt/gentoo/
+# # Copie et exécution de l'installation du stage3
+# cp stage3.sh /mnt/gentoo/
+# cp fonction.sh /mnt/gentoo/
 # (cd /mnt/gentoo ; bash stage3.sh)
 
+# umount -l /mnt/gentoo/dev{/shm,/pts,}  # Démontage des périphériques.
+# umount -R /mnt/gentoo  # Démontage récursif.
+
 log_msg INFO "Installation terminée. Vous pouvez redémarrer votre machine."
-# Finalisation et démontage
-umount -l /mnt/gentoo/dev{/shm,/pts,}  # Démontage des pseudo-fichiers
-umount -R /mnt/gentoo  # Démontage récursif
