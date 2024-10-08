@@ -4,7 +4,7 @@
 DISK="/dev/sda"
 CFG_PART_EFI_SIZE="100"     # 100 Mo
 CFG_PART_SWAP_SIZE="4096"    # 4096 Mo
-CFG_PART_ROOT_SIZE="71680"   # 70 Go
+CFG_PART_ROOT_SIZE="10240"   # 10 Go
 CFG_PART_HOME_SIZE="100%"    # Le reste
 
 # Supprimer les partitions existantes
