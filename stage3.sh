@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-source fonction.sh  # Charge les fonctions définies dans le fichier funcs.sh.
+source fonction.sh 
 
 #
 # Installation du stage 3
