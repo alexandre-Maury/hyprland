@@ -19,7 +19,7 @@ if [ "${CFG_PART_UEFI}" = "y" ]; then
     parted -a optimal ${CFG_BLOCK_DEVICE} mklabel gpt
 
     # Créer les partitions
-    parted -a optimal ${CFG_BLOCK_DEVICE} mkpart primary fat32 1MiB ${CFG_PART_EFI_SIZE}
+    parted -a optimal ${CFG_BLOCK_DEVICE} mkpart primary fat32 0% ${CFG_PART_EFI_SIZE}
     parted -a optimal ${CFG_BLOCK_DEVICE} set 1 esp on  # Définir la partition EFI
     parted -a optimal ${CFG_BLOCK_DEVICE} mkpart primary linux-swap ${CFG_PART_EFI_SIZE} $((CFG_PART_EFI_SIZE + CFG_PART_SWAP_SIZE))
     parted -a optimal ${CFG_BLOCK_DEVICE} mkpart primary ext4 ${CFG_PART_SWAP_SIZE} ${CFG_PART_ROOT_SIZE}
