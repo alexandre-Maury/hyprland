@@ -108,11 +108,11 @@ mount ${CFG_BLOCK_PART}3 /mnt/gentoo
 
 # Exécute l'installation du stage3
 cp stage3.sh /mnt/gentoo/
-cp funcs.sh /mnt/gentoo/
-(cd /mnt/gentoo ; bash stage3.sh)
+cp function.sh /mnt/gentoo/
+# (cd /mnt/gentoo ; bash stage3.sh)
 
-# Finalise l'installation
-umount -l /mnt/gentoo/dev{/shm,/pts,}  # Démontage des périphériques.
-umount -R /mnt/gentoo  # Démontage récursif.
+# # Finalise l'installation
+# umount -l /mnt/gentoo/dev{/shm,/pts,}  # Démontage des périphériques.
+# umount -R /mnt/gentoo  # Démontage récursif.
 
 log_msg INFO "Tout est terminé ! Vous pouvez exécuter 'reboot' maintenant !"  # Message final.
