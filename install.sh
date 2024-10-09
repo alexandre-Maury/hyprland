@@ -38,6 +38,7 @@ export USER_PASSWORD="$(prompt_value "Saisir votre mot de passe -> par exemple :
 
 export COMMON_FLAGS
 export CPU_FLAGS
+export NUM_CORES
 
 # Affiche la configuration pour validation
 log_msg INFO "$(cat <<END

@@ -23,6 +23,7 @@ USER=""
 USER_PASSWORD=""
 COMMON_FLAGS="-O2 -pipe -march=native"
 CPU_FLAGS=$(grep -m1 "flags" /proc/cpuinfo | cut -d' ' -f2-)
+NUM_CORES=$(nproc)
 
 
 # # Configuration des utilisateurs supplémentaires
