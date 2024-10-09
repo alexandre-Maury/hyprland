@@ -125,7 +125,7 @@ if prompt_confirm "Effacer tout sur le périphérique cible ? (y/n)"; then
     fi
 
     # Formater et créer le fichier swap
-    dd if=/dev/zero of=/mnt/gentoo/swap bs=1G count=${FILE_SWAP_SIZE}/1024   
+    dd if=/dev/zero of=/mnt/gentoo/swap bs=1M count=${FILE_SWAP_SIZE}  
     chmod 600 /mnt/gentoo/swap                            
     mkswap /mnt/gentoo/swap                                
     swapon /mnt/gentoo/swap    
