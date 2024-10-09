@@ -2,7 +2,7 @@
 
 # Variables
 BLOCK_DEVICE="$(lsblk -nd -o NAME,TYPE | awk '$2 == "disk" {print "/dev/" $1}')"
-PART_UEFI="y"                   # Choix entre UEFI (y) ou MBR (n)
+PART_UEFI="n"                   # Choix entre UEFI (y) ou MBR (n)
 PART_BOOTMBR_SIZE="256"         # Taille de la partition BOOT/MBR en MiB
 PART_BOOTEFI_SIZE="512"          # Taille de la partition BOOT/EFI en MiB
 PART_ROOT_SIZE="100"             # Taille de la partition pour / en GiB
