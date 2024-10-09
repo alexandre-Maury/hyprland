@@ -83,6 +83,7 @@ if prompt_confirm "Effacer tout sur le périphérique cible ? (y/n)"; then
         parted -a optimal ${BLOCK_DEVICE} --script mkpart primary fat32 1MiB ${PART_EFI_SIZE}MiB
         parted -a optimal ${BLOCK_DEVICE} --script set 1 esp on 
         parted -a optimal ${BLOCK_DEVICE} --script mkpart primary ext4 ${PART_EFI_SIZE}MiB $((PART_EFI_SIZE + PART_BOOT_SIZE))MiB 
+        parted -a optimal ${BLOCK_DEVICE} --script set 2 boot on 
     else
 
         log_msg INFO "Début du partitionnement du disque ${BLOCK_DEVICE} en MBR."
