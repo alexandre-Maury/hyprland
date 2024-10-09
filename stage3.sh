@@ -27,13 +27,13 @@ rm stage3-amd64.tar.xz
 log_msg INFO "Configuration du fichier /mnt/gentoo/etc/portage/make.conf"
 cat <<EOF > /mnt/gentoo/etc/portage/make.conf
 COMMON_FLAGS="-O2 -pipe -march=native"
-CFLAGS=\"${COMMON_FLAGS}\"
-CXXFLAGS=\"${COMMON_FLAGS}\"
-FCFLAGS=\"${COMMON_FLAGS}\"
-FFLAGS=\"${COMMON_FLAGS}\"
+CFLAGS="${COMMON_FLAGS}"
+CXXFLAGS="${COMMON_FLAGS}"
+FCFLAGS="${COMMON_FLAGS}"
+FFLAGS="${COMMON_FLAGS}"
 USE=""
-MAKEOPTS=\"-j$(nproc)\" 
-L10N=\"${CFG_LANGUAGE}\"
+MAKEOPTS="-j"$(nproc)"" 
+L10N="${CFG_LANGUAGE}"
 VIDEO_CARDS="fbdev vesa intel i915 nvidia nouveau radeon amdgpu radeonsi virtualbox vmware qxl"
 INPUT_DEVICES="libinput synaptics keyboard mouse joystick wacom"
 EMERGE_DEFAULT_OPTS="--quiet-build=y"
@@ -164,11 +164,11 @@ emerge --config sys-kernel/gentoo-kernel-bin
 
 # Configuration réseau
 log_msg INFO "Configuration du nom d'hôte"
-echo "hostname=\"${CFG_HOSTNAME}\" > /etc/conf.d/hostname
+echo "hostname=\"${CFG_HOSTNAME}\"" > /etc/conf.d/hostname
 
 log_msg INFO "Configuration des hôtes" 
-echo "127.0.0.1 localhost \"${CFG_HOSTNAME}\" " >> /etc/hosts
-echo "::1       localhost \"${CFG_HOSTNAME}\" " >> /etc/hosts
+echo "127.0.0.1 localhost \"${CFG_HOSTNAME}\"" >> /etc/hosts
+echo "::1       localhost \"${CFG_HOSTNAME}\"" >> /etc/hosts
 
 log_msg INFO "Installation de dhcpcd"
 emerge --quiet net-misc/dhcpcd
