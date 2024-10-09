@@ -27,12 +27,12 @@ rm stage3-amd64.tar.xz
 log_msg INFO "Configuration du fichier /mnt/gentoo/etc/portage/make.conf"
 cat <<EOF > /mnt/gentoo/etc/portage/make.conf
 COMMON_FLAGS="-O2 -pipe -march=native"
-CFLAGS="\${COMMON_FLAGS}"
-CXXFLAGS="\${COMMON_FLAGS}"
-FCFLAGS="\${COMMON_FLAGS}"
-FFLAGS="\${COMMON_FLAGS}"
+CFLAGS="${COMMON_FLAGS}"
+CXXFLAGS="${COMMON_FLAGS}"
+FCFLAGS="${COMMON_FLAGS}"
+FFLAGS="${COMMON_FLAGS}"
 USE=""
-MAKEOPTS="-j\$(nproc)" # A DETERMINER
+MAKEOPTS="-j$(nproc)" 
 L10N="${CFG_LANGUAGE}"
 VIDEO_CARDS="fbdev vesa intel i915 nvidia nouveau radeon amdgpu radeonsi virtualbox vmware qxl"
 INPUT_DEVICES="libinput synaptics keyboard mouse joystick wacom"
@@ -53,9 +53,9 @@ EOF
 # Ajout des options CPU_FLAGS_* au fichier make.conf
 CPU_FLAGS=$(grep -m1 "flags" /proc/cpuinfo | cut -d' ' -f2-)
 if [[ "$(uname -m)" == "x86_64" ]]; then
-    echo "CPU_FLAGS_X86_64=\"${CPU_FLAGS}\"" >> /mnt/gentoo/etc/portage/make.conf
+    echo "CPU_FLAGS_X86_64="${CPU_FLAGS}"" >> /mnt/gentoo/etc/portage/make.conf
 else
-    echo "CPU_FLAGS_X86=\"${CPU_FLAGS}\"" >> /mnt/gentoo/etc/portage/make.conf
+    echo "CPU_FLAGS_X86="${CPU_FLAGS}"" >> /mnt/gentoo/etc/portage/make.conf
 fi
 
 if [[ "${CFG_PART_UEFI}" == "y" ]]; then
