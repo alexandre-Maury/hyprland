@@ -19,7 +19,7 @@ wget https://distfiles.gentoo.org/releases/amd64/autobuilds/20240929T163611Z/sta
 
 # Extraction du stage3
 log_msg INFO "Extraction du stage3..."
-tar xpvf stage3-amd64.tar.xz --xattrs-include='*.*' --numeric-owner || { echo "Échec de l'extraction de stage3"; exit 1; }
+tar xpvf stage3-amd64.tar.xz --xattrs-include='*.*' --numeric-owner --overwrite || { echo "Échec de l'extraction de stage3"; exit 1; }
 rm stage3-amd64.tar.xz
 
 
