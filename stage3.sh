@@ -125,30 +125,30 @@ log_msg INFO "Mise à jour de l'ensemble @world"
 emerge -avuDN @world --quiet
 
 log_msg INFO "Configuration des locales (glibc)" 
-echo \"${LOCALE}\" >> /etc/locale.gen
+echo ${LOCALE} >> /etc/locale.gen
 locale-gen
 
 # Configuration du fuseau horaire et des locales
 log_msg INFO "Configuration du fuseau horaire (glibc)"
-echo \"${TIMEZONE}\" > /etc/timezone
+echo ${TIMEZONE} > /etc/timezone
 emerge --config sys-libs/timezone-data
 
 
 log_msg INFO " Génération du fichier /etc/fstab"
 
-if [[ \"${PART_UEFI}\" == "y" ]]; then
+if [[ ${PART_UEFI} == "y" ]]; then
   # Partition EFI
-  UUID=$(blkid -s UUID -o value \"${BLOCK_DEVICE}1\")
-  echo "UUID=\"${UUID}\"   /boot/efi      vfat    defaults      0  2" >> /etc/fstab
+  UUID=$(blkid -s UUID -o value ${BLOCK_DEVICE}1)
+  echo "UUID=${UUID}   /boot/EFI      vfat    defaults      0  2" >> /etc/fstab
 else
   # Partition BOOT en mode BIOS
-  UUID=$(blkid -s UUID -o value \"${BLOCK_DEVICE}1\")
-  echo "UUID=\"${UUID}\"   /boot          ext4    defaults      0  2" >> /etc/fstab
+  UUID=$(blkid -s UUID -o value ${BLOCK_DEVICE}1)
+  echo "UUID=${UUID}   /boot          ext4    defaults      0  2" >> /etc/fstab
 fi
 
 # Partition root
-UUID=$(blkid -s UUID -o value \"${BLOCK_DEVICE}2\")
-echo "UUID=\"${UUID}\"   /              ext4    defaults      0  1" >> /etc/fstab
+UUID=$(blkid -s UUID -o value ${BLOCK_DEVICE}2)
+echo "UUID=${UUID}     /              ext4    defaults      0  1" >> /etc/fstab
 
 # Fichier Swap
 echo "/swap   none   swap   sw    0   0" >> /etc/fstab
@@ -165,11 +165,11 @@ emerge --config sys-kernel/gentoo-kernel-bin
 
 # Configuration réseau
 log_msg INFO "Configuration du nom d'hôte"
-echo "hostname=\"${HOSTNAME}\"" > /etc/conf.d/hostname
+echo "hostname=${HOSTNAME}" > /etc/conf.d/hostname
 
 log_msg INFO "Configuration des hôtes" 
-echo "127.0.0.1 localhost \"${HOSTNAME}\"" >> /etc/hosts
-echo "::1       localhost \"${HOSTNAME}\"" >> /etc/hosts
+echo "127.0.0.1 localhost ${HOSTNAME}" >> /etc/hosts
+echo "::1       localhost ${HOSTNAME}" >> /etc/hosts
 
 log_msg INFO "Installation de dhcpcd"
 emerge --quiet net-misc/dhcpcd
@@ -179,30 +179,30 @@ log_msg INFO "Installation du sans-fil"
 emerge --quiet net-wireless/iw net-wireless/wpa_supplicant
 
 log_msg INFO "Définition du mot de passe root" 
-echo "root:\"${ROOT_PASSWORD}\"" | chpasswd
+echo "root:${ROOT_PASSWORD}" | chpasswd
 
 log_msg INFO "Installation de sudo"
 emerge --quiet app-admin/sudo
 
-log_msg INFO "Création de l'utilisateur \"${USER}\" "
-# useradd -m -G users,wheel -s /bin/bash \"${USER}\"
-# echo "\"${USER}\":\"${USER_PASSWORD}\"" | chpasswd
-# echo "\"${USER}\" ALL=(ALL) ALL" >> /etc/sudoers
+log_msg INFO "Création de l'utilisateur ${USER}"
+# useradd -m -G users,wheel -s /bin/bash ${USER}
+# echo "${USER}:${USER_PASSWORD}" | chpasswd
+# echo "${USER} ALL=(ALL) ALL" >> /etc/sudoers
 
-useradd -m -G users,wheel,audio,cdrom,video,portage -s /bin/bash \"${USER}\"
-echo "\"${USER}\":\"${USER_PASSWORD}\"" | chpasswd
+useradd -m -G users,wheel,audio,cdrom,video,portage -s /bin/bash ${USER}
+echo "${USER}:${USER_PASSWORD}" | chpasswd
 
 
 # Installation de GRUB
 emerge --quiet sys-boot/grub
-if [[ \"${PART_UEFI}\" == "y" ]]; then
+if [[ ${PART_UEFI} == "y" ]]; then
     log_msg INFO "Installation de GRUB pour UEFI"
     grub-install --target=x86_64-efi --efi-directory=/boot/EFI 
     grub-mkconfig -o /boot/grub/grub.cfg
 
 else
     log_msg INFO "Installation de GRUB pour MBR"
-    grub-install \"${BLOCK_DEVICE}1\"
+    grub-install ${BLOCK_DEVICE}1
     grub-mkconfig -o /boot/grub/grub.cfg
 fi
 
