@@ -24,9 +24,9 @@ log_msg INFO "Bienvenue dans le script d'installation de Gentoo !"
 # Configuration de l'installateur
 export BLOCK_DEVICE="$(prompt_value "Nom du périphérique cible -> par défaut :" "$BLOCK_DEVICE")"
 export PART_UEFI="$(prompt_value "Voulez-vous utiliser le mode UEFI -> par défaut :" "$PART_UEFI")"
-export PART_EFI_SIZE="$(prompt_value "Taille de la partition boot|EFI en Mo -> par défaut :" "$PART_EFI_SIZE")"
+export PART_EFI_SIZE="$(prompt_value "Taille de la partition boot|EFI en MiB -> par défaut :" "$PART_EFI_SIZE")"
 export PART_ROOT_SIZE="$(prompt_value "Taille de la partition root en %  -> par défaut :" "$PART_ROOT_SIZE")"
-export FILE_SWAP_SIZE="$(prompt_value "Taille du fichier swap en Mo -> par défaut :" "$FILE_SWAP_SIZE")"
+export FILE_SWAP_SIZE="$(prompt_value "Taille du fichier swap en Go -> par défaut :" "$FILE_SWAP_SIZE")"
 export TIMEZONE="$(prompt_value "Fuseau horaire du système -> par défaut :" "$TIMEZONE")"
 export LOCALE="$(prompt_value "Locale du système -> par défaut :" "$LOCALE")"
 export HOSTNAME="$(prompt_value "Nom d'hôte du système -> par défaut :" "$HOSTNAME")"
@@ -42,19 +42,19 @@ export CPU_FLAGS
 # Affiche la configuration pour validation
 log_msg INFO "$(cat <<END
 Vérification de la configuration :
-  - Périphérique cible :       $BLOCK_DEVICE
-  - UEFI utilisé :             $PART_UEFI
-  - Taille de boot :           $PART_EFI_SIZE
-  - Taille du swap :           $FILE_SWAP_SIZE
-  - Taille du root :           $PART_ROOT_SIZE
-  - Fuseau horaire :           $TIMEZONE
-  - Locale :                   $LOCALE
-  - Nom d'hôte :               $HOSTNAME
-  - Interface réseau :         $NETWORK_INTERFACE
-  - Disposition du clavier :   $KEYMAP
-  - Utilisateur root :         $ROOT_PASSWORD
-  - Votre utilisateur :        $USER
-  - Votre mot de passe :       $USER_PASSWORD
+  - Périphérique cible :       ${BLOCK_DEVICE}
+  - UEFI utilisé :             ${PART_UEFI}
+  - Taille de boot :           ${PART_EFI_SIZE}MiB
+  - Taille du swap :           ${FILE_SWAP_SIZE}Go
+  - Taille du root :           ${PART_ROOT_SIZE}%
+  - Fuseau horaire :           ${TIMEZONE}
+  - Locale :                   ${LOCALE}
+  - Nom d'hôte :               ${HOSTNAME}
+  - Interface réseau :         ${NETWORK_INTERFACE}
+  - Disposition du clavier :   ${KEYMAP}
+  - Utilisateur root :         ${ROOT_PASSWORD}
+  - Votre utilisateur :        ${USER}
+  - Votre mot de passe :       ${USER_PASSWORD}
 END
 )"
 
@@ -67,14 +67,21 @@ fi
 # Effacement des systèmes de fichiers existants
 if prompt_confirm "Effacer tout sur le périphérique cible ? (y/n)"; then
 
+    log_msg INFO "Début du formatage du disque ${BLOCK_DEVICE}."
     parted ${BLOCK_DEVICE} mklabel gpt 2>/dev/null || parted ${BLOCK_DEVICE} mklabel msdos 2>/dev/null
 
+    
+
     # Configuration de l'étiquette du disque
-    if [[ "$CFG_PART_UEFI" == "y" ]]; then
+    if [[ "$PART_UEFI" == "y" ]]; then
+
+        log_msg INFO "Début du partitionnement du disque ${BLOCK_DEVICE} en UEFI."
         parted -a optimal ${BLOCK_DEVICE} --script mklabel gpt
         parted -a optimal ${BLOCK_DEVICE} --script mkpart primary fat32 1MiB ${PART_EFI_SIZE}MiB
         parted -a optimal ${BLOCK_DEVICE} --script set 1 esp on  # Définir la partition EFI
     else
+
+        log_msg INFO "Début du partitionnement du disque ${BLOCK_DEVICE} en MBR."
         parted -a optimal ${BLOCK_DEVICE} --script mklabel msdos
         parted -a optimal ${BLOCK_DEVICE} --script mkpart primary ext4 1MiB ${PART_EFI_SIZE}MiB # Partition Boot
         parted -a optimal ${BLOCK_DEVICE} --script set 1 boot on # Définir la partition boot comme amorçable
@@ -82,7 +89,7 @@ if prompt_confirm "Effacer tout sur le périphérique cible ? (y/n)"; then
 
 
     # Création des partitions
-    parted -a optimal ${BLOCK_DEVICE} --script mkpart primary ext4 $((CFG_PART_EFI_SIZE))MiB ${PART_ROOT_SIZE}  # Partition ROOT
+    parted -a optimal ${BLOCK_DEVICE} --script mkpart primary ext4 $((PART_EFI_SIZE))MiB ${PART_ROOT_SIZE}%  # Partition ROOT
 
 
     # Configuration des systèmes de fichiers
@@ -97,7 +104,7 @@ if prompt_confirm "Effacer tout sur le périphérique cible ? (y/n)"; then
     mkdir -p /mnt/gentoo
     mount ${BLOCK_DEVICE}2 /mnt/gentoo
 
-    if [[ "$PART_UEFI" == "y" ]]; then
+    if [[ ${PART_UEFI} == "y" ]]; then
         mkdir -p /mnt/gentoo/boot/EFI      
         mount ${BLOCK_DEVICE}1 /mnt/gentoo/boot/EFI
     else

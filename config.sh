@@ -11,7 +11,7 @@ BLOCK_DEVICE="$(lsblk -nd -o NAME,TYPE | awk '$2 == "disk" {print "/dev/" $1}')"
 PART_UEFI="y"
 PART_EFI_SIZE="100" # 100 mo
 FILE_SWAP_SIZE="2" 
-PART_ROOT_SIZE="100%" # Le reste 
+PART_ROOT_SIZE="100" # Le reste 
 TIMEZONE="Europe/Paris"
 LOCALE="fr_FR.UTF-8 UTF-8"
 HOSTNAME="gentoo"
