@@ -8,8 +8,8 @@ source fonction.sh
 source config.sh  # Importation des configurations
 
 # Vérifier si le montage est correct
-if ! mountpoint -q /mnt/gentoo; then
-    log_msg ERROR "La partition root n'est pas montée sur /mnt/gentoo. Impossible de continuer."
+if ! mountpoint -q /mnt; then
+    log_msg ERROR "La partition root n'est pas montée sur /mnt. Impossible de continuer."
     exit 1
 fi
 
@@ -24,9 +24,9 @@ rm stage3-amd64.tar.xz
 
 
 
-# Configuration de /mnt/gentoo/etc/portage/make.conf
-log_msg INFO "Configuration du fichier /mnt/gentoo/etc/portage/make.conf"
-cat <<EOF > /mnt/gentoo/etc/portage/make.conf
+# Configuration de /mnt/etc/portage/make.conf
+log_msg INFO "Configuration du fichier /mnt/etc/portage/make.conf"
+cat <<EOF > /mnt/etc/portage/make.conf
 COMMON_FLAGS="-O2 -pipe -march=native"
 CFLAGS="${COMMON_FLAGS}"
 CXXFLAGS="${COMMON_FLAGS}"
@@ -54,37 +54,37 @@ EOF
 # Ajout des options CPU_FLAGS_* au fichier make.conf
 
 if [[ "$(uname -m)" == "x86_64" ]]; then
-    echo "CPU_FLAGS_X86_64=\"${CPU_FLAGS}\"" >> /mnt/gentoo/etc/portage/make.conf
+    echo "CPU_FLAGS_X86_64=\"${CPU_FLAGS}\"" >> /mnt/etc/portage/make.conf
 else
-    echo "CPU_FLAGS_X86=\"${CPU_FLAGS}\"" >> /mnt/gentoo/etc/portage/make.conf
+    echo "CPU_FLAGS_X86=\"${CPU_FLAGS}\"" >> /mnt/etc/portage/make.conf
 fi
 
 if [[ "${PART_UEFI}" == "y" ]]; then
     log_msg INFO "Installation de GRUB pour UEFI"
-    echo "GRUB_PLATFORMS=\"efi-64\"" >> /mnt/gentoo/etc/portage/make.conf
+    echo "GRUB_PLATFORMS=\"efi-64\"" >> /mnt/etc/portage/make.conf
 else
     log_msg INFO "Installation de GRUB pour MBR"
-    echo "GRUB_PLATFORMS=\"pc\"" >> /mnt/gentoo/etc/portage/make.conf
+    echo "GRUB_PLATFORMS=\"pc\"" >> /mnt/etc/portage/make.conf
 fi
 
 # Copie du repo.conf
 log_msg INFO "=== Copie du repo.conf ==="
-mkdir -p /mnt/gentoo/etc/portage/repos.conf
-cp /mnt/gentoo/usr/share/portage/config/repos.conf /mnt/gentoo/etc/portage/repos.conf/gentoo.conf
+mkdir --parents /mnt/etc/portage/repos.conf
+cp /mnt/usr/share/portage/config/repos.conf /mnt/etc/portage/repos.conf/gentoo.conf
 
 # Copie du DNS
 log_msg INFO "=== Copie du DNS ==="
-cp -L /etc/resolv.conf /mnt/gentoo/etc
+cp -L /etc/resolv.conf /mnt/etc
 
 # Montage des systèmes de fichiers
 log_msg INFO "=== Montage des systèmes de fichiers ==="
-mount --rbind /dev /mnt/gentoo/dev 
-mount --make-rslave /mnt/gentoo/dev 
-mount -t proc /proc /mnt/gentoo/proc 
-mount --rbind /sys /mnt/gentoo/sys 
-mount --make-rslave /mnt/gentoo/sys 
-mount --rbind /tmp /mnt/gentoo/tmp 
-mount --types tmpfs tmpfs /mnt/gentoo/run 
+mount --rbind /dev /mnt/dev 
+mount --make-rslave /mnt/dev 
+mount -t proc /proc /mnt/proc 
+mount --rbind /sys /mnt/sys 
+mount --make-rslave /mnt/sys 
+mount --rbind /tmp /mnt/tmp 
+mount --types tmpfs tmpfs /mnt/run 
 
 if [[ -L /dev/shm ]]; then
     rm /dev/shm
@@ -95,14 +95,9 @@ fi
 mount --types tmpfs --options nosuid,nodev,noexec shm /dev/shm || { log_msg ERROR "Erreur lors du montage de /dev/shm"; exit 1; }
 chmod 1777 /dev/shm
 
-# # Montage des systèmes de fichiers
-# mount -t proc /proc /mnt/gentoo/proc
-# mount --rbind /dev /mnt/gentoo/dev
-# mount --rbind /sys /mnt/gentoo/sys
-
 # Changement de racine (chroot)
 log_msg INFO "=== Changement de racine (chroot) ==="
-chroot /mnt/gentoo /bin/bash << EOF
+chroot /mnt/ /bin/bash << EOF
 
 source fonction.sh
 source config.sh  # Importation des configurations
@@ -136,7 +131,7 @@ emerge --config sys-libs/timezone-data
 
 
 # Créer le fichier fstab
-log_msg INFO "Création du fichier /mnt/gentoo/etc/fstab"
+log_msg INFO "Création du fichier /mnt/etc/fstab"
 
 # Ajouter l'entrée EFI si UEFI est utilisé
 if [[ ${PART_UEFI} == "y" ]]; then
@@ -196,7 +191,7 @@ emerge --quiet sys-boot/os-prober
 
 if [[ ${PART_UEFI} == "y" ]]; then
     log_msg INFO "Système UEFI détecté. Installation de GRUB pour UEFI."
-    grub-install --target=x86_64-efi --efi-directory=/boot/EFI --boot-directory=/boot --removable
+    grub-install --target=x86_64-efi --efi-directory=/boot
     
     # Activer os-prober dans la configuration de GRUB
     echo 'GRUB_DISABLE_OS_PROBER=false' >> /etc/default/grub

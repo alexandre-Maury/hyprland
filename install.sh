@@ -70,65 +70,80 @@ fi
 # Effacement des systèmes de fichiers existants
 if prompt_confirm "Effacer tout sur le périphérique cible ? (y/n)"; then
 
-    log_msg INFO "Début du formatage du disque ${BLOCK_DEVICE}."
-    parted ${BLOCK_DEVICE} mklabel gpt 2>/dev/null || parted ${BLOCK_DEVICE} mklabel msdos 2>/dev/null
-
-    
-
-    # Configuration de l'étiquette du disque
-    if [[ "$PART_UEFI" == "y" ]]; then
-
-        log_msg INFO "Début du partitionnement du disque ${BLOCK_DEVICE} en UEFI."
-        parted -a optimal ${BLOCK_DEVICE} --script mklabel gpt
-        parted -a optimal ${BLOCK_DEVICE} --script mkpart primary fat32 1MiB ${PART_BOOTEFI_SIZE}MiB
-        parted -a optimal ${BLOCK_DEVICE} --script set 1 esp on 
-        parted -a optimal ${BLOCK_DEVICE} --script mkpart primary ext4 ${PART_BOOTEFI_SIZE}MiB $((PART_BOOTEFI_SIZE + PART_ROOT_SIZE * 1024))MiB # converti valeur PART_ROOT_SIZE(GiB) en MiB
-    else
-
-        log_msg INFO "Début du partitionnement du disque ${BLOCK_DEVICE} en MBR."
-        parted -a optimal ${BLOCK_DEVICE} --script mklabel msdos
-        parted -a optimal ${BLOCK_DEVICE} --script mkpart primary ext4 1MiB ${PART_BOOT_SIZE}MiB 
-        parted -a optimal ${BLOCK_DEVICE} --script set 1 boot on 
+    # Vérifier si le disque existe
+    if [ ! -b "${BLOCK_DEVICE}" ]; then
+        log_msg WARN "Le disque ${BLOCK_DEVICE} n'existe pas."
+        exit 1
     fi
 
+    # Choisir le type de nettoyage
+    log_msg INFO "Choisissez le type de nettoyage du disque ${BLOCK_DEVICE} :"
+    echo "1. Nettoyage avec des zéros"
+    echo "2. Nettoyage avec des données aléatoires"
+    read -rp "Entrez votre choix (1 ou 2) : " CLEAN_OPTION
 
-    # Création de la partition ROOT
-    parted -a optimal ${BLOCK_DEVICE} --script mkpart primary ext4 $((PART_EFI_SIZE + PART_BOOT_SIZE))MiB ${PART_ROOT_SIZE}%  
+    # Nettoyage du disque
+    if [ "$CLEAN_OPTION" == "1" ]; then
+        log_msg INFO "Nettoyage du disque ${BLOCK_DEVICE} avec des zéros..."
+        dd if=/dev/zero of="${BLOCK_DEVICE}" bs=1M status=progress
+    elif [ "$CLEAN_OPTION" == "2" ]; then
+        log_msg INFO "Nettoyage du disque ${BLOCK_DEVICE} avec des données aléatoires..."
+        dd if=/dev/urandom of="${BLOCK_DEVICE}" bs=1M status=progress
+    else
+        log_msg WARN "Choix invalide. Veuillez relancer le script."
+        exit 1
+    fi
 
+    log_msg INFO "Nettoyage du disque ${BLOCK_DEVICE} terminée."
 
-    # Configuration des systèmes de fichiers
+    # Conversion de PART_ROOT_SIZE de GiB en MiB
+    PART_ROOT_SIZE_MB=$((PART_ROOT_SIZE * 1024))
+
+    # Configuration du Disque
     if [[ "$PART_UEFI" == "y" ]]; then
-        # Formater les partitions
-        mkfs.vfat -F32 ${BLOCK_DEVICE}1                 # EFI partition
-        mkfs.ext4 -L boot ${BLOCK_DEVICE}2              # Boot partition
-        mkfs.ext4 -L root-home ${BLOCK_DEVICE}3         # Root partition
+        parted -a optimal "${BLOCK_DEVICE}" --script mklabel gpt
+        parted -a optimal "${BLOCK_DEVICE}" --script mkpart primary fat32 1MiB ${PART_BOOTEFI_SIZE}MiB # Partition EFI
+        parted -a optimal "${BLOCK_DEVICE}" --script set 1 esp on 
+        parted -a optimal "${BLOCK_DEVICE}" --script mkpart primary ext4 ${PART_BOOTEFI_SIZE}MiB $((PART_BOOTEFI_SIZE + PART_ROOT_SIZE_MB))MiB # Partition Racine
+        parted -a optimal "${BLOCK_DEVICE}" --script mkpart primary ext4 $((PART_BOOTEFI_SIZE + PART_ROOT_SIZE_MB))MiB ${PART_HOME_SIZE}% # Partition Home
+
+        mkfs.vfat -F32 "${BLOCK_DEVICE}1"               # Partition EFI
+        mkfs.ext4 -L Racine "${BLOCK_DEVICE}2"          # Partition Racine
+        mkfs.ext4 -L Home "${BLOCK_DEVICE}3"            # Partition Home
 
         # Monter les partitions
-        mkdir -p /mnt/gentoo
-        mount ${BLOCK_DEVICE}3 /mnt/gentoo              # Monter la partition racine
+        mkdir -p /mnt
+        mount ${BLOCK_DEVICE}2 /mnt              # Monter la partition racine
 
-        mkdir -p /mnt/gentoo/boot  
-        mount ${BLOCK_DEVICE}2 /mnt/gentoo/boot         # Monter la partition boot
+        mkdir -p /mnt/{home,boot}
+        mount ${BLOCK_DEVICE}3 /mnt/home         # Monter la partition boot  
+        mount ${BLOCK_DEVICE}1 /mnt/boot     # Monter la partition EFI
 
-        mkdir -p /mnt/gentoo/boot/EFI      
-        mount ${BLOCK_DEVICE}1 /mnt/gentoo/boot/EFI     # Monter la partition EFI
     else
-        # Formater les partitions
-        mkfs.ext4 -L boot ${BLOCK_DEVICE}1              # Boot partition
-        mkfs.ext4 -L root-home ${BLOCK_DEVICE}2         # Root partition
+        parted -a optimal "${BLOCK_DEVICE}" --script mklabel msdos
+        parted -a optimal "${BLOCK_DEVICE}" --script mkpart primary ext4 1MiB ${PART_BOOTMBR_SIZE}MiB # Partition MBR
+        parted -a optimal "${BLOCK_DEVICE}" --script set 1 boot on 
+        parted -a optimal "${BLOCK_DEVICE}" --script mkpart primary ext4 ${PART_BOOTMBR_SIZE}MiB $((PART_BOOTMBR_SIZE + PART_ROOT_SIZE_MB))MiB # Partition Racine
+        parted -a optimal "${BLOCK_DEVICE}" --script mkpart primary ext4 $((PART_BOOTMBR_SIZE + PART_ROOT_SIZE_MB))MiB ${PART_HOME_SIZE}% # Partition Home
 
-        mkdir -p /mnt/gentoo
-        mount ${BLOCK_DEVICE}2 /mnt/gentoo              # Monter la partition racine
+        mkfs.ext4 -L Boot "${BLOCK_DEVICE}1"            # Partition MBR
+        mkfs.ext4 -L Racine "${BLOCK_DEVICE}2"          # Partition Racine
+        mkfs.ext4 -L Home"${BLOCK_DEVICE}3"             # Partition Home
 
-        mkdir -p /mnt/gentoo/boot  
-        mount ${BLOCK_DEVICE}1 /mnt/gentoo/boot         # Monter la partition boot
+        mkdir -p /mnt
+        mount ${BLOCK_DEVICE}2 /mnt              # Monter la partition boot
+
+        mkdir -p /mnt/{home,boot}
+        mount ${BLOCK_DEVICE}3 /mnt/home         # Monter la partition home
+        mount ${BLOCK_DEVICE}1 /mnt/boot         # Monter la partition racine
+
     fi
 
     # Formater et créer le fichier swap
-    dd if=/dev/zero of=/mnt/gentoo/swap bs=1M count=${FILE_SWAP_SIZE}  
-    chmod 600 /mnt/gentoo/swap                            
-    mkswap /mnt/gentoo/swap                                
-    swapon /mnt/gentoo/swap    
+    dd if=/dev/zero of=/mnt/swap bs=1M count=${FILE_SWAP_SIZE}  
+    chmod 600 /mnt/swap                            
+    mkswap /mnt/swap                                
+    swapon /mnt/swap    
 
 
     log_msg INFO "Partitionnement et formatage du disque terminés avec succès."
@@ -136,20 +151,20 @@ if prompt_confirm "Effacer tout sur le périphérique cible ? (y/n)"; then
 fi    
 
 # Copie et exécution de l'installation du stage3
-if [ -d "/mnt/gentoo" ]; then
+if [ -d "/mnt" ]; then
     
-    cp stage3.sh /mnt/gentoo/
-    cp fonction.sh /mnt/gentoo/
-    cp config.sh /mnt/gentoo/
+    cp stage3.sh /mnt
+    cp fonction.sh /mnt
+    cp config.sh /mnt
     
     # Exécution du script stage3.sh dans /mnt/gentoo
-    (cd /mnt/gentoo && bash stage3.sh)
+    (cd /mnt && bash stage3.sh)
 else
-    echo "Erreur : le répertoire /mnt/gentoo n'existe pas."
+    echo "Erreur : le répertoire /mnt n'existe pas."
     exit 1
 fi
 
-umount -R /mnt/gentoo  # Démontage récursif.
+umount -R /mnt  # Démontage récursif.
 
 log_msg INFO "Installation terminée. Vous pouvez redémarrer votre machine."
 log_msg INFO "Aprés redémarrage -> eselect locale list"

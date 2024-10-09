@@ -9,7 +9,7 @@
 
 
 # Liste des programmes requis pour l'installation
-packages=("git" "tar" "links" "curl" "wget")
+packages=("git" "tar" "curl" "wget")
 
 # DISK=$(lsblk -dno NAME,TYPE | awk '$2 == "disk"' | head -n 1)
 
