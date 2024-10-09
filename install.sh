@@ -22,22 +22,22 @@ log_msg INFO "Bienvenue dans le script d'installation de Gentoo !"
 
 
 # Configuration de l'installateur
-export $BLOCK_DEVICE="$(prompt_value "Nom du périphérique cible -> par défaut :" "$BLOCK_DEVICE")"
-export $PART_UEFI="$(prompt_value "Voulez-vous utiliser le mode UEFI -> par défaut :" "$PART_UEFI")"
-export $PART_EFI_SIZE="$(prompt_value "Taille de la partition boot|EFI en Mo -> par défaut :" "$PART_EFI_SIZE")"
-export $PART_ROOT_SIZE="$(prompt_value "Taille de la partition root en %  -> par défaut :" "$PART_ROOT_SIZE")"
-export $FILE_SWAP_SIZE="$(prompt_value "Taille du fichier swap en Mo -> par défaut :" "$FILE_SWAP_SIZE")"
-export $TIMEZONE="$(prompt_value "Fuseau horaire du système -> par défaut :" "$TIMEZONE")"
-export $LOCALE="$(prompt_value "Locale du système -> par défaut :" "$LOCALE")"
-export $HOSTNAME="$(prompt_value "Nom d'hôte du système -> par défaut :" "$HOSTNAME")"
-export $NETWORK_INTERFACE="$(prompt_value "Nom de l'interface réseau -> par défaut :" "$NETWORK_INTERFACE")"
-export $KEYMAP="$(prompt_value "Disposition du clavier à utiliser -> par défaut :" "$KEYMAP")"
-export $ROOT_PASSWORD="$(prompt_value "Créer votre mot de passe root -> par défaut : $ROOT_PASSWORD" "$ROOT_PASSWORD")"
-export $USER="$(prompt_value "Saisir votre nom d'utilisateur -> par exemple :" "$USER")"
-export $USER_PASSWORD="$(prompt_value "Saisir votre mot de passe -> par exemple :" "$USER_PASSWORD")"
+export BLOCK_DEVICE="$(prompt_value "Nom du périphérique cible -> par défaut :" "$BLOCK_DEVICE")"
+export PART_UEFI="$(prompt_value "Voulez-vous utiliser le mode UEFI -> par défaut :" "$PART_UEFI")"
+export PART_EFI_SIZE="$(prompt_value "Taille de la partition boot|EFI en Mo -> par défaut :" "$PART_EFI_SIZE")"
+export PART_ROOT_SIZE="$(prompt_value "Taille de la partition root en %  -> par défaut :" "$PART_ROOT_SIZE")"
+export FILE_SWAP_SIZE="$(prompt_value "Taille du fichier swap en Mo -> par défaut :" "$FILE_SWAP_SIZE")"
+export TIMEZONE="$(prompt_value "Fuseau horaire du système -> par défaut :" "$TIMEZONE")"
+export LOCALE="$(prompt_value "Locale du système -> par défaut :" "$LOCALE")"
+export HOSTNAME="$(prompt_value "Nom d'hôte du système -> par défaut :" "$HOSTNAME")"
+export NETWORK_INTERFACE="$(prompt_value "Nom de l'interface réseau -> par défaut :" "$NETWORK_INTERFACE")"
+export KEYMAP="$(prompt_value "Disposition du clavier à utiliser -> par défaut :" "$KEYMAP")"
+export ROOT_PASSWORD="$(prompt_value "Créer votre mot de passe root -> par défaut : $ROOT_PASSWORD" "$ROOT_PASSWORD")"
+export USER="$(prompt_value "Saisir votre nom d'utilisateur -> par exemple :" "$USER")"
+export USER_PASSWORD="$(prompt_value "Saisir votre mot de passe -> par exemple :" "$USER_PASSWORD")"
 
-export $COMMON_FLAGS
-export $CPU_FLAGS
+export COMMON_FLAGS
+export CPU_FLAGS
 
 # Affiche la configuration pour validation
 log_msg INFO "$(cat <<END
