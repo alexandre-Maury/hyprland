@@ -4,12 +4,9 @@
 
 ## Détails du montage des partitions :
 #     UEFI :
-#         Partition EFI (${BLOCK_DEVICE}1) : formatée en vfat, montée sur /mnt/gentoo/boot/EFI.
-#         Partition /boot (${BLOCK_DEVICE}2) : formatée en ext4, montée sur /mnt/gentoo/boot.
-#         Partition root (${BLOCK_DEVICE}3) : formatée en ext4, montée sur /mnt/gentoo.
+
 #     BIOS/MBR :
-#         Partition /boot (${BLOCK_DEVICE}1) : formatée en ext4, montée sur /mnt/gentoo/boot.
-#         Partition root (${BLOCK_DEVICE}2) : formatée en ext4, montée sur /mnt/gentoo.
+
 
 # Liste des programmes requis pour l'installation
 packages=("git" "tar" "links" "curl" "wget")
@@ -18,10 +15,11 @@ packages=("git" "tar" "links" "curl" "wget")
 
 BLOCK_DEVICE="$(lsblk -nd -o NAME,TYPE | awk '$2 == "disk" {print "/dev/" $1}')"
 PART_UEFI="y"
-PART_EFI_SIZE="100"        # Taille de la partition EFI en MiB
-PART_BOOT_SIZE="1024"      # Taille de la partition /boot en MiB
+PART_BOOTMBR_SIZE="256"    # Taille de la partition BOOT/MBR en MiB : /dev/sda1  ext4(8300)   256MiB   /Boot system partition
+PART_BOOTEFI_SIZE="512"    # Taille de la partition BOOT/EFI en MiB : /dev/sda1  vfat(ef00)   512MiB   /Boot/EFI system partition
+PART_ROOT_SIZE="100"       # Taille de la partition pour / en GiB   : /dev/sda2  ext4(8300)   100G     /Racine partition
+PART_HOME_SIZE="100"       # Taille de la partition pour /home en % : /dev/sda3  ext4(8300)   100%     /Home partition
 FILE_SWAP_SIZE="2048"      # Taille du fichier SWAP en MiB
-PART_ROOT_SIZE="100"       # Le reste du disque pour la racine / en %
 TIMEZONE="Europe/Paris"
 LOCALE="fr_FR.UTF-8 UTF-8"
 HOSTNAME="gentoo"

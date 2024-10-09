@@ -24,9 +24,9 @@ log_msg INFO "Bienvenue dans le script d'installation de Gentoo !"
 # Configuration de l'installateur
 export BLOCK_DEVICE="$(prompt_value "Nom du périphérique cible -> par défaut :" "$BLOCK_DEVICE")"
 export PART_UEFI="$(prompt_value "Voulez-vous utiliser le mode UEFI -> par défaut :" "$PART_UEFI")"
-export PART_EFI_SIZE="$(prompt_value "Taille de la partition EFI en MiB -> par défaut :" "$PART_EFI_SIZE")"
-export PART_BOOT_SIZE="$(prompt_value "Taille de la partition Boot en MiB -> par défaut :" "$PART_BOOT_SIZE")"
-export PART_ROOT_SIZE="$(prompt_value "Taille de la partition root en %  -> par défaut :" "$PART_ROOT_SIZE")"
+export PART_BOOTEFI_SIZE="$(prompt_value "Taille de la partition BOOT/EFI en MiB -> par défaut :" "$PART_BOOTEFI_SIZE")"
+export PART_ROOT_SIZE="$(prompt_value "Taille de la partition Racine en GiB -> par défaut :" "$PART_ROOT_SIZE")"
+export PART_HOME_SIZE="$(prompt_value "Taille de la partition Home en %  -> par défaut :" "$PART_HOME_SIZE")"
 export FILE_SWAP_SIZE="$(prompt_value "Taille du fichier swap en MiB -> par défaut :" "$FILE_SWAP_SIZE")"
 export TIMEZONE="$(prompt_value "Fuseau horaire du système -> par défaut :" "$TIMEZONE")"
 export LOCALE="$(prompt_value "Locale du système -> par défaut :" "$LOCALE")"
@@ -44,20 +44,20 @@ export NUM_CORES
 # Affiche la configuration pour validation
 log_msg INFO "$(cat <<END
 Vérification de la configuration :
-  - Périphérique cible :       ${BLOCK_DEVICE}
-  - UEFI utilisé :             ${PART_UEFI}
-  - Taille de l'EFI :          ${PART_EFI_SIZE}MiB
-  - Taille de Boot :           ${PART_BOOT_SIZE}MiB 
-  - Taille du swap :           ${FILE_SWAP_SIZE}MiB 
-  - Taille du root :           ${PART_ROOT_SIZE}%
-  - Fuseau horaire :           ${TIMEZONE}
-  - Locale :                   ${LOCALE}
-  - Nom d'hôte :               ${HOSTNAME}
-  - Interface réseau :         ${NETWORK_INTERFACE}
-  - Disposition du clavier :   ${KEYMAP}
-  - Utilisateur root :         ${ROOT_PASSWORD}
-  - Votre utilisateur :        ${USER}
-  - Votre mot de passe :       ${USER_PASSWORD}
+  - Périphérique cible              :           ${BLOCK_DEVICE}
+  - UEFI utilisé                    :           ${PART_UEFI}
+  - Taille de la partition BOOT/EFI :           ${PART_BOOTEFI_SIZE}MiB
+  - Taille de la partition Racine   :           ${PART_ROOT_SIZE}GiB 
+  - Taille de la partition Home     :           ${PART_HOME_SIZE}%
+  - Taille du fichier swap          :           ${FILE_SWAP_SIZE}MiB 
+  - Fuseau horaire                  :           ${TIMEZONE}
+  - Locale                          :           ${LOCALE}
+  - Nom d'hôte                      :           ${HOSTNAME}
+  - Interface réseau                :           ${NETWORK_INTERFACE}
+  - Disposition du clavier          :           ${KEYMAP}
+  - Utilisateur root                :           ${ROOT_PASSWORD}
+  - Votre utilisateur               :           ${USER}
+  - Votre mot de passe              :           ${USER_PASSWORD}
 END
 )"
 
@@ -80,10 +80,9 @@ if prompt_confirm "Effacer tout sur le périphérique cible ? (y/n)"; then
 
         log_msg INFO "Début du partitionnement du disque ${BLOCK_DEVICE} en UEFI."
         parted -a optimal ${BLOCK_DEVICE} --script mklabel gpt
-        parted -a optimal ${BLOCK_DEVICE} --script mkpart primary fat32 1MiB ${PART_EFI_SIZE}MiB
+        parted -a optimal ${BLOCK_DEVICE} --script mkpart primary fat32 1MiB ${PART_BOOTEFI_SIZE}MiB
         parted -a optimal ${BLOCK_DEVICE} --script set 1 esp on 
-        parted -a optimal ${BLOCK_DEVICE} --script mkpart primary ext4 ${PART_EFI_SIZE}MiB $((PART_EFI_SIZE + PART_BOOT_SIZE))MiB 
-        parted -a optimal ${BLOCK_DEVICE} --script set 2 boot on 
+        parted -a optimal ${BLOCK_DEVICE} --script mkpart primary ext4 ${PART_BOOTEFI_SIZE}MiB $((PART_BOOTEFI_SIZE + PART_ROOT_SIZE * 1024))MiB # converti valeur PART_ROOT_SIZE(GiB) en MiB
     else
 
         log_msg INFO "Début du partitionnement du disque ${BLOCK_DEVICE} en MBR."
