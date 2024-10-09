@@ -24,9 +24,10 @@ log_msg INFO "Bienvenue dans le script d'installation de Gentoo !"
 # Configuration de l'installateur
 export BLOCK_DEVICE="$(prompt_value "Nom du périphérique cible -> par défaut :" "$BLOCK_DEVICE")"
 export PART_UEFI="$(prompt_value "Voulez-vous utiliser le mode UEFI -> par défaut :" "$PART_UEFI")"
-export PART_EFI_SIZE="$(prompt_value "Taille de la partition boot|EFI en MiB -> par défaut :" "$PART_EFI_SIZE")"
+export PART_EFI_SIZE="$(prompt_value "Taille de la partition EFI en MiB -> par défaut :" "$PART_EFI_SIZE")"
+export PART_BOOT_SIZE="$(prompt_value "Taille de la partition Boot en MiB -> par défaut :" "$PART_BOOT_SIZE")"
 export PART_ROOT_SIZE="$(prompt_value "Taille de la partition root en %  -> par défaut :" "$PART_ROOT_SIZE")"
-export FILE_SWAP_SIZE="$(prompt_value "Taille du fichier swap en Go -> par défaut :" "$FILE_SWAP_SIZE")"
+export FILE_SWAP_SIZE="$(prompt_value "Taille du fichier swap en MiB -> par défaut :" "$FILE_SWAP_SIZE")"
 export TIMEZONE="$(prompt_value "Fuseau horaire du système -> par défaut :" "$TIMEZONE")"
 export LOCALE="$(prompt_value "Locale du système -> par défaut :" "$LOCALE")"
 export HOSTNAME="$(prompt_value "Nom d'hôte du système -> par défaut :" "$HOSTNAME")"
@@ -45,8 +46,9 @@ log_msg INFO "$(cat <<END
 Vérification de la configuration :
   - Périphérique cible :       ${BLOCK_DEVICE}
   - UEFI utilisé :             ${PART_UEFI}
-  - Taille de boot :           ${PART_EFI_SIZE}MiB
-  - Taille du swap :           ${FILE_SWAP_SIZE}Go
+  - Taille de l'EFI :          ${PART_EFI_SIZE}MiB
+  - Taille de Boot :           ${PART_BOOT_SIZE}MiB 
+  - Taille du swap :           ${FILE_SWAP_SIZE}MiB 
   - Taille du root :           ${PART_ROOT_SIZE}%
   - Fuseau horaire :           ${TIMEZONE}
   - Locale :                   ${LOCALE}
@@ -79,52 +81,59 @@ if prompt_confirm "Effacer tout sur le périphérique cible ? (y/n)"; then
         log_msg INFO "Début du partitionnement du disque ${BLOCK_DEVICE} en UEFI."
         parted -a optimal ${BLOCK_DEVICE} --script mklabel gpt
         parted -a optimal ${BLOCK_DEVICE} --script mkpart primary fat32 1MiB ${PART_EFI_SIZE}MiB
-        parted -a optimal ${BLOCK_DEVICE} --script set 1 esp on  # Définir la partition EFI
+        parted -a optimal ${BLOCK_DEVICE} --script set 1 esp on 
+        parted -a optimal ${BLOCK_DEVICE} --script mkpart primary ext4 ${PART_EFI_SIZE}MiB $((PART_EFI_SIZE + PART_BOOT_SIZE))MiB 
     else
 
         log_msg INFO "Début du partitionnement du disque ${BLOCK_DEVICE} en MBR."
         parted -a optimal ${BLOCK_DEVICE} --script mklabel msdos
-        parted -a optimal ${BLOCK_DEVICE} --script mkpart primary ext4 1MiB ${PART_EFI_SIZE}MiB # Partition Boot
-        parted -a optimal ${BLOCK_DEVICE} --script set 1 boot on # Définir la partition boot comme amorçable
+        parted -a optimal ${BLOCK_DEVICE} --script mkpart primary ext4 1MiB ${PART_BOOT_SIZE}MiB 
+        parted -a optimal ${BLOCK_DEVICE} --script set 1 boot on 
     fi
 
 
-    # Création des partitions
-    parted -a optimal ${BLOCK_DEVICE} --script mkpart primary ext4 $((PART_EFI_SIZE))MiB ${PART_ROOT_SIZE}%  # Partition ROOT
+    # Création de la partition ROOT
+    parted -a optimal ${BLOCK_DEVICE} --script mkpart primary ext4 $((PART_EFI_SIZE + PART_BOOT_SIZE))MiB ${PART_ROOT_SIZE}%  
 
 
     # Configuration des systèmes de fichiers
     if [[ "$PART_UEFI" == "y" ]]; then
-        mkfs.vfat -F32 ${BLOCK_DEVICE}1      
-    else
-        mkfs.ext4 -L boot ${BLOCK_DEVICE}1    
-    fi
-            
-    mkfs.ext4 -L root-home ${BLOCK_DEVICE}2
+        # Formater les partitions
+        mkfs.vfat -F32 ${BLOCK_DEVICE}1                 # EFI partition
+        mkfs.ext4 -L boot ${BLOCK_DEVICE}2              # Boot partition
+        mkfs.ext4 -L root-home ${BLOCK_DEVICE}3         # Root partition
 
-    mkdir -p /mnt/gentoo
-    mount ${BLOCK_DEVICE}2 /mnt/gentoo
+        # Monter les partitions
+        mkdir -p /mnt/gentoo
+        mount ${BLOCK_DEVICE}3 /mnt/gentoo              # Monter la partition racine
 
-    if [[ ${PART_UEFI} == "y" ]]; then
+        mkdir -p /mnt/gentoo/boot  
+        mount ${BLOCK_DEVICE}2 /mnt/gentoo/boot         # Monter la partition boot
+
         mkdir -p /mnt/gentoo/boot/EFI      
-        mount ${BLOCK_DEVICE}1 /mnt/gentoo/boot/EFI
+        mount ${BLOCK_DEVICE}1 /mnt/gentoo/boot/EFI     # Monter la partition EFI
     else
-        mkdir -p /mnt/gentoo/boot
-        mount ${BLOCK_DEVICE}1 /mnt/gentoo/boot
+        # Formater les partitions
+        mkfs.ext4 -L boot ${BLOCK_DEVICE}1              # Boot partition
+        mkfs.ext4 -L root-home ${BLOCK_DEVICE}2         # Root partition
+
+        mkdir -p /mnt/gentoo
+        mount ${BLOCK_DEVICE}2 /mnt/gentoo              # Monter la partition racine
+
+        mkdir -p /mnt/gentoo/boot  
+        mount ${BLOCK_DEVICE}1 /mnt/gentoo/boot         # Monter la partition boot
     fi
 
     # Formater et créer le fichier swap
-    dd if=/dev/zero of=/mnt/gentoo/swap bs=1G count=${FILE_SWAP_SIZE}   # Créer un fichier swap de 4 Go
-    chmod 600 /mnt/gentoo/swap                             # Configurer les droits
-    mkswap /mnt/gentoo/swap                                # Formater le fichier swap
+    dd if=/dev/zero of=/mnt/gentoo/swap bs=1G count=${FILE_SWAP_SIZE}/1024   
+    chmod 600 /mnt/gentoo/swap                            
+    mkswap /mnt/gentoo/swap                                
     swapon /mnt/gentoo/swap    
 
 
     log_msg INFO "Partitionnement et formatage du disque terminés avec succès."
     parted -s "$BLOCK_DEVICE" print  # Affiche la table de partitions
 fi    
-
-
 
 # Copie et exécution de l'installation du stage3
 if [ -d "/mnt/gentoo" ]; then

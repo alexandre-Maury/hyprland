@@ -135,24 +135,20 @@ echo ${TIMEZONE} > /etc/timezone
 emerge --config sys-libs/timezone-data
 
 
-log_msg INFO " Génération du fichier /etc/fstab"
+# Créer le fichier fstab
+log_msg INFO "Création du fichier /mnt/gentoo/etc/fstab"
 
+# Ajouter l'entrée EFI si UEFI est utilisé
 if [[ ${PART_UEFI} == "y" ]]; then
-  # Partition EFI
-  UUID=$(blkid -s UUID -o value ${BLOCK_DEVICE}1)
-  echo "UUID=${UUID}   /boot/EFI      vfat    defaults      0  2" >> /etc/fstab
+    echo "${BLOCK_DEVICE}1   /boot/EFI       vfat    defaults,noatime        0 2" >> /etc/fstab
+    echo "${BLOCK_DEVICE}2   /boot           ext4    defaults,noatime        0 2" >> /etc/fstab
+    echo "${BLOCK_DEVICE}3   /               ext4    defaults,noatime        0 1" >> /etc/fstab
 else
-  # Partition BOOT en mode BIOS
-  UUID=$(blkid -s UUID -o value ${BLOCK_DEVICE}1)
-  echo "UUID=${UUID}   /boot          ext4    defaults      0  2" >> /etc/fstab
+    echo "${BLOCK_DEVICE}1   /boot           ext4    defaults,noatime        0 2" >> /etc/fstab
+    echo "${BLOCK_DEVICE}2   /               ext4    defaults,noatime        0 1" >> /etc/fstab
 fi
 
-# Partition root
-UUID=$(blkid -s UUID -o value ${BLOCK_DEVICE}2)
-echo "UUID=${UUID}     /              ext4    defaults      0  1" >> /etc/fstab
-
-# Fichier Swap
-echo "/swap   none   swap   sw    0   0" >> /etc/fstab
+echo "/swap                  none            swap    sw                      0 0" >> /etc/fstab
 
 
 # Installation de linux-firmware
@@ -196,17 +192,27 @@ echo "${USER}:${USER_PASSWORD}" | chpasswd
 
 # Installation de GRUB
 emerge --quiet sys-boot/grub
+emerge --quiet sys-boot/os-prober
+
 if [[ ${PART_UEFI} == "y" ]]; then
-    log_msg INFO "Installation de GRUB pour UEFI"
-    grub-install --target=x86_64-efi --efi-directory=/boot/EFI 
+    log_msg INFO "Système UEFI détecté. Installation de GRUB pour UEFI."
+    grub-install --target=x86_64-efi --efi-directory=/boot/EFI --boot-directory=/boot --removable
+    
+    # Activer os-prober dans la configuration de GRUB
+    echo 'GRUB_DISABLE_OS_PROBER=false' >> /etc/default/grub
+    
     grub-mkconfig -o /boot/grub/grub.cfg
 
 else
-    log_msg INFO "Installation de GRUB pour MBR"
-    grub-install ${BLOCK_DEVICE}1
+    log_msg INFO "Système BIOS détecté. Installation de GRUB pour BIOS."
+    grub-install --target=i386-pc ${BLOCK_DEVICE}
+
+    # Activer os-prober dans la configuration de GRUB
+    echo 'GRUB_DISABLE_OS_PROBER=false' >> /etc/default/grub
+
     grub-mkconfig -o /boot/grub/grub.cfg
 fi
 
-log_msg INFO "=== Installation terminée ==="
 exit
 EOF
+
