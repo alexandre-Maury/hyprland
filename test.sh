@@ -81,3 +81,23 @@ else
     parted -a optimal "${BLOCK_DEVICE}" --script mkpart primary ext4 "$((PART_BOOTMBR_SIZE + PART_ROOT_SIZE_MB))MiB" "${PART_HOME_SIZE}%" # Partition Home
 fi
 
+# Formatage des partitions
+if [[ "$PART_UEFI" == "y" ]]; then
+    log_msg INFO "Formatage de la partition EFI."
+    mkfs.vfat -F32 "${BLOCK_DEVICE}1"  # Partition EFI
+
+    log_msg INFO "Formatage de la partition Racine."
+    mkfs.ext4 -L Racine "${BLOCK_DEVICE}2"        # Partition Racine
+
+    log_msg INFO "Formatage de la partition Home."
+    mkfs.ext4 -L Home "${BLOCK_DEVICE}3"        # Partition Home
+else
+    log_msg INFO "Formatage de la partition MBR."
+    mkfs.ext4 "${BLOCK_DEVICE}1"        # Partition MBR
+
+    log_msg INFO "Formatage de la partition Racine."
+    mkfs.ext4 -L Racine "${BLOCK_DEVICE}2"        # Partition Racine
+
+    log_msg INFO "Formatage de la partition Home."
+    mkfs.ext4 -L Home"${BLOCK_DEVICE}3"        # Partition Home
+fi
