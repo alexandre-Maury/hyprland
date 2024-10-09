@@ -36,8 +36,8 @@ export $ROOT_PASSWORD="$(prompt_value "Créer votre mot de passe root -> par dé
 export $USER="$(prompt_value "Saisir votre nom d'utilisateur -> par exemple :" "$USER")"
 export $USER_PASSWORD="$(prompt_value "Saisir votre mot de passe -> par exemple :" "$USER_PASSWORD")"
 
-export COMMON_FLAGS
-export CPU_FLAGS
+export $COMMON_FLAGS
+export $CPU_FLAGS
 
 # Affiche la configuration pour validation
 log_msg INFO "$(cat <<END
