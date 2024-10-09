@@ -114,6 +114,7 @@ export PS1="[chroot] $PS1"
 # Synchronisation du dépôt ebuild Gentoo
 log_msg INFO "Synchronisation du dépôt ebuild Gentoo"
 emerge-webrsync --quiet
+emerge --sync --quiet
 
 eselect profile list
 
