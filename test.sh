@@ -69,14 +69,14 @@ if [[ "$PART_UEFI" == "y" ]]; then
     parted -a optimal "${BLOCK_DEVICE}" --script mklabel gpt
     parted -a optimal "${BLOCK_DEVICE}" --script mkpart primary fat32 1MiB ${PART_BOOTEFI_SIZE}MiB # Partition EFI
     parted -a optimal "${BLOCK_DEVICE}" --script set 1 esp on 
-    parted -a optimal "${BLOCK_DEVICE}" --script mkpart primary ext4 ${PART_BOOTEFI_SIZE}MiB $((PART_BOOTEFI_SIZE + PART_ROOT_SIZE))MiB # Partition Racine
+    parted -a optimal "${BLOCK_DEVICE}" --script mkpart primary ext4 ${PART_BOOTEFI_SIZE}MiB $((PART_BOOTEFI_SIZE + PART_ROOT_SIZE_MB))MiB # Partition Racine
     parted -a optimal "${BLOCK_DEVICE}" --script mkpart primary ext4 $((PART_BOOTEFI_SIZE + PART_BOOT_SIZE))MiB ${PART_HOME_SIZE}% # Partition Home
 else
     parted -a optimal "${BLOCK_DEVICE}" --script mklabel msdos
     parted -a optimal "${BLOCK_DEVICE}" --script mkpart primary ext4 1MiB ${PART_BOOTMBR_SIZE}MiB # Partition MBR
     parted -a optimal "${BLOCK_DEVICE}" --script set 1 boot on 
-    parted -a optimal "${BLOCK_DEVICE}" --script mkpart primary ext4 ${PART_BOOTMBR_SIZE}MiB $((PART_BOOTMBR_SIZE + PART_ROOT_SIZE))MiB # Partition Racine
-    parted -a optimal "${BLOCK_DEVICE}" --script mkpart primary ext4 $((PART_BOOTMBR_SIZE + PART_ROOT_SIZE))MiB ${PART_HOME_SIZE}% # Partition Home
+    parted -a optimal "${BLOCK_DEVICE}" --script mkpart primary ext4 ${PART_BOOTMBR_SIZE}MiB $((PART_BOOTMBR_SIZE + PART_ROOT_SIZE_MB))MiB # Partition Racine
+    parted -a optimal "${BLOCK_DEVICE}" --script mkpart primary ext4 $((PART_BOOTMBR_SIZE + PART_ROOT_SIZE_MB))MiB ${PART_HOME_SIZE}% # Partition Home
 fi
 
 # Formatage des partitions
