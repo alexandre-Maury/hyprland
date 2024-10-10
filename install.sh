@@ -89,25 +89,26 @@ if prompt_confirm "Effacer tout sur le périphérique cible ? (y/n)"; then
         exit 1
     fi
 
-    # Choisir le type de nettoyage
-    log_msg INFO "Choisissez le type de nettoyage du disque ${BLOCK_DEVICE} :"
-    echo "1. Nettoyage avec des zéros"
-    echo "2. Nettoyage avec des données aléatoires"
-    read -rp "Entrez votre choix (1 ou 2) : " CLEAN_OPTION
+    while true; do
+        read -rp "Nombre de passes d'écriture (vous pouvez augmenter ce nombre pour plus de sécurité) [3 par défaut] : " nbRead
 
-    # Nettoyage du disque
-    if [ "$CLEAN_OPTION" == "1" ]; then
-        log_msg INFO "Nettoyage du disque ${BLOCK_DEVICE} avec des zéros..."
-        dd if=/dev/zero of="${BLOCK_DEVICE}" bs=1M status=progress
-    elif [ "$CLEAN_OPTION" == "2" ]; then
-        log_msg INFO "Nettoyage du disque ${BLOCK_DEVICE} avec des données aléatoires..."
-        dd if=/dev/urandom of="${BLOCK_DEVICE}" bs=1M status=progress
-    else
-        log_msg WARN "Choix invalide. Veuillez relancer le script."
-        exit 1
-    fi
+        # Utiliser 3 comme valeur par défaut si aucune saisie
+        nbRead=${nbRead:-3}
 
-    log_msg INFO "Nettoyage du disque ${BLOCK_DEVICE} terminée."
+        # Vérifier si la valeur saisie est un nombre
+        if [[ "$nbRead" =~ ^[0-9]+$ ]]; then
+            read -rp "Êtes-vous sûr de vouloir écraser ${BLOCK_DEVICE} avec ${nbRead} passes ? (y/n) " confirm
+            if [[ "$confirm" == "y" ]]; then
+                shred -n "${nbRead}" -v "${BLOCK_DEVICE}"
+                break # Sortir de la boucle si un nombre valide a été saisi
+            else
+                echo "Opération annulée."
+            fi
+        else
+            log_msg WARN "Ce n'est pas un nombre valide"
+        fi
+    done
+
 
     # Conversion de PART_ROOT_SIZE de GiB en MiB
     PART_ROOT_SIZE_MB=$((PART_ROOT_SIZE * 1024))
@@ -183,3 +184,5 @@ log_msg INFO "Installation terminée. Vous pouvez redémarrer votre machine."
 log_msg INFO "Aprés redémarrage -> eselect locale list"
 log_msg INFO "Aprés redémarrage -> hostnamectl"
 log_msg INFO "Aprés redémarrage -> passwd" # Set root password
+
+
