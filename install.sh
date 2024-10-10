@@ -49,27 +49,27 @@ export COMMON_FLAGS
 export CPU_FLAGS
 export NUM_CORES
 
-
+clear
 log_msg INFO "Vérification de la configuration :"
-
-log_msg "- Périphérique cible :" "${BLOCK_DEVICE}"
-log_msg "- UEFI Activé :" "${PART_UEFI}"
-log_msg "- Taille de la partition boot EFI en MiB :" "${PART_BOOTEFI_SIZE}MiB"
-log_msg "- Taille de la partition boot MBR en MiB :" "${PART_BOOTMBR_SIZE}MiB"
-log_msg "- Taille de la partition Racine en GiB :" "${PART_ROOT_SIZE}GiB"
-log_msg "- Taille de la partition Home en % :" "${PART_HOME_SIZE}%"
-log_msg "- Taille du fichier swap en MiB :" "${FILE_SWAP_SIZE}MiB"
-log_msg "- Fuseau horaire :" "${TIMEZONE}"
-log_msg "- Locale :" "${LOCALE}"
-log_msg "- Nom d'hôte :" "${HOSTNAME}"
-log_msg "- Interface réseau :" "${NETWORK_INTERFACE}"
-log_msg "- Disposition du clavier :" "${KEYMAP}"
-log_msg "- Votre mot de passe ROOT :" "${ROOT_PASSWORD}"
-log_msg "- Votre utilisateur :" "${USER}"
-log_msg "- Votre mot de passe :" "${USER_PASSWORD}"
+echo ""
+log_msg "- Périphérique cible"                            "${BLOCK_DEVICE}"
+log_msg "- UEFI Activé"                                   "${PART_UEFI}"
+log_msg "- Taille de la partition boot EFI en MiB"        "${PART_BOOTEFI_SIZE} MiB"
+log_msg "- Taille de la partition boot MBR en MiB"        "${PART_BOOTMBR_SIZE} MiB"
+log_msg "- Taille de la partition Racine en GiB"          "${PART_ROOT_SIZE}    GiB"
+log_msg "- Taille de la partition Home en %"              "${PART_HOME_SIZE}    %"
+log_msg "- Taille du fichier swap en MiB"                 "${FILE_SWAP_SIZE}    MiB"
+log_msg "- Fuseau horaire"                                "${TIMEZONE}"
+log_msg "- Locale"                                        "${LOCALE}"
+log_msg "- Nom d'hôte"                                    "${HOSTNAME}"
+log_msg "- Interface réseau"                              "${NETWORK_INTERFACE}"
+log_msg "- Disposition du clavier"                        "${KEYMAP}"
+log_msg "- Votre mot de passe ROOT"                       "${ROOT_PASSWORD}"
+log_msg "- Votre utilisateur"                             "${USER}"
+log_msg "- Votre mot de passe"                            "${USER_PASSWORD}"
 
 # Demande à l'utilisateur de confirmer la configuration
-if ! prompt_confirm "Vérifiez que les informations ci-dessus sont correctes (y/n)"; then
+if ! prompt_confirm "Vérifiez que les informations ci-dessus sont correctes (Y/n)"; then
     log_msg WARN "Annulation de l'installation."
     exit 0
 fi
