@@ -24,15 +24,23 @@ log_msg INFO "Bienvenue dans le script d'installation de Gentoo !"
 # Configuration de l'installateur
 export BLOCK_DEVICE="$(prompt_value "Nom du périphérique cible -> par défaut :" "$BLOCK_DEVICE")"
 export PART_UEFI="$(prompt_value "Voulez-vous utiliser le mode UEFI -> par défaut :" "$PART_UEFI")"
-export PART_BOOTEFI_SIZE="$(prompt_value "Taille de la partition BOOT/EFI en MiB -> par défaut :" "$PART_BOOTEFI_SIZE")"
+
+if [[ "$PART_UEFI" == "y" ]]; then
+    export PART_BOOTEFI_SIZE="$(prompt_value "Taille de la partition BOOT/EFI en MiB -> par défaut :" "$PART_BOOTEFI_SIZE")"
+else
+    export PART_BOOTMBR_SIZE="$(prompt_value "Taille de la partition BOOT/MBR en MiB -> par défaut :" "$PART_BOOTMBR_SIZE")"
+fi
+
 export PART_ROOT_SIZE="$(prompt_value "Taille de la partition Racine en GiB -> par défaut :" "$PART_ROOT_SIZE")"
 export PART_HOME_SIZE="$(prompt_value "Taille de la partition Home en %  -> par défaut :" "$PART_HOME_SIZE")"
 export FILE_SWAP_SIZE="$(prompt_value "Taille du fichier swap en MiB -> par défaut :" "$FILE_SWAP_SIZE")"
+
 export TIMEZONE="$(prompt_value "Fuseau horaire du système -> par défaut :" "$TIMEZONE")"
 export LOCALE="$(prompt_value "Locale du système -> par défaut :" "$LOCALE")"
 export HOSTNAME="$(prompt_value "Nom d'hôte du système -> par défaut :" "$HOSTNAME")"
 export NETWORK_INTERFACE="$(prompt_value "Nom de l'interface réseau -> par défaut :" "$NETWORK_INTERFACE")"
 export KEYMAP="$(prompt_value "Disposition du clavier à utiliser -> par défaut :" "$KEYMAP")"
+
 export ROOT_PASSWORD="$(prompt_value "Créer votre mot de passe root -> par défaut : $ROOT_PASSWORD" "$ROOT_PASSWORD")"
 export USER="$(prompt_value "Saisir votre nom d'utilisateur -> par exemple :" "$USER")"
 export USER_PASSWORD="$(prompt_value "Saisir votre mot de passe -> par exemple :" "$USER_PASSWORD")"
@@ -171,3 +179,12 @@ log_msg INFO "Aprés redémarrage -> eselect locale list"
 log_msg INFO "Aprés redémarrage -> hostnamectl"
 
 
+
+
+if [[ "$PART_UEFI" == "y" ]]; then
+
+
+else
+
+
+fi
