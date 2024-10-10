@@ -14,7 +14,7 @@ packages=("git" "tar" "curl" "wget")
 # DISK=$(lsblk -dno NAME,TYPE | awk '$2 == "disk"' | head -n 1)
 
 BLOCK_DEVICE="$(lsblk -nd -o NAME,TYPE | awk '$2 == "disk" {print "/dev/" $1}')"
-PART_UEFI="y"
+PART_UEFI="y"              # Ou N -> Boot MBR
 PART_BOOTMBR_SIZE="256"    # Taille de la partition BOOT/MBR en MiB : /dev/sda1  ext4(8300)   256MiB   /Boot system partition
 PART_BOOTEFI_SIZE="512"    # Taille de la partition BOOT/EFI en MiB : /dev/sda1  vfat(ef00)   512MiB   /Boot/EFI system partition
 PART_ROOT_SIZE="100"       # Taille de la partition pour / en GiB   : /dev/sda2  ext4(8300)   100G     /Racine partition

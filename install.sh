@@ -49,16 +49,22 @@ export COMMON_FLAGS
 export CPU_FLAGS
 export NUM_CORES
 
+
 clear
 log_msg INFO "Vérification de la configuration :"
 echo ""
 log_msg "- Périphérique cible"                            "${BLOCK_DEVICE}"
 log_msg "- UEFI Activé"                                   "${PART_UEFI}"
-log_msg "- Taille de la partition boot EFI en MiB"        "${PART_BOOTEFI_SIZE} MiB"
-log_msg "- Taille de la partition boot MBR en MiB"        "${PART_BOOTMBR_SIZE} MiB"
-log_msg "- Taille de la partition Racine en GiB"          "${PART_ROOT_SIZE}    GiB"
-log_msg "- Taille de la partition Home en %"              "${PART_HOME_SIZE}    %"
-log_msg "- Taille du fichier swap en MiB"                 "${FILE_SWAP_SIZE}    MiB"
+
+if [[ "$PART_UEFI" == "y" ]]; then
+    log_msg "- Taille de la partition boot EFI en MiB"    "${PART_BOOTEFI_SIZE}MiB"
+else
+    log_msg "- Taille de la partition boot MBR en MiB"    "${PART_BOOTMBR_SIZE}MiB"
+fi
+
+log_msg "- Taille de la partition Racine en GiB"          "${PART_ROOT_SIZE}GiB"
+log_msg "- Taille de la partition Home en %"              "${PART_HOME_SIZE}%"
+log_msg "- Taille du fichier swap en MiB"                 "${FILE_SWAP_SIZE}MiB"
 log_msg "- Fuseau horaire"                                "${TIMEZONE}"
 log_msg "- Locale"                                        "${LOCALE}"
 log_msg "- Nom d'hôte"                                    "${HOSTNAME}"
@@ -67,7 +73,7 @@ log_msg "- Disposition du clavier"                        "${KEYMAP}"
 log_msg "- Votre mot de passe ROOT"                       "${ROOT_PASSWORD}"
 log_msg "- Votre utilisateur"                             "${USER}"
 log_msg "- Votre mot de passe"                            "${USER_PASSWORD}"
-
+echo ""
 # Demande à l'utilisateur de confirmer la configuration
 if ! prompt_confirm "Vérifiez que les informations ci-dessus sont correctes (Y/n)"; then
     log_msg WARN "Annulation de l'installation."
@@ -124,7 +130,7 @@ if prompt_confirm "Effacer tout sur le périphérique cible ? (y/n)"; then
 
         mkdir -p /mnt/{home,boot}
         mount ${BLOCK_DEVICE}3 /mnt/home         # Monter la partition boot  
-        mount ${BLOCK_DEVICE}1 /mnt/boot     # Monter la partition EFI
+        mount ${BLOCK_DEVICE}1 /mnt/boot         # Monter la partition EFI
 
     else
         parted -a optimal "${BLOCK_DEVICE}" --script mklabel msdos
@@ -176,14 +182,4 @@ umount -R /mnt  # Démontage récursif.
 log_msg INFO "Installation terminée. Vous pouvez redémarrer votre machine."
 log_msg INFO "Aprés redémarrage -> eselect locale list"
 log_msg INFO "Aprés redémarrage -> hostnamectl"
-
-
-
-
-if [[ "$PART_UEFI" == "y" ]]; then
-
-
-else
-
-
-fi
+log_msg INFO "Aprés redémarrage -> passwd" # Set root password

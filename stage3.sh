@@ -22,11 +22,71 @@ log_msg INFO "Extraction du stage3..."
 tar xpvf stage3-amd64.tar.xz --xattrs-include='*.*' --numeric-owner --overwrite || { echo "Échec de l'extraction de stage3"; exit 1; }
 rm stage3-amd64.tar.xz
 
+# Copie du repo.conf
+log_msg INFO "=== Configuration de Portage Rsync Repo ==="
+mkdir --parents /mnt/etc/portage/repos.conf
+cp /mnt/usr/share/portage/config/repos.conf /mnt/etc/portage/repos.conf/gentoo.conf
+
+log_msg INFO "=== Entrer dans le namespace systemd ==="
+sed -i -e 's/^root:\*/root:/' /mnt/etc/shadow # Supprimer le mot de passe root avant d'entrer dans le namespace systemd
+systemd-nspawn -bD /mnt # Entrer dans le namespace systemd en utilisant systemd-nspawn
+
+log_msg INFO "=== Configuration des locales ===" 
+echo ${LOCALE} >> /etc/locale.gen
+locale-gen
+localectl set-locale LANG=${LOCALE}
+
+log_msg INFO "=== Configuration du clavier ===" 
+localectl set-keymap ${KEYMAP}
+
+log_msg INFO "=== Configuration du nom d'hôte ===" 
+# echo "hostname=${HOSTNAME}" > /etc/conf.d/hostname
+hostnamectl set-hostname ${HOSTNAME}
+# echo "127.0.1.1 ${HOSTNAME}.localdomain ${HOSTNAME}" >> /etc/hosts
+echo "127.0.0.1 localhost ${HOSTNAME}" >> /etc/hosts
+
+log_msg INFO "=== Définir le fuseau horaire ===" 
+# echo ${TIMEZONE} > /etc/timezone
+# emerge --config sys-libs/timezone-data
+timedatectl set-timezone ${TIMEZONE}
+timedatectl set-ntp true
+
+log_msg INFO "=== Quitter l'espace de noms Systemd ===" 
+poweroff
+
+# Créer le fichier fstab
+log_msg INFO "=== Création du fichier /mnt/etc/fstab ==="
+log_msg WARN "=== Nous allons utiliser genfstab d'Arch Linux pour générer le fichier fstab ==="
+genfstab -U /mnt >> /mnt/etc/fstab
+
+# # Ajouter l'entrée EFI si UEFI est utilisé
+# if [[ ${PART_UEFI} == "y" ]]; then
+#     echo "${BLOCK_DEVICE}1   /boot           vfat    defaults,noatime        0 2" >> /etc/fstab
+#     echo "${BLOCK_DEVICE}2   /root           ext4    defaults,noatime        0 1" >> /etc/fstab
+#     echo "${BLOCK_DEVICE}3   /home           ext4    defaults,noatime        0 1" >> /etc/fstab
+# else
+#     echo "${BLOCK_DEVICE}1   /boot           ext4    defaults,noatime        0 2" >> /etc/fstab
+#     echo "${BLOCK_DEVICE}2   /root           ext4    defaults,noatime        0 1" >> /etc/fstab
+#     echo "${BLOCK_DEVICE}3   /home           ext4    defaults,noatime        0 1" >> /etc/fstab
+# fi
+# echo "/swap                  none            swap    sw                      0 0" >> /etc/fstab
+
+log_msg INFO "=== Montez les systèmes de fichiers nécessaires avant de chrooter dans Gentoo ==="
+mount -t proc none /mnt/proc
+mount --rbind /dev /mnt/dev
+mount --rbind /sys /mnt/sys
 
 
-# Configuration de /mnt/etc/portage/make.conf
-log_msg INFO "Configuration du fichier /mnt/etc/portage/make.conf"
-cat <<EOF > /mnt/etc/portage/make.conf
+log_msg INFO "=== Entrer dans l'environnement Gentoo avec chroot ==="
+chroot /mnt /bin/bash
+source /etc/profile
+export PS1="(chroot) ${PS1}"
+emerge-webrsync
+emerge --sync
+emerge -1 sys-apps/portage
+
+log_msg INFO "=== Configuration du fichier /etc/portage/make.conf ==="
+cat <<EOF > /etc/portage/make.conf
 COMMON_FLAGS="-O2 -pipe -march=native"
 CFLAGS="${COMMON_FLAGS}"
 CXXFLAGS="${COMMON_FLAGS}"
@@ -51,163 +111,143 @@ PKGDIR="/var/cache/binpkgs"
 CHOST="x86_64-pc-linux-gnu"
 EOF
 
-# Ajout des options CPU_FLAGS_* au fichier make.conf
-
 if [[ "$(uname -m)" == "x86_64" ]]; then
-    echo "CPU_FLAGS_X86_64=\"${CPU_FLAGS}\"" >> /mnt/etc/portage/make.conf
+    echo "CPU_FLAGS_X86_64=\"${CPU_FLAGS}\"" >> /etc/portage/make.conf
 else
-    echo "CPU_FLAGS_X86=\"${CPU_FLAGS}\"" >> /mnt/etc/portage/make.conf
+    echo "CPU_FLAGS_X86=\"${CPU_FLAGS}\"" >> /etc/portage/make.conf
 fi
 
 if [[ "${PART_UEFI}" == "y" ]]; then
-    log_msg INFO "Installation de GRUB pour UEFI"
-    echo "GRUB_PLATFORMS=\"efi-64\"" >> /mnt/etc/portage/make.conf
+    log_msg INFO "=== Installation de GRUB pour UEFI dans /etc/portage/make.conf ==="
+    echo "GRUB_PLATFORMS=\"efi-64\"" >> /etc/portage/make.conf
 else
-    log_msg INFO "Installation de GRUB pour MBR"
-    echo "GRUB_PLATFORMS=\"pc\"" >> /mnt/etc/portage/make.conf
+    log_msg INFO "=== Installation de GRUB pour MBR dans /etc/portage/make.conf ==="
+    echo "GRUB_PLATFORMS=\"pc\"" >> /etc/portage/make.conf
 fi
 
-# Copie du repo.conf
-log_msg INFO "=== Copie du repo.conf ==="
-mkdir --parents /mnt/etc/portage/repos.conf
-cp /mnt/usr/share/portage/config/repos.conf /mnt/etc/portage/repos.conf/gentoo.conf
+log_msg INFO "=== OPTIONNEL (RECOMMANDÉ) : Reconstruire les paquets avec de nouveaux drapeaux USE ==="
+emerge -auDN @world
 
-# Copie du DNS
-log_msg INFO "=== Copie du DNS ==="
-cp -L /etc/resolv.conf /mnt/etc
+log_msg INFO "=== Installer le noyau et les outils système ==="
+emerge gentoo-sources linux-firmware genkernel grub:2 os-prober dosfstools
 
-# Montage des systèmes de fichiers
-log_msg INFO "=== Montage des systèmes de fichiers ==="
-mount --rbind /dev /mnt/dev 
-mount --make-rslave /mnt/dev 
-mount -t proc /proc /mnt/proc 
-mount --rbind /sys /mnt/sys 
-mount --make-rslave /mnt/sys 
-mount --rbind /tmp /mnt/tmp 
-mount --types tmpfs tmpfs /mnt/run 
+log_msg INFO "=== Configurer le réseau Systemd ==="
+cat <<EOF > /etc/systemd/network/20-wired.network
+[Match]
+Name=${NETWORK_INTERFACE}
+ 
+[Network]
+DHCP=yes
+EOF
 
-if [[ -L /dev/shm ]]; then
-    rm /dev/shm
-    mkdir /dev/shm
-    log_msg INFO "/dev/shm a été supprimé et recréé en tant que répertoire."
-fi
+systemctl enable systemd-networkd.service
+systemctl enable systemd-resolved.service
 
-mount --types tmpfs --options nosuid,nodev,noexec shm /dev/shm || { log_msg ERROR "Erreur lors du montage de /dev/shm"; exit 1; }
-chmod 1777 /dev/shm
+log_msg INFO "=== Configurer et compiler le noyau ==="
+genkernel --menuconfig all
 
-# Changement de racine (chroot)
-log_msg INFO "=== Changement de racine (chroot) ==="
-chroot /mnt/ /bin/bash << EOF
-
-source fonction.sh
-source config.sh  # Importation des configurations
-
-env-update && source /etc/profile
-
-export PS1="[chroot] $PS1"
-
-# Synchronisation du dépôt ebuild Gentoo
-log_msg INFO "Synchronisation du dépôt ebuild Gentoo"
-emerge-webrsync --quiet
-emerge --sync --quiet
-
-eselect profile list
-
-mkdir /etc/portage/package.license
-echo "*/* *" >> /etc/portage/package.license/custom
-
-
-log_msg INFO "Mise à jour de l'ensemble @world"
-emerge -avuDN @world --quiet
-
-log_msg INFO "Configuration des locales (glibc)" 
-echo ${LOCALE} >> /etc/locale.gen
-locale-gen
-
-# Configuration du fuseau horaire et des locales
-log_msg INFO "Configuration du fuseau horaire (glibc)"
-echo ${TIMEZONE} > /etc/timezone
-emerge --config sys-libs/timezone-data
-
-
-# Créer le fichier fstab
-log_msg INFO "Création du fichier /mnt/etc/fstab"
-
-# Ajouter l'entrée EFI si UEFI est utilisé
-if [[ ${PART_UEFI} == "y" ]]; then
-    echo "${BLOCK_DEVICE}1   /boot/EFI       vfat    defaults,noatime        0 2" >> /etc/fstab
-    echo "${BLOCK_DEVICE}2   /boot           ext4    defaults,noatime        0 2" >> /etc/fstab
-    echo "${BLOCK_DEVICE}3   /               ext4    defaults,noatime        0 1" >> /etc/fstab
-else
-    echo "${BLOCK_DEVICE}1   /boot           ext4    defaults,noatime        0 2" >> /etc/fstab
-    echo "${BLOCK_DEVICE}2   /               ext4    defaults,noatime        0 1" >> /etc/fstab
-fi
-
-echo "/swap                  none            swap    sw                      0 0" >> /etc/fstab
-
-
-# Installation de linux-firmware
-emerge --quiet sys-kernel/linux-firmware
-
-# Installation du noyau binaire
-log_msg INFO "Installation du noyau binaire"
-emerge --quiet sys-kernel/gentoo-kernel-bin
-emerge --config sys-kernel/gentoo-kernel-bin
-
-
-# Configuration réseau
-log_msg INFO "Configuration du nom d'hôte"
-echo "hostname=${HOSTNAME}" > /etc/conf.d/hostname
-
-log_msg INFO "Configuration des hôtes" 
-echo "127.0.0.1 localhost ${HOSTNAME}" >> /etc/hosts
-echo "::1       localhost ${HOSTNAME}" >> /etc/hosts
-
-log_msg INFO "Installation de dhcpcd"
-emerge --quiet net-misc/dhcpcd
-systemctl enable dhcpcd
-
-log_msg INFO "Installation du sans-fil"
-emerge --quiet net-wireless/iw net-wireless/wpa_supplicant
-
-log_msg INFO "Définition du mot de passe root" 
-echo "root:${ROOT_PASSWORD}" | chpasswd
-
-log_msg INFO "Installation de sudo"
-emerge --quiet app-admin/sudo
-
-log_msg INFO "Création de l'utilisateur ${USER}"
-# useradd -m -G users,wheel -s /bin/bash ${USER}
-# echo "${USER}:${USER_PASSWORD}" | chpasswd
-# echo "${USER} ALL=(ALL) ALL" >> /etc/sudoers
-
-useradd -m -G users,wheel,audio,cdrom,video,portage -s /bin/bash ${USER}
-echo "${USER}:${USER_PASSWORD}" | chpasswd
-
-
-# Installation de GRUB
-emerge --quiet sys-boot/grub
-emerge --quiet sys-boot/os-prober
+log_msg INFO "=== Configurer et installer Grub ==="
+echo 'GRUB_DISABLE_OS_PROBER=false' >> /etc/default/grub
+echo 'GRUB_CMDLINE_LINUX="init=/usr/lib/systemd/systemd"' >> /etc/default/grub
 
 if [[ ${PART_UEFI} == "y" ]]; then
     log_msg INFO "Système UEFI détecté. Installation de GRUB pour UEFI."
-    grub-install --target=x86_64-efi --efi-directory=/boot
-    
-    # Activer os-prober dans la configuration de GRUB
-    echo 'GRUB_DISABLE_OS_PROBER=false' >> /etc/default/grub
-    
+
+    grub-install --target=x86_64-efi --efi-directory=/boot    
     grub-mkconfig -o /boot/grub/grub.cfg
 
 else
     log_msg INFO "Système BIOS détecté. Installation de GRUB pour BIOS."
+    
     grub-install --target=i386-pc ${BLOCK_DEVICE}
-
-    # Activer os-prober dans la configuration de GRUB
-    echo 'GRUB_DISABLE_OS_PROBER=false' >> /etc/default/grub
-
     grub-mkconfig -o /boot/grub/grub.cfg
 fi
 
 exit
-EOF
+
+
+
+
+
+
+# # Changement de racine (chroot)
+# log_msg INFO "=== Changement de racine (chroot) ==="
+# chroot /mnt/ /bin/bash << EOF
+
+# source fonction.sh
+# source config.sh  # Importation des configurations
+
+# env-update && source /etc/profile
+
+# export PS1="[chroot] $PS1"
+
+# # Synchronisation du dépôt ebuild Gentoo
+# log_msg INFO "Synchronisation du dépôt ebuild Gentoo"
+# emerge-webrsync --quiet
+# emerge --sync --quiet
+
+# eselect profile list
+
+# mkdir /etc/portage/package.license
+# echo "*/* *" >> /etc/portage/package.license/custom
+
+
+# log_msg INFO "Mise à jour de l'ensemble @world"
+# emerge -avuDN @world --quiet
+
+# # Installation de linux-firmware
+# emerge --quiet sys-kernel/linux-firmware
+
+# # Installation du noyau binaire
+# log_msg INFO "Installation du noyau binaire"
+# emerge --quiet sys-kernel/gentoo-kernel-bin
+# emerge --config sys-kernel/gentoo-kernel-bin
+
+# log_msg INFO "Installation de dhcpcd"
+# emerge --quiet net-misc/dhcpcd
+# systemctl enable dhcpcd
+
+# log_msg INFO "Installation du sans-fil"
+# emerge --quiet net-wireless/iw net-wireless/wpa_supplicant
+
+# log_msg INFO "Définition du mot de passe root" 
+# echo "root:${ROOT_PASSWORD}" | chpasswd
+
+# log_msg INFO "Installation de sudo"
+# emerge --quiet app-admin/sudo
+
+# log_msg INFO "Création de l'utilisateur ${USER}"
+# # useradd -m -G users,wheel -s /bin/bash ${USER}
+# # echo "${USER}:${USER_PASSWORD}" | chpasswd
+# # echo "${USER} ALL=(ALL) ALL" >> /etc/sudoers
+
+# useradd -m -G users,wheel,audio,cdrom,video,portage -s /bin/bash ${USER}
+# echo "${USER}:${USER_PASSWORD}" | chpasswd
+
+
+# # Installation de GRUB
+# emerge --quiet sys-boot/grub
+# emerge --quiet sys-boot/os-prober
+
+# if [[ ${PART_UEFI} == "y" ]]; then
+#     log_msg INFO "Système UEFI détecté. Installation de GRUB pour UEFI."
+#     grub-install --target=x86_64-efi --efi-directory=/boot
+    
+#     # Activer os-prober dans la configuration de GRUB
+#     echo 'GRUB_DISABLE_OS_PROBER=false' >> /etc/default/grub
+    
+#     grub-mkconfig -o /boot/grub/grub.cfg
+
+# else
+#     log_msg INFO "Système BIOS détecté. Installation de GRUB pour BIOS."
+#     grub-install --target=i386-pc ${BLOCK_DEVICE}
+
+#     # Activer os-prober dans la configuration de GRUB
+#     echo 'GRUB_DISABLE_OS_PROBER=false' >> /etc/default/grub
+
+#     grub-mkconfig -o /boot/grub/grub.cfg
+# fi
+
+# exit
+# EOF
 
