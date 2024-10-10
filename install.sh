@@ -26,9 +26,9 @@ export BLOCK_DEVICE="$(prompt_value "Nom du périphérique cible -> par défaut 
 export PART_UEFI="$(prompt_value "Voulez-vous utiliser le mode UEFI -> par défaut :" "$PART_UEFI")"
 
 if [[ "$PART_UEFI" == "y" ]]; then
-    export PART_BOOTEFI_SIZE="$(prompt_value "Taille de la partition BOOT/EFI en MiB -> par défaut :" "$PART_BOOTEFI_SIZE")"
+    export PART_BOOTEFI_SIZE="$(prompt_value "Taille de la partition EFI en MiB -> par défaut :" "$PART_BOOTEFI_SIZE")"
 else
-    export PART_BOOTMBR_SIZE="$(prompt_value "Taille de la partition BOOT/MBR en MiB -> par défaut :" "$PART_BOOTMBR_SIZE")"
+    export PART_BOOTMBR_SIZE="$(prompt_value "Taille de la partition BOOT en MiB -> par défaut :" "$PART_BOOTMBR_SIZE")"
 fi
 
 export PART_ROOT_SIZE="$(prompt_value "Taille de la partition Racine en GiB -> par défaut :" "$PART_ROOT_SIZE")"
@@ -49,25 +49,24 @@ export COMMON_FLAGS
 export CPU_FLAGS
 export NUM_CORES
 
-# Affiche la configuration pour validation
-log_msg INFO "$(cat <<END
-Vérification de la configuration :
-  - Périphérique cible              :           ${BLOCK_DEVICE}
-  - UEFI utilisé                    :           ${PART_UEFI}
-  - Taille de la partition BOOT/EFI :           ${PART_BOOTEFI_SIZE}MiB
-  - Taille de la partition Racine   :           ${PART_ROOT_SIZE}GiB 
-  - Taille de la partition Home     :           ${PART_HOME_SIZE}%
-  - Taille du fichier swap          :           ${FILE_SWAP_SIZE}MiB 
-  - Fuseau horaire                  :           ${TIMEZONE}
-  - Locale                          :           ${LOCALE}
-  - Nom d'hôte                      :           ${HOSTNAME}
-  - Interface réseau                :           ${NETWORK_INTERFACE}
-  - Disposition du clavier          :           ${KEYMAP}
-  - Utilisateur root                :           ${ROOT_PASSWORD}
-  - Votre utilisateur               :           ${USER}
-  - Votre mot de passe              :           ${USER_PASSWORD}
-END
-)"
+
+log_msg INFO "Vérification de la configuration :"
+
+log_msg "- Périphérique cible :" ${BLOCK_DEVICE}
+log_msg "- UEFI Activé " ${PART_UEFI}
+log_msg "- Taille de la partition boot EFI en MiB" ${PART_BOOTEFI_SIZE}MiB
+log_msg "- Taille de la partition boot MBR en MiB" ${PART_BOOTMBR_SIZE}MiB
+log_msg "- Taille de la partition Racine en GiB" ${PART_ROOT_SIZE}GiB 
+log_msg "- Taille de la partition Home en %" ${PART_HOME_SIZE}%
+log_msg "- Taille du fichier swap en MiB" ${FILE_SWAP_SIZE}MiB
+log_msg "- Fuseau horaire " ${TIMEZONE}
+log_msg "- Locale " ${LOCALE}
+log_msg "- Nom d'hôte " ${HOSTNAME}
+log_msg "- Interface réseau " ${NETWORK_INTERFACE}
+log_msg "- Disposition du clavier " ${KEYMAP}
+log_msg "- Votre mot de passe ROOT " ${ROOT_PASSWORD}
+log_msg "- Votre utilisateur " ${USER}
+log_msg "- Votre mot de passe " ${USER_PASSWORD}
 
 # Demande à l'utilisateur de confirmer la configuration
 if ! prompt_confirm "Vérifiez que les informations ci-dessus sont correctes (y/n)"; then
