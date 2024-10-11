@@ -30,6 +30,7 @@ cp /mnt/usr/share/portage/config/repos.conf /mnt/etc/portage/repos.conf/gentoo.c
 log_msg INFO "=== Entrer dans le namespace systemd ==="
 sed -i -e 's/^root:\*/root:/' /mnt/etc/shadow # Supprimer le mot de passe root avant d'entrer dans le namespace systemd
 
+# systemd-nspawn --private-users=pick -bD /mnt << EOF
 systemd-nspawn -bD /mnt /bin/bash << EOF # Entrer dans le namespace systemd en utilisant systemd-nspawn
 log_msg INFO "=== Configuration des locales ===" 
 echo ${LOCALE} >> /etc/locale.gen
