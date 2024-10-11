@@ -75,23 +75,125 @@ done
 
 log_success "TERMINÉ"
 
-# Afficher le disque sélectionné ou saisi manuellement
-echo "Vous avez choisi : $DISK"
+##############################################################################
+## Select shred                                                         
+##############################################################################
+
+# if [[ "$SHRED" == "On" ]]; then
+#     export SHRED_PASS="$(prompt_value "Nombre de passe pour le netoyage de /dev/$DISK [ par défaut : ]" "$SHRED_PASS")"
+#     log_success "TERMINÉ"
+# fi
+
+if [[ "$SHRED" == "On" ]]; then
+    while true; do
+        # Demande à l'utilisateur de saisir le nombre de passes
+        export SHRED_PASS="$(prompt_value "Nombre de passes pour le nettoyage de /dev/$DISK [par défaut : $SHRED_PASS] : " "$SHRED_PASS")"
+        
+        # Vérifie si la valeur saisie est un nombre
+        if [[ "$SHRED_PASS" =~ ^[0-9]+$ ]]; then
+            log_success "TERMINÉ"
+            break  # Sort de la boucle si la saisie est correcte
+        else
+            log_warning "veuillez saisir un nombre valide."  # Message d'erreur
+        fi
+    done
+fi
 
 
 ##############################################################################
-## Select part                                                          
+## Select size                                                         
 ##############################################################################
 log_info "Sélectionner les tailles de vos partitions :"
 
 if [[ -n $(ls /sys/firmware/efi/efivars 2>/dev/null) ]];then
-
     export MODE="UEFI"
-    echo "vous est en mode : $MODE"
-
+    log_info "vous est en mode : $MODE"
+    export EFI_SIZE="$(prompt_value "Taille de la partition EFI en MiB [ par défaut : ]" "$EFI_SIZE")"
 else
-
     export MODE="BIOS"
-    echo "vous est en mode : $MODE"
+    log_info "vous est en mode : $MODE"
+    export MBR_SIZE="$(prompt_value "Taille de la partition BIOS en MiB [ par défaut : ]" "$MBR_SIZE")"
+fi
 
+export ROOT_SIZE="$(prompt_value "Taille de la partition Racine en GiB [ par défaut : ]" "$ROOT_SIZE")"
+export HOME_SIZE="$(prompt_value "Taille de la partition Home en %  [ par défaut : ]" "$HOME_SIZE")"
+
+if [[ "$SWAP" == "On" ]]; then
+    if [[ "$SWAP_FILE" == "On" ]]; then
+        export SWAP_SIZE="$(prompt_value "Taille du fichier Swap en MiB [ par défaut : ]" "$SWAP_SIZE")"
+    else
+        export SWAP_SIZE="$(prompt_value "Taille de la partition Swap en MiB [ par défaut : ]" "$SWAP_SIZE")"
+    fi
+fi
+
+log_success "TERMINÉ"
+
+##############################################################################
+## Select config                                                         
+##############################################################################
+log_info "Sélectionner vos configurations systéme :"
+
+export TIMEZONE="$(prompt_value "Fuseau horaire du système [ par défaut : ]" "$TIMEZONE")"
+export LOCALE="$(prompt_value "Locale du système [ par défaut : ]" "$LOCALE")"
+export HOSTNAME="$(prompt_value "Nom d'hôte du système [ par défaut : ]" "$HOSTNAME")"
+export INTERFACE="$(prompt_value "Nom de l'interface réseau [ par défaut : ]" "$NETWORK_INTERFACE")"
+export KEYMAP="$(prompt_value "Disposition du clavier à utiliser [ par défaut : ]" "$KEYMAP")"
+
+export ROOT_PASSWORD="$(prompt_value "Créer votre mot de passe root [ par défaut : ]" "$ROOT_PASSWORD")"
+export USERNAME="$(prompt_value "Saisir votre nom d'utilisateur [ par défaut : ]" "$USERNAME")"
+export USERNAME_PASSWORD="$(prompt_value "Saisir votre mot de passe [ par défaut : ]" "$USERNAME_PASSWORD")"
+
+export COMMON_FLAGS
+export CPU_FLAGS
+export NUM_CORES
+
+log_success "TERMINÉ"
+
+##############################################################################
+## Check config                                                         
+##############################################################################
+log_info "Vérification de la configuration :"
+echo ""
+echo "- Périphérique cible"                               "/dev/${DISK}"
+echo "- Mode Activé"                                      "${MODE}"
+
+if [[ "${MODE}" == "UEFI" ]]; then
+    echo "- Taille de la partition EFI en MiB"            "${EFI_SIZE}MiB"
+else 
+    echo "- Taille de la partition BIOS en MiB"           "${MBR_SIZE}MiB"
+fi
+
+echo "- Taille de la partition Racine en GiB"             "${ROOT_SIZE}GiB"
+echo "- Taille de la partition Home en %"                 "${HOME_SIZE}%"
+
+if [[ "$SWAP" == "On" ]]; then
+    if [[ "$SWAP_FILE" == "On" ]]; then
+        echo "- Taille du fichier swap en MiB"            "${SWAP_SIZE}MiB"
+    else
+        echo "- Taille de la partition Swap en MiB"       "${SWAP_SIZE}MiB"
+    fi
+fi
+
+echo "- Fuseau horaire"                                   "${TIMEZONE}"
+echo "- Locale"                                           "${LOCALE}"
+echo "- Nom d'hôte"                                       "${HOSTNAME}"
+echo "- Interface"                                        "${INTERFACE}"
+echo "- Disposition du clavier"                           "${KEYMAP}"
+echo "- Votre mot de passe ROOT"                          "${ROOT_PASSWORD}"
+echo "- Votre utilisateur"                                "${USERNAME}"
+echo "- Votre mot de passe"                               "${USERNAME_PASSWORD}"
+echo ""
+
+# Demande à l'utilisateur de confirmer la configuration
+if ! prompt_confirm "Vérifiez que les informations ci-dessus sont correctes (Y/n)"; then
+    log_error "Annulation de l'installation."
+    exit 0
+fi
+
+##############################################################################
+## Check config                                                         
+##############################################################################
+
+if [[ "$SHRED" == "On" ]]; then
+    shred -n "${SHRED_PASS}" -v "/dev/${DISK}"
 fi
