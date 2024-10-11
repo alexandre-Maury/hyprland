@@ -203,7 +203,7 @@ if [[ "$SHRED" == "On" ]]; then
 fi
 
 ##############################################################################
-## Creating partitions                                                       
+## Creating partitions + Formatting + Mount Point                                                       
 ##############################################################################
 
 # Conversion de PART_ROOT_SIZE de GiB en MiB
@@ -211,19 +211,24 @@ ROOT_SIZE_MB=$((ROOT_SIZE * 1024))
 
 if [[ "${MODE}" == "UEFI" ]]; then
 
+    log_info "Création : Table de partitions GPT"
     parted --script -a optimal /dev/"${DISK}" mklabel gpt
+
+    log_info "Création : Table de partitions EFI"
     parted --script -a optimal /dev/"${DISK}" mkpart primary fat32 1MiB ${EFI_SIZE}MiB # Partition EFI
     parted --script /dev/"${DISK}" set 1 esp on
 
     if [[ "$SWAP" == "On" ]]; then
         if [[ "$SWAP_FILE" == "On" ]]; then
 
-            log_info "Création du fichier Swap"
-
+            
+            log_info "Création : Partition Racine"
             parted --script -a optimal /dev/"${DISK}" mkpart ext4 ${EFI_SIZE}MiB $((EFI_SIZE + ROOT_SIZE_MB))MiB # Partition Racine
+
+            log_info "Création : Partition Home"
             parted --script -a optimal /dev/"${DISK}" mkpart ext4 $((EFI_SIZE + ROOT_SIZE_MB))MiB ${HOME_SIZE}%  # Partition Home
 
-            # Création du fichier de swap
+            log_info "Création : fichier Swap"
             dd if=/dev/zero of=$MOUNT_POINT/swap bs=1M count=${SWAP_SIZE}  
             chmod 600 $MOUNT_POINT/swap                            
             mkswap $MOUNT_POINT/swap                                
@@ -233,18 +238,24 @@ if [[ "${MODE}" == "UEFI" ]]; then
 
         else
 
-            log_info "Création d'une partition Swap"
-
-            # Création des partition
+            log_info "Création : Partition Swap"
             parted --script -a optimal /dev/"${DISK}" mkpart linux-swap ${EFI_SIZE}MiB $((EFI_SIZE + SWAP_SIZE))MiB  # Partition Swap
+
+            log_info "Création : Partition Racine"
             parted --script -a optimal /dev/"${DISK}" mkpart ext4 $((EFI_SIZE + SWAP_SIZE))MiB ${ROOT_SIZE_MB}MiB    # Partition Racine
+
+            log_info "Création : Partition Home"
             parted --script -a optimal /dev/"${DISK}" mkpart ext4 $((EFI_SIZE + ROOT_SIZE_MB))MiB ${HOME_SIZE}%      # Partition Home
 
             # PARTITIONS=$(lsblk --list --noheadings /dev/"${DISK}" | tail -n +2 | awk '{print $1}')
         fi
 
     else # Swap Off
+        
+        log_info "Création : Partition Racine"
         parted --script -a optimal /dev/"${DISK}" mkpart ext4 ${EFI_SIZE}MiB $((EFI_SIZE + ROOT_SIZE_MB))MiB # Partition Racine
+
+        log_info "Création : Partition Home"
         parted --script -a optimal /dev/"${DISK}" mkpart ext4 $((EFI_SIZE + ROOT_SIZE_MB))MiB ${HOME_SIZE}%  # Partition Home
 
         # PARTITIONS=$(lsblk --list --noheadings /dev/"${DISK}" | tail -n +2 | awk '{print $1}')
@@ -257,10 +268,62 @@ if [[ "${MODE}" == "UEFI" ]]; then
     echo "$PARTITIONS" 
 
     
-else 
+else # BIOS
 
+    log_info "Création : Table de partitions MBR"
     parted --script -a optimal /dev/"${DISK}" mklabel msdos
+
+    log_info "Création : Table de partitions BIOS"
     parted -a optimal /dev/"${DISK}" mkpart primary ext4 1MiB ${MBR_SIZE}MiB # Partition BIOS
+
+    if [[ "$SWAP" == "On" ]]; then
+
+        if [[ "$SWAP_FILE" == "On" ]]; then
+
+            log_info "Création : Partition Racine"
+            parted --script -a optimal /dev/"${DISK}" mkpart ext4 ${MBR_SIZE}MiB $((MBR_SIZE + ROOT_SIZE_MB))MiB # Partition Racine
+
+            log_info "Création : Partition Home"
+            parted --script -a optimal /dev/"${DISK}" mkpart ext4 $((MBR_SIZE + ROOT_SIZE_MB))MiB ${HOME_SIZE}%  # Partition Home
+
+            log_info "Création : fichier Swap"
+            dd if=/dev/zero of=$MOUNT_POINT/swap bs=1M count=${SWAP_SIZE}  
+            chmod 600 $MOUNT_POINT/swap                            
+            mkswap $MOUNT_POINT/swap                                
+            swapon $MOUNT_POINT/swap  
+
+            # PARTITIONS=$(lsblk --list --noheadings /dev/"${DISK}" | tail -n +2 | awk '{print $1}')
+
+        else
+
+            log_info "Création : Partition Swap"
+            parted --script -a optimal /dev/"${DISK}" mkpart linux-swap ${MBR_SIZE}MiB $((MBR_SIZE + SWAP_SIZE))MiB  # Partition Swap
+
+            log_info "Création : Partition Racine"
+            parted --script -a optimal /dev/"${DISK}" mkpart ext4 $((MBR_SIZE + SWAP_SIZE))MiB ${ROOT_SIZE_MB}MiB    # Partition Racine
+
+            log_info "Création : Partition Home"
+            parted --script -a optimal /dev/"${DISK}" mkpart ext4 $((MBR_SIZE + ROOT_SIZE_MB))MiB ${HOME_SIZE}%      # Partition Home
+
+            # PARTITIONS=$(lsblk --list --noheadings /dev/"${DISK}" | tail -n +2 | awk '{print $1}')
+        fi
+
+    else # Swap Off
+
+        log_info "Création : Partition Racine"
+        parted --script -a optimal /dev/"${DISK}" mkpart ext4 ${MBR_SIZE}MiB $((MBR_SIZE + ROOT_SIZE_MB))MiB # Partition Racine
+
+        log_info "Création : Partition Home"
+        parted --script -a optimal /dev/"${DISK}" mkpart ext4 $((MBR_SIZE + ROOT_SIZE_MB))MiB ${HOME_SIZE}%  # Partition Home
+
+        # PARTITIONS=$(lsblk --list --noheadings /dev/"${DISK}" | tail -n +2 | awk '{print $1}')
+        
+    fi
+
+    # RESTE FORMATING
+    PARTITIONS=$(lsblk --list --noheadings /dev/"${DISK}" | tail -n +2 | awk '{print $1}')
+
+    echo "$PARTITIONS" 
 
     
 fi
