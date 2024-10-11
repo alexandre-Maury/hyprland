@@ -29,8 +29,8 @@ cp /mnt/usr/share/portage/config/repos.conf /mnt/etc/portage/repos.conf/gentoo.c
 
 log_msg INFO "=== Entrer dans le namespace systemd ==="
 sed -i -e 's/^root:\*/root:/' /mnt/etc/shadow # Supprimer le mot de passe root avant d'entrer dans le namespace systemd
-systemd-nspawn -bD /mnt # Entrer dans le namespace systemd en utilisant systemd-nspawn
 
+systemd-nspawn -bD /mnt /bin/bash << EOF # Entrer dans le namespace systemd en utilisant systemd-nspawn
 log_msg INFO "=== Configuration des locales ===" 
 echo ${LOCALE} >> /etc/locale.gen
 locale-gen
@@ -53,6 +53,7 @@ timedatectl set-ntp true
 
 log_msg INFO "=== Quitter l'espace de noms Systemd ===" 
 poweroff
+EOF
 
 # Créer le fichier fstab
 log_msg INFO "=== Création du fichier /mnt/etc/fstab ==="
@@ -63,7 +64,7 @@ genfstab -U /mnt >> /mnt/etc/fstab
 # if [[ ${PART_UEFI} == "y" ]]; then
 #     echo "${BLOCK_DEVICE}1   /boot           vfat    defaults,noatime        0 2" >> /etc/fstab
 #     echo "${BLOCK_DEVICE}2   /root           ext4    defaults,noatime        0 1" >> /etc/fstab
-#     echo "${BLOCK_DEVICE}3   /home           ext4    defaults,noatime        0 1" >> /etc/fstab
+#     echo "${BLOCK_DEVICE}3   /home           ext4    defaults,noatime        0 2" >> /etc/fstab
 # else
 #     echo "${BLOCK_DEVICE}1   /boot           ext4    defaults,noatime        0 2" >> /etc/fstab
 #     echo "${BLOCK_DEVICE}2   /root           ext4    defaults,noatime        0 1" >> /etc/fstab
@@ -78,7 +79,7 @@ mount --rbind /sys /mnt/sys
 
 
 log_msg INFO "=== Entrer dans l'environnement Gentoo avec chroot ==="
-chroot /mnt /bin/bash
+chroot /mnt /bin/bash << EOF
 source /etc/profile
 export PS1="(chroot) ${PS1}"
 emerge-webrsync
@@ -86,30 +87,29 @@ emerge --sync
 emerge -1 sys-apps/portage
 
 log_msg INFO "=== Configuration du fichier /etc/portage/make.conf ==="
-cat <<EOF > /etc/portage/make.conf
-COMMON_FLAGS="-O2 -pipe -march=native"
-CFLAGS="${COMMON_FLAGS}"
-CXXFLAGS="${COMMON_FLAGS}"
-FCFLAGS="${COMMON_FLAGS}"
-FFLAGS="${COMMON_FLAGS}"
-USE=""
-MAKEOPTS="-j${NUM_CORES}"
-L10N="${LANGUAGE}"
-VIDEO_CARDS="fbdev vesa intel i915 nvidia nouveau radeon amdgpu radeonsi virtualbox vmware qxl"
-INPUT_DEVICES="libinput synaptics keyboard mouse joystick wacom"
-EMERGE_DEFAULT_OPTS="--quiet-build=y"
-PORTAGE_SCHEDULING_POLICY="idle"
-ACCEPT_KEYWORDS="amd64"
-ACCEPT_LICENSE="*"
-SYNC="rsync://rsync.gentoo.org/gentoo-portage"
-FEATURES="buildpkg"
-PORTAGE_NICENESS=19
-PORTAGE_TMPDIR="/var/tmp"
-GENTOO_MIRRORS="http://ftp.snt.utwente.nl/pub/os/linux/gentoo/ http://mirror.leaseweb.com/gentoo/"
-DISTDIR="/var/cache/distfiles"
-PKGDIR="/var/cache/binpkgs"
-CHOST="x86_64-pc-linux-gnu"
-EOF
+
+echo 'COMMON_FLAGS="-O2 -pipe -march=native"' >> /etc/portage/make.conf
+echo 'CFLAGS="${COMMON_FLAGS}"' >> /etc/portage/make.conf
+echo 'CXXFLAGS="${COMMON_FLAGS}"' >> /etc/portage/make.conf
+echo 'FCFLAGS="${COMMON_FLAGS}"' >> /etc/portage/make.conf
+echo 'FFLAGS="${COMMON_FLAGS}"' >> /etc/portage/make.conf
+echo 'USE=""' >> /etc/portage/make.conf
+echo 'MAKEOPTS="-j${NUM_CORES}"' >> /etc/portage/make.conf
+echo 'L10N="${LANGUAGE}"' >> /etc/portage/make.conf
+echo 'VIDEO_CARDS="fbdev vesa intel i915 nvidia nouveau radeon amdgpu radeonsi virtualbox vmware qxl"' >> /etc/portage/make.conf
+echo 'INPUT_DEVICES="libinput synaptics keyboard mouse joystick wacom"' >> /etc/portage/make.conf
+echo 'EMERGE_DEFAULT_OPTS="--quiet-build=y"' >> /etc/portage/make.conf
+echo 'PORTAGE_SCHEDULING_POLICY="idle"' >> /etc/portage/make.conf
+echo 'ACCEPT_KEYWORDS="amd64"' >> /etc/portage/make.conf
+echo 'ACCEPT_LICENSE="*"' >> /etc/portage/make.conf
+echo 'SYNC="rsync://rsync.gentoo.org/gentoo-portage"' >> /etc/portage/make.conf
+echo 'FEATURES="buildpkg"' >> /etc/portage/make.conf
+echo 'PORTAGE_NICENESS=19' >> /etc/portage/make.conf
+echo 'PORTAGE_TMPDIR="/var/tmp"' >> /etc/portage/make.conf
+echo 'GENTOO_MIRRORS="http://ftp.snt.utwente.nl/pub/os/linux/gentoo/ http://mirror.leaseweb.com/gentoo/"' >> /etc/portage/make.conf
+echo 'DISTDIR="/var/cache/distfiles"' >> /etc/portage/make.conf
+echo 'PKGDIR="/var/cache/binpkgs"' >> /etc/portage/make.conf
+echo 'CHOST="x86_64-pc-linux-gnu"' >> /etc/portage/make.conf
 
 if [[ "$(uname -m)" == "x86_64" ]]; then
     echo "CPU_FLAGS_X86_64=\"${CPU_FLAGS}\"" >> /etc/portage/make.conf
@@ -132,13 +132,10 @@ log_msg INFO "=== Installer le noyau et les outils système ==="
 emerge gentoo-sources linux-firmware genkernel grub:2 os-prober dosfstools
 
 log_msg INFO "=== Configurer le réseau Systemd ==="
-cat <<EOF > /etc/systemd/network/20-wired.network
-[Match]
-Name=${NETWORK_INTERFACE}
- 
-[Network]
-DHCP=yes
-EOF
+echo '[Match]' >> /etc/systemd/network/20-wired.network
+echo 'Name=${NETWORK_INTERFACE}' >> /etc/systemd/network/20-wired.network
+echo '[Network]' >> /etc/systemd/network/20-wired.network
+echo 'DHCP=yes' >> /etc/systemd/network/20-wired.network
 
 systemctl enable systemd-networkd.service
 systemctl enable systemd-resolved.service
@@ -164,7 +161,7 @@ else
 fi
 
 exit
-
+EOF
 
 
 
