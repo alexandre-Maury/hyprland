@@ -26,7 +26,7 @@ done
 log_info "Bienvenue dans le script d'installation de Gentoo !" # Affiche un message de bienvenue pour l'utilisateur.
 
 log_info "Sélectionner le disque pour l'installation"
-LIST="$(lsblk -d -n | -v -e "loop" -e "sr" | awk '{print $1, $4}' | nl -s") ")"
+LIST="$(lsblk -d -n | grep -v "loop" "sr" | awk '{print $1, $4}' | nl -s") ")"
 echo "${LIST}"
 OPTION=""
 
