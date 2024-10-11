@@ -254,7 +254,7 @@ if [[ "${MODE}" == "UEFI" ]]; then
     # RESTE FORMATING
     PARTITIONS=$(lsblk --list --noheadings /dev/"${DISK}" | tail -n +2 | awk '{print $1}')
 
-    echo "Vos Partition : $PARTITIONS"
+    echo "$PARTITIONS" 
 
     
 else 
