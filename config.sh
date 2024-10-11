@@ -10,7 +10,7 @@ packages=("git" "tar" "curl" "wget")
 GENTOO_BASE="https://distfiles.gentoo.org/releases/amd64/autobuilds/current-stage3-amd64-systemd-mergedusr/stage3-amd64-systemd-mergedusr-*.tar.xz"
 
 
-DISK="SDA"            # Support pour l'installation du systeme  
+MODE=""               # <UEFI> ou <BIOS>  
 SWAP="On"             # SWAP <On> OU <Off>
 MBR_SIZE="256"        # Taille de la partition BOOT/MBR en MiB : /dev/sda1  ext4(8300)   256MiB   /Boot system partition
 EFI_SIZE="512"        # Taille de la partition BOOT/EFI en MiB : /dev/sda1  vfat(ef00)   512MiB   /Boot/EFI system partition
