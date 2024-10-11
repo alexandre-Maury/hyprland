@@ -40,3 +40,6 @@ DISK="$(echo "${LIST}" | grep "  ${OPTION})" | awk '{print $2}')"
 
 export DISK="$(prompt_value "Nom du périphérique cible -> par défaut :" "$DISK")"
 log_success "TERMINÉ"
+
+
+echo "------------ vous avez choisi : $DISK"
