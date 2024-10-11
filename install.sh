@@ -77,6 +77,8 @@ while [[ -z "$(echo "${LIST}" | grep "  ${OPTION})")" && -z "${OPTION}" ]]; do
     fi
 done
 
+echo "vous avez choisi $DISK"
+
 
 ##############################################################################
 ## Select part                                                          
