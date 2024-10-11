@@ -23,7 +23,7 @@ SHRED_PASS="1"        # Nombre de passe pour le nettoyage
 # Gestion	    Nécessite des outils de partitionnement pour la création.	    Peut être géré par des commandes simples.
 
 SWAP="On"             # <On> SWAP Activé - <Off> SWAP Désactivé
-SWAP_FILE="Off"        # <On> Activation du swap avec fichier - Sinon Activation du swap avec partition
+SWAP_FILE="On"        # <On> Activation du swap avec fichier - Sinon Activation du swap avec partition
 
 MBR_SIZE="256"        # Taille de la partition BOOT/MBR en MiB : /dev/sda1  ext4(8300)   256MiB   /Boot system partition
 EFI_SIZE="512"        # Taille de la partition BOOT/EFI en MiB : /dev/sda1  vfat(ef00)   512MiB   /Boot/EFI system partition

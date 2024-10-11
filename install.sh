@@ -106,8 +106,6 @@ fi
 ## Select size                                                         
 ##############################################################################
 
-log_info "Sélectionner les tailles de vos partitions :"
-
 if [[ -n $(ls /sys/firmware/efi/efivars 2>/dev/null) ]];then
     export MODE="UEFI"
     log_info "vous est en mode : $MODE"
@@ -219,6 +217,9 @@ if [[ "${MODE}" == "UEFI" ]]; then
 
     if [[ "$SWAP" == "On" ]]; then
         if [[ "$SWAP_FILE" == "On" ]]; then
+
+            log_info "Création du fichier Swap"
+
             parted --script -a optimal /dev/"${DISK}" mkpart ext4 ${EFI_SIZE}MiB $((EFI_SIZE + ROOT_SIZE_MB))MiB # Partition Racine
             parted --script -a optimal /dev/"${DISK}" mkpart ext4 $((EFI_SIZE + ROOT_SIZE_MB))MiB ${HOME_SIZE}%  # Partition Home
 
@@ -231,6 +232,9 @@ if [[ "${MODE}" == "UEFI" ]]; then
             # PARTITIONS=$(lsblk --list --noheadings /dev/"${DISK}" | tail -n +2 | awk '{print $1}')
 
         else
+
+            log_info "Création d'une partition Swap"
+
             # Création des partition
             parted --script -a optimal /dev/"${DISK}" mkpart linux-swap ${EFI_SIZE}MiB $((EFI_SIZE + SWAP_SIZE))MiB  # Partition Swap
             parted --script -a optimal /dev/"${DISK}" mkpart ext4 $((EFI_SIZE + SWAP_SIZE))MiB ${ROOT_SIZE_MB}MiB    # Partition Racine
