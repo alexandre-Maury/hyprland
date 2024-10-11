@@ -4,11 +4,11 @@
 
 
 # Liste des programmes requis pour l'installation
-packages=("git" "tar" "curl" "wget")
+packages=("git" "tar" "curl" "wget" "chrony")
 
 #Gentoo Base
-GENTOO_BASE="https://distfiles.gentoo.org/releases/amd64/autobuilds/current-stage3-amd64-systemd-mergedusr/stage3-amd64-systemd-mergedusr-*.tar.xz"
-MOUNT_POINT="/mnt"
+GENTOO_BASE="https://distfiles.gentoo.org/releases/amd64/autobuilds/20240929T163611Z/stage3-amd64-systemd-20240929T163611Z.tar.xz"
+MOUNT_POINT="/mnt/gentoo"
 
 MODE=""               # <UEFI> ou <BIOS>  
 SHRED="On"            # <On> Nettoyage du disque
@@ -31,13 +31,17 @@ ROOT_SIZE="100"       # Taille de la partition pour / en GiB   : /dev/sda2  
 HOME_SIZE="100"       # Taille de la partition pour /home en % : /dev/sda3  ext4(8300)   100%     /Home partition
 SWAP_SIZE="4096"      # Taille du fichier SWAP en MiB
 
+BOOT_PARTITION=""      # Le script se charge d'assigner la valeur <install.sh>   
+ROOT_PARTITION=""     # Le script se charge d'assigner la valeur <install.sh> 
+HOME_PARTITION=""     # Le script se charge d'assigner la valeur <install.sh>  
+SWAP_PARTITION=""     # Le script se charge d'assigner la valeur <install.sh> 
 
 TIMEZONE="Europe/Paris"
-LOCALE="fr_FR.UTF-8"
+LOCALE="fr_FR.UTF-8 UTF-8"
+LANG="fr_FR.UTF-8"
 HOSTNAME="gentoo"
 INTERFACE="$(ip link show | awk -F': ' '/^[0-9]+: / && !/lo/ {print $2; exit}')"
 KEYMAP="fr"
-LANGUAGE="fr"
 
 ROOT_PASSWORD="toor"
 USERNAME="alexandre"
@@ -45,9 +49,10 @@ USERNAME_PASSWORD="azerty"
 
 COMMON_FLAGS="-O2 -pipe -march=native"
 CPU_FLAGS=$(grep -m1 "flags" /proc/cpuinfo | cut -d' ' -f2-)
-NUM_CORES="-j$(nproc) -l$(nproc)"
-
-
+MAKEOPTS="-j$(nproc) -l$(nproc)"
+USE="minimal"
+L10N="fr"
+INPUT_DEVICES="libinput synaptics keyboard mouse joystick wacom"
 
 
 
