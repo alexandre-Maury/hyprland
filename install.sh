@@ -14,6 +14,7 @@ chmod +x *.sh # Rendre les scripts exécutables.
 ##############################################################################
 ## Check internet                                                          
 ##############################################################################
+
 log_info "Vérification de la connexion Internet"
 if ! ping -c1 -w1 1.1.1.1 > /dev/null 2>&1; then
     log_error "Pas de connexion Internet"
@@ -36,6 +37,7 @@ log_info "Bienvenue dans le script d'installation de Gentoo !" # Affiche un mess
 ##############################################################################
 ## Select Disk                                                          
 ##############################################################################
+
 # log_info "Sélectionner le disque pour l'installation"
 # # LIST="$(lsblk -d -n | grep -v "loop" | awk '{print $1, $4}' | nl -s") ")"
 # LIST="$(lsblk -d -n | grep -v -e "loop" -e "sr" | awk '{print $1, $4}' | nl -s") ")" 
@@ -103,6 +105,7 @@ fi
 ##############################################################################
 ## Select size                                                         
 ##############################################################################
+
 log_info "Sélectionner les tailles de vos partitions :"
 
 if [[ -n $(ls /sys/firmware/efi/efivars 2>/dev/null) ]];then
@@ -131,6 +134,7 @@ log_success "TERMINÉ"
 ##############################################################################
 ## Select config                                                         
 ##############################################################################
+
 log_info "Sélectionner vos configurations systéme :"
 
 export TIMEZONE="$(prompt_value "Fuseau horaire du système [ par défaut : ]" "$TIMEZONE")"
@@ -146,12 +150,14 @@ export USERNAME_PASSWORD="$(prompt_value "Saisir votre mot de passe [ par défau
 export COMMON_FLAGS
 export CPU_FLAGS
 export NUM_CORES
+export MOUNT_POINT
 
 log_success "TERMINÉ"
 
 ##############################################################################
 ## Check config                                                         
 ##############################################################################
+
 log_info "Vérification de la configuration :"
 echo ""
 echo "- Périphérique cible : --------------------------------------" "[ /dev/${DISK} ]"
@@ -186,14 +192,71 @@ echo ""
 
 # Demande à l'utilisateur de confirmer la configuration
 if ! prompt_confirm "Vérifiez que les informations ci-dessus sont correctes (Y/n)"; then
-    log_error "Annulation de l'installation."
+    log_warning "Annulation de l'installation."
     exit 0
 fi
 
 ##############################################################################
-## Check config                                                         
+## Formatting disk                                                       
 ##############################################################################
 
 if [[ "$SHRED" == "On" ]]; then
     shred -n "${SHRED_PASS}" -v "/dev/${DISK}"
+fi
+
+##############################################################################
+## Creating partitions                                                       
+##############################################################################
+
+# Conversion de PART_ROOT_SIZE de GiB en MiB
+ROOT_SIZE_MB=$((ROOT_SIZE * 1024))
+
+if [[ "${MODE}" == "UEFI" ]]; then
+
+    parted --script -a optimal /dev/"${DISK}" mklabel gpt
+    parted --script -a optimal /dev/"${DISK}" mkpart primary fat32 1MiB ${EFI_SIZE}MiB # Partition EFI
+    parted --script /dev/"${DISK}" set 1 esp on
+
+    if [[ "$SWAP" == "On" ]]; then
+        if [[ "$SWAP_FILE" == "On" ]]; then
+            parted --script -a optimal /dev/"${DISK}" mkpart ext4 ${EFI_SIZE}MiB $((EFI_SIZE + ROOT_SIZE_MB))MiB # Partition Racine
+            parted --script -a optimal /dev/"${DISK}" mkpart ext4 $((EFI_SIZE + ROOT_SIZE_MB))MiB ${HOME_SIZE}%  # Partition Home
+
+            # Création du fichier de swap
+            dd if=/dev/zero of=$MOUNT_POINT/swap bs=1M count=${SWAP_SIZE}  
+            chmod 600 $MOUNT_POINT/swap                            
+            mkswap $MOUNT_POINT/swap                                
+            swapon $MOUNT_POINT/swap  
+
+            # PARTITIONS=$(lsblk --list --noheadings /dev/"${DISK}" | tail -n +2 | awk '{print $1}')
+
+        else
+            # Création des partition
+            parted --script -a optimal /dev/"${DISK}" mkpart linux-swap ${EFI_SIZE}MiB $((EFI_SIZE + SWAP_SIZE))MiB  # Partition Swap
+            parted --script -a optimal /dev/"${DISK}" mkpart ext4 $((EFI_SIZE + SWAP_SIZE))MiB ${ROOT_SIZE_MB}MiB    # Partition Racine
+            parted --script -a optimal /dev/"${DISK}" mkpart ext4 $((EFI_SIZE + ROOT_SIZE_MB))MiB ${HOME_SIZE}%      # Partition Home
+
+            # PARTITIONS=$(lsblk --list --noheadings /dev/"${DISK}" | tail -n +2 | awk '{print $1}')
+        fi
+
+    else # Swap Off
+        parted --script -a optimal /dev/"${DISK}" mkpart ext4 ${EFI_SIZE}MiB $((EFI_SIZE + ROOT_SIZE_MB))MiB # Partition Racine
+        parted --script -a optimal /dev/"${DISK}" mkpart ext4 $((EFI_SIZE + ROOT_SIZE_MB))MiB ${HOME_SIZE}%  # Partition Home
+
+        # PARTITIONS=$(lsblk --list --noheadings /dev/"${DISK}" | tail -n +2 | awk '{print $1}')
+        
+    fi
+
+    # RESTE FORMATING
+    PARTITIONS=$(lsblk --list --noheadings /dev/"${DISK}" | tail -n +2 | awk '{print $1}')
+
+    echo "Vos Partition : $PARTITIONS"
+
+    
+else 
+
+    parted --script -a optimal /dev/"${DISK}" mklabel msdos
+    parted -a optimal /dev/"${DISK}" mkpart primary ext4 1MiB ${MBR_SIZE}MiB # Partition BIOS
+
+    
 fi

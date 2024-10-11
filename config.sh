@@ -8,14 +8,22 @@ packages=("git" "tar" "curl" "wget")
 
 #Gentoo Base
 GENTOO_BASE="https://distfiles.gentoo.org/releases/amd64/autobuilds/current-stage3-amd64-systemd-mergedusr/stage3-amd64-systemd-mergedusr-*.tar.xz"
+MOUNT_POINT="/mnt"
 
-
+MODE=""               # <UEFI> ou <BIOS>  
 SHRED="On"            # <On> Nettoyage du disque
 SHRED_PASS="1"        # Nombre de passe pour le nettoyage
 
-MODE=""               # <UEFI> ou <BIOS>  
+
+# Comparaison entre Partition Swap et Fichier Swap :
+# Critère	    Partition Swap :	                                            Fichier Swap :
+# Performance	Généralement plus rapide en raison d'un accès direct.	        Moins rapide, mais souvent suffisant pour la plupart des usages.
+# Flexibilité	Taille fixe, nécessite un redimensionnement pour changer.	    Facile à redimensionner en ajoutant ou supprimant des fichiers.
+# Simplicité	Nécessite des opérations de partitionnement.	                Plus simple à configurer et à gérer.
+# Gestion	    Nécessite des outils de partitionnement pour la création.	    Peut être géré par des commandes simples.
+
 SWAP="On"             # <On> SWAP Activé - <Off> SWAP Désactivé
-SWAP_FILE="On"        # <On> Activation du swap avec fichier - Sinon Activation du swap avec partition
+SWAP_FILE="Off"        # <On> Activation du swap avec fichier - Sinon Activation du swap avec partition
 
 MBR_SIZE="256"        # Taille de la partition BOOT/MBR en MiB : /dev/sda1  ext4(8300)   256MiB   /Boot system partition
 EFI_SIZE="512"        # Taille de la partition BOOT/EFI en MiB : /dev/sda1  vfat(ef00)   512MiB   /Boot/EFI system partition
