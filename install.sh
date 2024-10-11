@@ -14,7 +14,7 @@ chmod +x *.sh # Rendre les scripts exécutables.
 ##############################################################################
 ## Check internet                                                          
 ##############################################################################
-log_info "Vérifiez la connexion Internet"
+log_info "Vérification de la connexion Internet"
 if ! ping -c1 -w1 1.1.1.1 > /dev/null 2>&1; then
     log_error "Pas de connexion Internet"
     exit 1
@@ -136,7 +136,7 @@ log_info "Sélectionner vos configurations systéme :"
 export TIMEZONE="$(prompt_value "Fuseau horaire du système [ par défaut : ]" "$TIMEZONE")"
 export LOCALE="$(prompt_value "Locale du système [ par défaut : ]" "$LOCALE")"
 export HOSTNAME="$(prompt_value "Nom d'hôte du système [ par défaut : ]" "$HOSTNAME")"
-export INTERFACE="$(prompt_value "Nom de l'interface réseau [ par défaut : ]" "$NETWORK_INTERFACE")"
+export INTERFACE="$(prompt_value "Nom de l'interface réseau [ par défaut : ]" "$INTERFACE")"
 export KEYMAP="$(prompt_value "Disposition du clavier à utiliser [ par défaut : ]" "$KEYMAP")"
 
 export ROOT_PASSWORD="$(prompt_value "Créer votre mot de passe root [ par défaut : ]" "$ROOT_PASSWORD")"
@@ -154,34 +154,34 @@ log_success "TERMINÉ"
 ##############################################################################
 log_info "Vérification de la configuration :"
 echo ""
-echo "- Périphérique cible"                               "/dev/${DISK}"
-echo "- Mode Activé"                                      "${MODE}"
+echo "- Périphérique cible : --------------------------------------" "[ /dev/${DISK} ]"
+echo "- Mode Activé : ---------------------------------------------" "[ ${MODE} ]"
 
 if [[ "${MODE}" == "UEFI" ]]; then
-    echo "- Taille de la partition EFI en MiB"            "${EFI_SIZE}MiB"
+    echo "- Taille de la partition EFI en MiB : -------------------" "[ ${EFI_SIZE}MiB ]"
 else 
-    echo "- Taille de la partition BIOS en MiB"           "${MBR_SIZE}MiB"
+    echo "- Taille de la partition BIOS en MiB : ------------------" "[ ${MBR_SIZE}MiB ]"
 fi
 
-echo "- Taille de la partition Racine en GiB"             "${ROOT_SIZE}GiB"
-echo "- Taille de la partition Home en %"                 "${HOME_SIZE}%"
+echo "- Taille de la partition Racine en GiB : --------------------" "[ ${ROOT_SIZE}GiB ]"
+echo "- Taille de la partition Home en % : ------------------------" "[ ${HOME_SIZE}% ]"
 
 if [[ "$SWAP" == "On" ]]; then
     if [[ "$SWAP_FILE" == "On" ]]; then
-        echo "- Taille du fichier swap en MiB"            "${SWAP_SIZE}MiB"
+        echo "- Taille du fichier swap en MiB : -------------------" "[ ${SWAP_SIZE}MiB ]"
     else
-        echo "- Taille de la partition Swap en MiB"       "${SWAP_SIZE}MiB"
+        echo "- Taille de la partition Swap en MiB : --------------" "[ ${SWAP_SIZE}MiB ]"
     fi
 fi
 
-echo "- Fuseau horaire"                                   "${TIMEZONE}"
-echo "- Locale"                                           "${LOCALE}"
-echo "- Nom d'hôte"                                       "${HOSTNAME}"
-echo "- Interface"                                        "${INTERFACE}"
-echo "- Disposition du clavier"                           "${KEYMAP}"
-echo "- Votre mot de passe ROOT"                          "${ROOT_PASSWORD}"
-echo "- Votre utilisateur"                                "${USERNAME}"
-echo "- Votre mot de passe"                               "${USERNAME_PASSWORD}"
+echo "- Fuseau horaire : ------------------------------------------" "[ ${TIMEZONE} ]"
+echo "- Locale : --------------------------------------------------" "[ ${LOCALE} ]"
+echo "- Nom d'hôte : ----------------------------------------------" "[ ${HOSTNAME} ]"
+echo "- Interface : -----------------------------------------------" "[ ${INTERFACE} ]"
+echo "- Disposition du clavier : ----------------------------------" "[ ${KEYMAP} ]"
+echo "- Votre mot de passe ROOT : ---------------------------------" "[ ${ROOT_PASSWORD} ]"
+echo "- Votre utilisateur : ---------------------------------------" "[ ${USERNAME} ]"
+echo "- Votre mot de passe : --------------------------------------" "[ ${USERNAME_PASSWORD} ]"
 echo ""
 
 # Demande à l'utilisateur de confirmer la configuration
