@@ -31,15 +31,12 @@ echo "${LIST}"
 OPTION=""
 
 while [[ -z "$(echo "${LIST}" | grep "  ${OPTION})")" ]]; do
-    printf "Choisissez un disque (ex : 1) : "
+    printf "Choisissez un disque pour la suite de l'installation (ex : 1) : "
     read -r OPTION
 done
 
-DISK="$(echo "${LIST}" | grep "  ${OPTION})" | awk '{print $2}')"
-
-
-export DISK="$(prompt_value "Nom du périphérique cible -> par défaut :" "$DISK")"
+export DISK="$(echo "${LIST}" | grep "  ${OPTION})" | awk '{print $2}')"
 log_success "TERMINÉ"
 
 
-echo "------------ vous avez choisi : $DISK"
+echo "Vous avez choisi : $DISK  "
