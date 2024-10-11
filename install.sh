@@ -23,20 +23,37 @@ for pkg in "${packages[@]}"; do
     check_and_install "$pkg" # S'assurer que les packages requis sont installés
 done
 
+# log_info "Bienvenue dans le script d'installation de Gentoo !" # Affiche un message de bienvenue pour l'utilisateur.
+
+# log_info "Sélectionner le disque pour l'installation"
+# LIST="$(lsblk -d -n | grep -v "loop" | awk '{print $1, $4}' | nl -s") ")"
+# echo "${LIST}"
+# OPTION=""
+
+# while [[ -z "$(echo "${LIST}" | grep "  ${OPTION})")" ]]; do
+#     printf "Choisissez un disque pour la suite de l'installation (ex : 1) : "
+#     read -r OPTION
+# done
+
+# export DISK="$(echo "${LIST}" | grep "  ${OPTION})" | awk '{print $2}')"
+# log_success "TERMINÉ"
+
+
+# echo "Vous avez choisi : $DISK  "
+
 log_info "Bienvenue dans le script d'installation de Gentoo !" # Affiche un message de bienvenue pour l'utilisateur.
 
 log_info "Sélectionner le disque pour l'installation"
-LIST="$(lsblk -d -n | grep -v "loop" | awk '{print $1, $4}' | nl -s") ")"
+LIST="$(lsblk -d -n | grep -v "loop" | awk '{print $1, $4}' | nl -s ") ")" # Liste les disques disponibles avec leurs tailles et les numérote
 echo "${LIST}"
 OPTION=""
 
-while [[ -z "$(echo "${LIST}" | grep "  ${OPTION})")" ]]; do
+while [[ -z "$(echo "${LIST}" | grep "^ *${OPTION})")" ]]; do
     printf "Choisissez un disque pour la suite de l'installation (ex : 1) : "
     read -r OPTION
 done
 
-export DISK="$(echo "${LIST}" | grep "  ${OPTION})" | awk '{print $2}')"
+export DISK="$(echo "${LIST}" | grep "^ *${OPTION})" | awk '{print $2}')"
 log_success "TERMINÉ"
 
-
-echo "Vous avez choisi : $DISK  "
+echo "Vous avez choisi : $DISK"
