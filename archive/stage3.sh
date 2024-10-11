@@ -29,28 +29,28 @@ cp /mnt/usr/share/portage/config/repos.conf /mnt/etc/portage/repos.conf/gentoo.c
 
 log_msg INFO "=== Configuration du fichier /mnt/etc/portage/make.conf ==="
 
-echo 'COMMON_FLAGS="-O2 -pipe -march=native"' >> /mnt/etc/portage/make.conf
-echo 'CFLAGS="${COMMON_FLAGS}"' >> /mnt/etc/portage/make.conf
-echo 'CXXFLAGS="${COMMON_FLAGS}"' >> /mnt/etc/portage/make.conf
-echo 'FCFLAGS="${COMMON_FLAGS}"' >> /mnt/etc/portage/make.conf
-echo 'FFLAGS="${COMMON_FLAGS}"' >> /mnt/etc/portage/make.conf
-echo 'USE=""' >> /mnt/etc/portage/make.conf
-echo 'MAKEOPTS="-j${NUM_CORES}"' >> /mnt/etc/portage/make.conf
-echo 'L10N="${LANGUAGE}"' >> /mnt/etc/portage/make.conf
-echo 'VIDEO_CARDS="fbdev vesa intel i915 nvidia nouveau radeon amdgpu radeonsi virtualbox vmware qxl"' >> /mnt/etc/portage/make.conf
-echo 'INPUT_DEVICES="libinput synaptics keyboard mouse joystick wacom"' >> /mnt/etc/portage/make.conf
-echo 'EMERGE_DEFAULT_OPTS="--quiet-build=y"' >> /mnt/etc/portage/make.conf
-echo 'PORTAGE_SCHEDULING_POLICY="idle"' >> /mnt/etc/portage/make.conf
-echo 'ACCEPT_KEYWORDS="amd64"' >> /mnt/etc/portage/make.conf
-echo 'ACCEPT_LICENSE="*"' >> /mnt/etc/portage/make.conf
-echo 'SYNC="rsync://rsync.gentoo.org/gentoo-portage"' >> /mnt/etc/portage/make.conf
-echo 'FEATURES="buildpkg"' >> /mnt/etc/portage/make.conf
-echo 'PORTAGE_NICENESS=19' >> /mnt/etc/portage/make.conf
-echo 'PORTAGE_TMPDIR="/var/tmp"' >> /mnt/etc/portage/make.conf
-echo 'GENTOO_MIRRORS="http://ftp.snt.utwente.nl/pub/os/linux/gentoo/ http://mirror.leaseweb.com/gentoo/"' >> /mnt/etc/portage/make.conf
-echo 'DISTDIR="/var/cache/distfiles"' >> /mnt/etc/portage/make.conf
-echo 'PKGDIR="/var/cache/binpkgs"' >> /mnt/etc/portage/make.conf
-echo 'CHOST="x86_64-pc-linux-gnu"' >> /mnt/etc/portage/make.conf
+echo "COMMON_FLAGS="-O2 -pipe -march=native"" >> /mnt/etc/portage/make.conf
+echo "CFLAGS="${COMMON_FLAGS}"" >> /mnt/etc/portage/make.conf
+echo "CXXFLAGS="${COMMON_FLAGS}"" >> /mnt/etc/portage/make.conf
+echo "FCFLAGS="${COMMON_FLAGS}"" >> /mnt/etc/portage/make.conf
+echo "FFLAGS="${COMMON_FLAGS}"" >> /mnt/etc/portage/make.conf
+echo "USE=""" >> /mnt/etc/portage/make.conf
+echo "MAKEOPTS="-j${NUM_CORES}"" >> /mnt/etc/portage/make.conf
+echo "L10N="${LANGUAGE}"" >> /mnt/etc/portage/make.conf
+echo "VIDEO_CARDS="fbdev vesa intel i915 nvidia nouveau radeon amdgpu radeonsi virtualbox vmware qxl"" >> /mnt/etc/portage/make.conf
+echo "INPUT_DEVICES="libinput synaptics keyboard mouse joystick wacom"" >> /mnt/etc/portage/make.conf
+echo "EMERGE_DEFAULT_OPTS="--quiet-build=y"" >> /mnt/etc/portage/make.conf
+echo "PORTAGE_SCHEDULING_POLICY="idle"" >> /mnt/etc/portage/make.conf
+echo "ACCEPT_KEYWORDS="amd64"" >> /mnt/etc/portage/make.conf
+echo "ACCEPT_LICENSE="*"" >> /mnt/etc/portage/make.conf
+echo "SYNC="rsync://rsync.gentoo.org/gentoo-portage"" >> /mnt/etc/portage/make.conf
+echo "FEATURES="buildpkg"" >> /mnt/etc/portage/make.conf
+echo "PORTAGE_NICENESS=19" >> /mnt/etc/portage/make.conf
+echo "PORTAGE_TMPDIR="/var/tmp"" >> /mnt/etc/portage/make.conf
+echo "GENTOO_MIRRORS="http://ftp.snt.utwente.nl/pub/os/linux/gentoo/ http://mirror.leaseweb.com/gentoo/"" >> /mnt/etc/portage/make.conf
+echo "DISTDIR="/var/cache/distfiles"" >> /mnt/etc/portage/make.conf
+echo "PKGDIR="/var/cache/binpkgs"" >> /mnt/etc/portage/make.conf
+echo "CHOST="x86_64-pc-linux-gnu"" >> /mnt/etc/portage/make.conf
 
 if [[ "$(uname -m)" == "x86_64" ]]; then
     echo "CPU_FLAGS_X86_64=\"${CPU_FLAGS}\"" >> /mnt/etc/portage/make.conf
