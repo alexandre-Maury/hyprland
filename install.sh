@@ -26,18 +26,18 @@ done
 log_info "Bienvenue dans le script d'installation de Gentoo !" # Affiche un message de bienvenue pour l'utilisateur.
 
 log_info "Sélectionner le disque pour l'installation"
-LIST="$(lsblk -d -n | grep -v "loop" | awk '{print $1, $4}' | nl -s") ")"
+LIST="$(lsblk -d -n | -v -e "loop" -e "sr" | awk '{print $1, $4}' | nl -s") ")"
 echo "${LIST}"
-# OPTION=""
+OPTION=""
 
-# while [[ -z "$(echo "${LIST}" | grep "  ${OPTION})")" ]]; do
-#     printf "Choisissez un disque pour la suite de l'installation (ex : 1) : "
-#     read -r OPTION
-# done
+while [[ -z "$(echo "${LIST}" | grep "  ${OPTION})")" ]]; do
+    printf "Choisissez un disque pour la suite de l'installation (ex : 1) : "
+    read -r OPTION
+done
 
-# export DISK="$(echo "${LIST}" | grep "  ${OPTION})" | awk '{print $2}')"
-# log_success "TERMINÉ"
+export DISK="$(echo "${LIST}" | grep "  ${OPTION})" | awk '{print $2}')"
+log_success "TERMINÉ"
 
 
-# echo "Vous avez choisi : $DISK  "
+echo "Vous avez choisi : $DISK  "
 
