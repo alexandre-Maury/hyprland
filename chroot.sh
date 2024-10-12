@@ -55,7 +55,7 @@ log_success "Configuration des logiciels non-libres (Facultatif) + dépôts bina
 ## Mise à jour du world                                  
 ##############################################################################
 log_info "Mise à jour de l'ensemble @world"
-emerge --quiet --update --deep --newuse @world
+# emerge --quiet --update --deep --newuse @world
 log_success "Mise à jour de l'ensemble @world terminée"
 
 ##############################################################################
