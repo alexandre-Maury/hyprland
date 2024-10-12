@@ -11,7 +11,7 @@ CFG_PART_HOME_SIZE="100%"   # Le reste pour /home
 LOCALE="fr_FR.UTF-8"
 
 # Variables de stage 3
-STAGE3_URL="https://bouncer.gentoo.org/fetch/root/all/releases/amd64/autobuilds/current-stage3-amd64-systemd/stage3-amd64-systemd-latest.tar.xz"
+STAGE3_URL="https://distfiles.gentoo.org/releases/amd64/autobuilds/20240929T163611Z/stage3-amd64-systemd-20240929T163611Z.tar.xz"
 MOUNT_DIR="/mnt/gentoo"
 
 # Partitionnement et formatage du disque
