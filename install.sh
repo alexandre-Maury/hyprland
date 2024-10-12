@@ -550,8 +550,7 @@ echo 'PORTAGE_SCHEDULING_POLICY="idle"' >> "${MAKE_CONF}"
 echo 'ACCEPT_LICENSE="*"' >> "${MAKE_CONF}"
 echo 'ACCEPT_KEYWORDS="~amd64"' >> "${MAKE_CONF}"
 echo 'GENTOO_MIRRORS="https://gentoo.mirrors.ovh.net/gentoo-distfiles/ http://ftp.free.fr/mirrors/ftp.gentoo.org/"' >> "${MAKE_CONF}"
-
-
+echo 'VIDEO_CARDS="fbdev vesa intel i915 nvidia nouveau radeon amdgpu radeonsi virtualbox vmware qxl"' >> "${MAKE_CONF}"
 
 if [[ "$(uname -m)" == "x86_64" ]]; then
     echo "CPU_FLAGS_X86_64=\"${CPU_FLAGS}\"" >> "${MAKE_CONF}"
