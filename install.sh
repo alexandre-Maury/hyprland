@@ -230,8 +230,6 @@ if [[ "${MODE}" == "UEFI" ]]; then
 
         if [[ "$SWAP_FILE" == "On" ]]; then
 
-            mkdir --parents $MOUNT_POINT/{efi,home,swap}
-
             log_info "Création : Partition Racine"
             parted --script -a optimal /dev/"${DISK}" mkpart ext4 ${EFI_SIZE}MiB $((EFI_SIZE + ROOT_SIZE_MB))MiB # Partition Racine
 
@@ -253,24 +251,25 @@ if [[ "${MODE}" == "UEFI" ]]; then
             mkfs.ext4 -F /dev/"${HOME_PARTITION}"
 
             log_info "Montage : Partition Racine"
+            mkdir --parents $MOUNT_POINT
             mount /dev/"${ROOT_PARTITION}" $MOUNT_POINT
 
             log_info "Montage : Partition Home"
+            mkdir --parents $MOUNT_POINT/home
             mount /dev/"${HOME_PARTITION}" $MOUNT_POINT/home
 
             log_info "Montage : Partition Boot"
+            mkdir --parents $MOUNT_POINT/efi
             mount /dev/"${BOOT_PARTITION}" $MOUNT_POINT/efi 
 
             log_info "Création : fichier Swap"
-            fallocate -l "${SWAP_SIZE}MiB" $MOUNT_POINT/swap/swapfile
-            # dd if=/dev/zero of=$MOUNT_POINT/swap bs=1M count=${SWAP_SIZE}  
+            mkdir --parents $MOUNT_POINT/swap
+            fallocate -l "${SWAP_SIZE}MiB" $MOUNT_POINT/swap/swapfile 
             chmod 600 $MOUNT_POINT/swap/swapfile                            
             mkswap $MOUNT_POINT/swap/swapfile                                
             swapon $MOUNT_POINT/swap/swapfile
 
         else
-
-            mkdir --parents $MOUNT_POINT/{efi,swap,home}
 
             log_info "Création : Partition Swap"
             parted --script -a optimal /dev/"${DISK}" mkpart linux-swap ${EFI_SIZE}MiB $((EFI_SIZE + SWAP_SIZE))MiB  # Partition Swap
@@ -301,21 +300,23 @@ if [[ "${MODE}" == "UEFI" ]]; then
             mkfs.ext4 -F /dev/"${HOME_PARTITION}"
 
             log_info "Montage : Partition Racine"
+            mkdir --parents $MOUNT_POINT
             mount /dev/"${ROOT_PARTITION}" $MOUNT_POINT
 
             log_info "Montage : Partition Home"
+            mkdir --parents $MOUNT_POINT/home
             mount /dev/"${HOME_PARTITION}" $MOUNT_POINT/home
 
             log_info "Montage : Partition Boot"
+            mkdir --parents $MOUNT_POINT/efi
             mount /dev/"${BOOT_PARTITION}" $MOUNT_POINT/efi 
 
             log_info "Montage : Partition Swap"
+            mkdir --parents $MOUNT_POINT/swap
             mount /dev/"${SWAP_PARTITION}" $MOUNT_POINT/swap 
         fi
 
     else # Swap Off
-
-        mkdir --parents $MOUNT_POINT/{efi,home}
         
         log_info "Création : Partition Racine"
         parted --script -a optimal /dev/"${DISK}" mkpart ext4 ${EFI_SIZE}MiB $((EFI_SIZE + ROOT_SIZE_MB))MiB # Partition Racine
@@ -338,12 +339,15 @@ if [[ "${MODE}" == "UEFI" ]]; then
         mkfs.ext4 -F /dev/"${HOME_PARTITION}" 
 
         log_info "Montage : Partition Racine"
+        mkdir --parents $MOUNT_POINT
         mount /dev/"${ROOT_PARTITION}" $MOUNT_POINT
 
         log_info "Montage : Partition Home"
+        mkdir --parents $MOUNT_POINT/home
         mount /dev/"${HOME_PARTITION}" $MOUNT_POINT/home
 
         log_info "Montage : Partition Boot"
+        mkdir --parents $MOUNT_POINT/efi
         mount /dev/"${BOOT_PARTITION}" $MOUNT_POINT/efi 
     fi
 
@@ -358,8 +362,6 @@ else # BIOS
     if [[ "$SWAP" == "On" ]]; then
 
         if [[ "$SWAP_FILE" == "On" ]]; then
-
-            mkdir --parents $MOUNT_POINT/{boot,home,swap}
 
             log_info "Création : Partition Racine"
             parted --script -a optimal /dev/"${DISK}" mkpart ext4 ${MBR_SIZE}MiB $((MBR_SIZE + ROOT_SIZE_MB))MiB # Partition Racine
@@ -383,15 +385,19 @@ else # BIOS
             mkfs.ext4 -F /dev/"${HOME_PARTITION}"
 
             log_info "Montage : Partition Racine"
+            mkdir --parents $MOUNT_POINT
             mount /dev/"${ROOT_PARTITION}" $MOUNT_POINT
 
             log_info "Montage : Partition Home"
+            mkdir --parents $MOUNT_POINT/home
             mount /dev/"${HOME_PARTITION}" $MOUNT_POINT/home
 
             log_info "Montage : Partition Boot"
+            mkdir --parents $MOUNT_POINT/boot
             mount /dev/"${BOOT_PARTITION}" $MOUNT_POINT/boot 
 
             log_info "Création : fichier Swap"
+            mkdir --parents $MOUNT_POINT/swap
             fallocate -l "${SWAP_SIZE}MiB" $MOUNT_POINT/swap/swapfile
             # dd if=/dev/zero of=$MOUNT_POINT/swap bs=1M count=${SWAP_SIZE}  
             chmod 600 $MOUNT_POINT/swap/swapfile                            
@@ -399,8 +405,6 @@ else # BIOS
             swapon $MOUNT_POINT/swap/swapfile  
 
         else
-
-            mkdir --parents $MOUNT_POINT/{boot,home,swap}
 
             log_info "Création : Partition Swap"
             parted --script -a optimal /dev/"${DISK}" mkpart linux-swap ${MBR_SIZE}MiB $((MBR_SIZE + SWAP_SIZE))MiB  # Partition Swap
@@ -431,15 +435,19 @@ else # BIOS
             mkfs.ext4 -F /dev/"${HOME_PARTITION}"
 
             log_info "Montage : Partition Racine"
+            mkdir --parents $MOUNT_POINT
             mount /dev/"${ROOT_PARTITION}" $MOUNT_POINT
 
             log_info "Montage : Partition Home"
+            mkdir --parents $MOUNT_POINT/home
             mount /dev/"${HOME_PARTITION}" $MOUNT_POINT/home
 
             log_info "Montage : Partition Boot"
+            mkdir --parents $MOUNT_POINT/boot
             mount /dev/"${BOOT_PARTITION}" $MOUNT_POINT/boot 
 
             log_info "Montage : Partition Swap"
+            mkdir --parents $MOUNT_POINT/swap
             mount /dev/"${SWAP_PARTITION}" $MOUNT_POINT/swap
         fi
 
@@ -468,12 +476,15 @@ else # BIOS
         mkfs.ext4 -F /dev/"${HOME_PARTITION}"
 
         log_info "Montage : Partition Racine"
+        mkdir --parents $MOUNT_POINT
         mount /dev/"${ROOT_PARTITION}" $MOUNT_POINT
 
         log_info "Montage : Partition Home"
+        mkdir --parents $MOUNT_POINT/home
         mount /dev/"${HOME_PARTITION}" $MOUNT_POINT/home
 
         log_info "Montage : Partition Boot"
+        mkdir --parents $MOUNT_POINT/boot
         mount /dev/"${BOOT_PARTITION}" $MOUNT_POINT/boot 
         
     fi
