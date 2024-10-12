@@ -80,6 +80,13 @@ fi
 for ((i = 1; i <= num_partitions; i++)); do
   read -p "Entrez la taille de la partition $i (en GiB ou '100%' pour le reste du disque) : " partition_size
   read -p "Entrez le type de la partition $i (par ex. ext4, linux-swap, etc.) : " partition_type
+  read -p "Souhaitez-vous ajouter un label pour cette partition ? (y/n) : " add_label
+
+  if [ "$add_label" = "y" ]; then
+    read -p "Entrez le label pour la partition $i : " partition_label
+  else
+    partition_label=""
+  fi
 
   # Vérification de la taille de la partition
   if [ "$partition_size" != "100%" ] && ! [[ "$partition_size" =~ ^[0-9]+(\.[0-9]+)?$ ]]; then
@@ -90,6 +97,9 @@ for ((i = 1; i <= num_partitions; i++)); do
   # Si l'utilisateur veut que la partition prenne tout l'espace disponible
   if [ "$partition_size" = "100%" ]; then
     parted --script -a optimal $disk mkpart primary $partition_type ${start_point}MiB 100%
+    if [ -n "$partition_label" ]; then
+      parted --script $disk name $i "$partition_label"
+    fi
     echo "Partition $i créée en occupant 100 % de l'espace disponible."
     break  # Arrêter la boucle car tout l'espace est utilisé
   else
@@ -100,6 +110,10 @@ for ((i = 1; i <= num_partitions; i++)); do
     
     # Créer la partition avec la taille spécifiée
     parted --script -a optimal $disk mkpart primary $partition_type ${start_point}MiB ${end_point}MiB
+    
+    if [ -n "$partition_label" ]; then
+      parted --script $disk name $i "$partition_label"
+    fi
     echo "Partition $i de taille ${partition_size_mb}Mo et de type $partition_type créée."
     
     # Mettre à jour le point de départ pour la prochaine partition
