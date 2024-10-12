@@ -31,15 +31,16 @@ for pkg in "${packages[@]}"; do
     check_and_install "$pkg" # S'assurer que les packages requis sont installés
 done
 
+clear 
 log_info "Bienvenue dans le script d'installation de Gentoo !" # Affiche un message de bienvenue pour l'utilisateur.
-
+echo ""
 
 ##############################################################################
 ## Select Disk                                                          
 ##############################################################################
 
-# log_info "Sélectionner le disque pour l'installation"
-# # LIST="$(lsblk -d -n | grep -v "loop" | awk '{print $1, $4}' | nl -s") ")"
+log_info "Sélectionner un disque pour l'installation :"
+
 # LIST="$(lsblk -d -n | grep -v -e "loop" -e "sr" | awk '{print $1, $4}' | nl -s") ")" 
 
 # echo "${LIST}"
@@ -75,21 +76,18 @@ while [[ -z "$(echo "${LIST}" | grep "  ${OPTION})")" ]]; do
     fi
 done
 
-log_success "TERMINÉ"
+log_success "Sélection du disque $DISK pour l'installation terminée"
 
 ##############################################################################
 ## Select shred                                                         
 ##############################################################################
 
-# if [[ "$SHRED" == "On" ]]; then
-#     export SHRED_PASS="$(prompt_value "Nombre de passe pour le netoyage de /dev/$DISK [ par défaut : ]" "$SHRED_PASS")"
-#     log_success "TERMINÉ"
-# fi
+log_info "Nombre de passes pour le nettoyage de /dev/$DISK :"
 
 if [[ "$SHRED" == "On" ]]; then
     while true; do
         # Demande à l'utilisateur de saisir le nombre de passes
-        export SHRED_PASS="$(prompt_value "Nombre de passes pour le nettoyage de /dev/$DISK [par défaut : $SHRED_PASS] : " "$SHRED_PASS")"
+        export SHRED_PASS="$(prompt_value "[par défaut : $SHRED_PASS] : " "$SHRED_PASS")"
         
         # Vérifie si la valeur saisie est un nombre
         if [[ "$SHRED_PASS" =~ ^[0-9]+$ ]]; then
@@ -101,18 +99,19 @@ if [[ "$SHRED" == "On" ]]; then
     done
 fi
 
+log_success "Sélection du nombre de passes pour le nettoyage de /dev/$DISK terminée"
 
 ##############################################################################
 ## Select size                                                         
 ##############################################################################
 
+log_info "Sélection des tailles de partition :"
+
 if [[ -n $(ls /sys/firmware/efi/efivars 2>/dev/null) ]];then
     export MODE="UEFI"
-    log_info "vous est en mode : $MODE"
     export EFI_SIZE="$(prompt_value "Taille de la partition EFI en MiB [ par défaut : ]" "$EFI_SIZE")"
 else
     export MODE="BIOS"
-    log_info "vous est en mode : $MODE"
     export MBR_SIZE="$(prompt_value "Taille de la partition BIOS en MiB [ par défaut : ]" "$MBR_SIZE")"
 fi
 
@@ -127,7 +126,7 @@ if [[ "$SWAP" == "On" ]]; then
     fi
 fi
 
-log_success "TERMINÉ"
+log_success "Sélection des tailles de partition terminée"
 
 ##############################################################################
 ## Select config                                                         
@@ -155,7 +154,7 @@ export INPUT_DEVICES
 
 export MOUNT_POINT
 
-log_success "TERMINÉ"
+log_success "Configurations systéme terminée"
 
 ##############################################################################
 ## Check config                                                         
@@ -600,6 +599,7 @@ log_success "TERMINÉ"
 log_info "Copie de la deuxième partie du script d'installation dans le nouvel environnement"
 cp chroot.sh $MOUNT_POINT
 cp functions.sh $MOUNT_POINT
+cp config.sh $MOUNT_POINT
 log_success "TERMINÉ"
 
 
