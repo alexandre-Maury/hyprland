@@ -205,19 +205,19 @@ fi
 
 if [[ "$SHRED" == "On" ]]; then
 
-    # Lister les partitions montées
-    MOUNTED_PARTITIONS=$(lsblk --noheadings --output MOUNTPOINT "/dev/${DISK}" | grep -v "^$")
+    # # Lister les partitions montées
+    # MOUNTED_PARTITIONS=$(lsblk --noheadings --output MOUNTPOINT "/dev/${DISK}" | grep -v "^$")
 
-    # Si des partitions sont montées, les démonter
-    if [[ -n "${MOUNTED_PARTITIONS}" ]]; then
-        echo "Démontage des partitions montées sur ${DISK}..."
-        for partition in $(lsblk --noheadings --output NAME,MOUNTPOINT "/dev/${DISK}" | grep -v "^$" | awk '{print $1}')
-        do
-            umount "/dev/${partition}" && echo "Partition /dev/${partition} démontée avec succès."
-        done
-    else
-        echo "Aucune partition montée sur ${DISK}."
-    fi
+    # # Si des partitions sont montées, les démonter
+    # if [[ -n "${MOUNTED_PARTITIONS}" ]]; then
+    #     echo "Démontage des partitions montées sur ${DISK}..."
+    #     for partition in $(lsblk --noheadings --output NAME,MOUNTPOINT "/dev/${DISK}" | grep -v "^$" | awk '{print $1}')
+    #     do
+    #         umount "/dev/${partition}" && echo "Partition /dev/${partition} démontée avec succès."
+    #     done
+    # else
+    #     echo "Aucune partition montée sur ${DISK}."
+    # fi
 
     # Une fois toutes les partitions démontées, lancer shred
     echo "Lancement de shred sur ${DISK} avec ${SHRED_PASS} passes..."
