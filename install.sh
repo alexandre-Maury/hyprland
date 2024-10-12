@@ -204,9 +204,7 @@ fi
 ##############################################################################
 
 if [[ "$SHRED" == "On" ]]; then
-    # shred -n "${SHRED_PASS}" -v "/dev/${DISK}"
-    # log_success "TERMINÉ"
-    # Lister les partitions montées
+
     MOUNTED_PARTITIONS=$(lsblk --list --noheadings /dev/"${DISK}" | tail -n +2 | awk '{print $1}')
 
     # Si des partitions sont montées, les démonter
@@ -220,8 +218,8 @@ if [[ "$SHRED" == "On" ]]; then
         echo "Aucune partition montée sur ${DISK}."
     fi
 
-    Une fois toutes les partitions démontées, lancer shred
     echo "Lancement de shred sur ${DISK} avec ${SHRED_PASS} passes..."
+    wipefs --all /dev/"${DISK}" && echo "Étiquettes et signatures supprimées avec succès."
     shred -n "${SHRED_PASS}" -v "/dev/${DISK}"
     
 fi
