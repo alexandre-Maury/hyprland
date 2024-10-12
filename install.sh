@@ -549,7 +549,7 @@ echo "EMERGE_DEFAULT_OPTS=\"${EMERGE_DEFAULT_OPTS} --quiet-build=y\"" >> "${MAKE
 echo 'PORTAGE_SCHEDULING_POLICY="idle"' >> "${MAKE_CONF}"
 echo 'ACCEPT_LICENSE="*"' >> "${MAKE_CONF}"
 echo 'ACCEPT_KEYWORDS="~amd64"' >> "${MAKE_CONF}"
-echo "GENTOO_MIRRORS="https://gentoo.mirrors.ovh.net/gentoo-distfiles/ http://ftp.free.fr/mirrors/ftp.gentoo.org/"" >> "${MAKE_CONF}"
+echo 'GENTOO_MIRRORS="https://gentoo.mirrors.ovh.net/gentoo-distfiles/ http://ftp.free.fr/mirrors/ftp.gentoo.org/"' >> "${MAKE_CONF}"
 
 
 

@@ -22,11 +22,11 @@ log_success "TERMINÉ"
 ##############################################################################
 log_info "Installation d'un instantané du dépôt ebuild de Gentoo depuis le web"
 emerge-webrsync
-log_success "TERMINÉ"
+log_success "Installation d'un instantané du dépôt ebuild terminée"
 
 log_info "Mise à jour de l'ensemble @world"
 emerge --quiet --update --deep --newuse @world
-log_success "TERMINÉ"
+log_success "Mise à jour de l'ensemble @world terminée"
 
 log_info "Configuration de VIDEO_CARDS dans make.conf + installation des drivers"
 GPU="$(lspci | grep VGA)"
@@ -38,7 +38,6 @@ elif [[ "$(echo "${GPU}" | grep -q -i nvidia; echo $?)" == 0 ]]; then
 elif [[ "$(echo "${GPU}" | grep -q -i amd; echo $?)" == 0 ]]; then 
     echo 'VIDEO_CARDS="amdgpu radeonsi radeon"' >> /etc/portage/make.conf
 fi
-
 log_success "Configuration de VIDEO_CARDS terminée."
 
 ##############################################################################
