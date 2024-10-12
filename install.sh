@@ -115,7 +115,7 @@ else
     MBR_SIZE="$(prompt_value "Partition BIOS en MiB [ par défaut : ]" "$MBR_SIZE")"
 fi
 
-ROOT_SIZE="$(prompt_value "Partition Racine en GiB [ par défaut : ]" "$ROOT_SIZE")"
+ROOT_SIZE="$(prompt_value "Partition Root en GiB [ par défaut : ]" "$ROOT_SIZE")"
 HOME_SIZE="$(prompt_value "Partition Home en %  [ par défaut : ]" "$HOME_SIZE")"
 
 if [[ "$SWAP" == "On" ]]; then
@@ -162,7 +162,7 @@ else
     echo "[ ${MBR_SIZE}MiB ]"        "- Partition BIOS en MiB" 
 fi
 
-echo "[ ${ROOT_SIZE}GiB ]"           "- Partition Racine en GiB" 
+echo "[ ${ROOT_SIZE}GiB ]"           "- Partition Root en GiB" 
 echo "[ ${HOME_SIZE}% ]"             "- Partition Home en %" 
 
 if [[ "$SWAP" == "On" ]]; then

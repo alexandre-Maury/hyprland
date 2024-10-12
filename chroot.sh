@@ -30,41 +30,40 @@ emerge-webrsync
 log_success "Installation d'un instantané du dépôt ebuild terminée"
 
 ##############################################################################
-## Setting the timezone                                                    
-##############################################################################
-log_info "Configuration du fuseau horaire"
-echo "${TIMEZONE}" > /etc/timezone
-emerge --config sys-libs/timezone-data
-log_success "Configuration du fuseau horaire terminée."
-
-##############################################################################
-## Setting the timezone                                                    
+## Setting the locale                                                    
 ##############################################################################
 log_info "Configuration des locales"
 echo "${LOCALE}" >> /etc/locale.gen
 locale-gen
-    
-# create file
-echo "LANG=\"${LANG}\"" > /etc/env.d/02locale
-echo "LC_COLLATE=\"${LANG}\"" > /etc/env.d/02locale
+localectl set-locale "${LANG}"
+localectl set-keymap "${KEYMAP}"
+localectl set-x11-keymap "${KEYMAP}"
+log_info "Configuration des locales terminé"
 
-env-update && source /etc/profile && export PS1="(chroot) ${PS1}"
-log_success "Configuration des locales terminée."
+##############################################################################
+## Setting the timezone                                                    
+##############################################################################
+log_info "Configuration du fuseau horaire"
+echo "${TIMEZONE}" > /etc/timezone
+timedatectl set-timezone "${TIMEZONE}"
+log_info "Configuration du fuseau horaire terminé"
 
 ##############################################################################
 ## Generate hostname                                                
 ##############################################################################
 log_info "Génération du hostname"
 echo "${HOSTNAME}" > /etc/hostname
+hostnamectl set-hostname "${HOSTNAME}"
+echo "127.0.0.1 localhost" >> /etc/hosts
 log_success "Génération du hostname terminée"
 
 ##############################################################################
 ## Configurer profil                                                  
 ##############################################################################
-log_info "Configuration du profil avec eselect"
+# log_info "Configuration du profil avec eselect"
 # eselect profile list
 # eselect profile set XX
-log_success "Configuration du profil avec eselect terminée"
+# log_success "Configuration du profil avec eselect terminée"
 
 ##############################################################################
 ## Créer le machine-id                                                 
@@ -162,10 +161,10 @@ fi
 ## Enable networking                                                
 ##############################################################################
 log_info "Activation du réseau"
-echo '[Match]' >> /etc/systemd/network/20-wired.network
-echo "Name=${INTERFACE}" >> /etc/systemd/network/20-wired.network
-echo '[Network]' >> /etc/systemd/network/20-wired.network
-echo 'DHCP=yes' >> /etc/systemd/network/20-wired.network
+echo '[Match]' >> /etc/systemd/network/50-dhcp.network
+echo "Name=${INTERFACE}" >> /etc/systemd/network/50-dhcp.network
+echo '[Network]' >> /etc/systemd/network/50-dhcp.network
+echo 'DHCP=yes' >> /etc/systemd/network/50-dhcp.network
 
 systemctl enable systemd-networkd.service
 systemctl enable systemd-resolved.service
@@ -175,9 +174,15 @@ log_success "Activation du réseau terminée"
 ## Change root password                                              
 ##############################################################################
 log_info "Changer le mot de passe root"
-while ! passwd ; do
-    sleep 1
-done
+
+echo "root:${ROOT_PASSWORD}" | chpasswd
+
+# Vérification
+if [ $? -eq 0 ]; then
+    echo "Le mot de passe root a été changé avec succès."
+else
+    echo "Erreur lors du changement du mot de passe root."
+fi
 
 log_success "Changer le mot de passe root terminée"
 
@@ -186,23 +191,11 @@ log_success "Changer le mot de passe root terminée"
 ##############################################################################
 log_info "Configuration du compte utilisateur"
 
-NAME=""
 
-while [ -z "${NAME}" ]; do
-    printf "Entrez le nom de l'utilisateur local :"
-    read -r NAME
-done
-
-log_info "Ajout de l'utilisateur aux groupes users, audio, video et wheel"
-useradd -m -G wheel,users,audio,video -s /bin/bash "${NAME}"
-
-log_info "Ajout au fichier sudoers"
+useradd -m -G wheel,users,audio,video -s /bin/bash "${USERNAME}"
 echo "%wheel ALL=(ALL:ALL) ALL" >> /etc/sudoers
 
-log_info "Configuration du mot de passe utilisateur"
-while ! passwd "${NAME}"; do
-    sleep 1
-done
+echo "${USERNAME}:${USERNAME_PASSWORD}" | chpasswd
 
 log_success "Configuration du compte utilisateur terminée"
 
