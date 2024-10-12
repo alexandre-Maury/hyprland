@@ -9,34 +9,43 @@ fi
 
 echo "Mode de démarrage détecté : $boot_mode"
 
-shred -n "1" -v "/dev/sda"
+# Demande à l'utilisateur sur quel disque effectuer les modifications
+read -p "Sur quel disque souhaitez-vous créer les partitions ? (ex: /dev/sda) " disk
 
-# Demander à l'utilisateur le nombre de partitions à créer
-read -p "Combien de partitions souhaitez-vous créer ? " num_partitions
-
-# Vérifier si le nombre est valide (un entier positif)
-if ! [[ "$num_partitions" =~ ^[0-9]+$ ]] || [ "$num_partitions" -le 0 ]; then
-  echo "Erreur : Veuillez entrer un nombre entier positif."
+# Vérifier si le disque existe
+if [ ! -b "$disk" ]; then
+  echo "Erreur : Le disque $disk n'existe pas."
   exit 1
 fi
 
-# Initialiser la table des partitions avec parted
-read -p "Sur quel disque souhaitez-vous créer les partitions ? (ex: /dev/sda) " disk
+# Confirmation avant d'effacer les données
+read -p "ATTENTION : Toutes les données sur $disk seront détruites. Voulez-vous continuer ? (y/n) : " confirm
+if [ "$confirm" != "y" ]; then
+  echo "Opération annulée."
+  exit 0
+fi
 
-# Effacer les partitions actuelles et créer une nouvelle table de partitions
+# Effacer les données existantes avec shred
+shred -n 1 -v "$disk"
+
+# Initialiser la table des partitions avec parted
 if [ "$boot_mode" = "UEFI" ]; then
-  parted $disk mklabel gpt
+  parted --script -a optimal $disk mklabel gpt
   echo "Table de partitions GPT créée pour le mode UEFI."
 else
-  parted $disk mklabel msdos
+  parted --script -a optimal $disk mklabel msdos
   echo "Table de partitions MSDOS créée pour le mode MBR."
 fi
 
 # Si UEFI, créer une partition EFI obligatoire
 if [ "$boot_mode" = "UEFI" ]; then
   read -p "Entrez la taille de la partition EFI (en Mo) : " efi_size
-  parted $disk mkpart ESP fat32 1MiB ${efi_size}MiB
-  parted $disk set 1 esp on
+  if ! [[ "$efi_size" =~ ^[0-9]+$ ]]; then
+    echo "Erreur : Taille de la partition EFI invalide."
+    exit 1
+  fi
+  parted --script -a optimal $disk mkpart ESP fat32 1MiB ${efi_size}MiB
+  parted --script -a optimal $disk set 1 esp on
   echo "Partition EFI créée de ${efi_size}Mo."
   start_point=$efi_size  # Définir la fin de la partition EFI comme point de départ pour les autres partitions
 else
@@ -48,29 +57,50 @@ if [ "$boot_mode" = "MBR" ]; then
   read -p "Souhaitez-vous créer une partition /boot séparée ? (y/n) : " create_boot
   if [ "$create_boot" = "y" ]; then
     read -p "Entrez la taille de la partition /boot (en Mo) : " boot_size
-    parted $disk mkpart primary ext4 1MiB ${boot_size}MiB
+    if ! [[ "$boot_size" =~ ^[0-9]+$ ]]; then
+      echo "Erreur : Taille de la partition /boot invalide."
+      exit 1
+    fi
+    parted --script -a optimal $disk mkpart primary ext4 1MiB ${boot_size}MiB
     echo "Partition /boot créée de ${boot_size}Mo."
     start_point=$boot_size  # Définir la fin de la partition /boot comme point de départ
   fi
 fi
 
+# Demander à l'utilisateur le nombre de partitions à créer
+read -p "Combien de partitions supplémentaires souhaitez-vous créer ? " num_partitions
+
+# Vérifier si le nombre est valide (un entier positif)
+if ! [[ "$num_partitions" =~ ^[0-9]+$ ]] || [ "$num_partitions" -le 0 ]; then
+  echo "Erreur : Veuillez entrer un nombre entier positif."
+  exit 1
+fi
+
 # Boucle pour demander les détails de chaque partition supplémentaire
 for ((i = 1; i <= num_partitions; i++)); do
-  read -p "Entrez la taille de la partition $i (en Mo ou '100%' pour le reste du disque) : " partition_size
-  read -p "Entrez le type de la partition $i (par ex. ext4, swap, etc.) : " partition_type
+  read -p "Entrez la taille de la partition $i (en GiB ou '100%' pour le reste du disque) : " partition_size
+  read -p "Entrez le type de la partition $i (par ex. ext4, linux-swap, etc.) : " partition_type
+
+  # Vérification de la taille de la partition
+  if [ "$partition_size" != "100%" ] && ! [[ "$partition_size" =~ ^[0-9]+(\.[0-9]+)?$ ]]; then
+    echo "Erreur : Taille de la partition $i invalide."
+    exit 1
+  fi
 
   # Si l'utilisateur veut que la partition prenne tout l'espace disponible
   if [ "$partition_size" = "100%" ]; then
-    parted $disk mkpart primary $partition_type ${start_point}MiB 100%
+    parted --script -a optimal $disk mkpart primary $partition_type ${start_point}MiB 100%
     echo "Partition $i créée en occupant 100 % de l'espace disponible."
     break  # Arrêter la boucle car tout l'espace est utilisé
   else
+    partition_size_mb=$((partition_size * 1024))  # Conversion GiB en MiB
+
     # Calculer le point de fin pour la partition actuelle
-    end_point=$((start_point + partition_size))
+    end_point=$((start_point + partition_size_mb))
     
     # Créer la partition avec la taille spécifiée
-    parted $disk mkpart primary $partition_type ${start_point}MiB ${end_point}MiB
-    echo "Partition $i de taille ${partition_size}Mo et de type $partition_type créée."
+    parted --script -a optimal $disk mkpart primary $partition_type ${start_point}MiB ${end_point}MiB
+    echo "Partition $i de taille ${partition_size_mb}Mo et de type $partition_type créée."
     
     # Mettre à jour le point de départ pour la prochaine partition
     start_point=$end_point
