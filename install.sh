@@ -219,8 +219,6 @@ mkdir --parents $MOUNT_POINT
 
 if [[ "${MODE}" == "UEFI" ]]; then
 
-    mkdir --parents $MOUNT_POINT/{efi,home}
-
     log_info "Création : Table de partitions GPT"
     parted --script -a optimal /dev/"${DISK}" mklabel gpt
 
@@ -251,6 +249,17 @@ if [[ "${MODE}" == "UEFI" ]]; then
             log_info "Formatage : Partition HOME"
             HOME_PARTITION=$(echo "$PARTITIONS" | sed -n '3p')
             mkfs.ext4 -F /dev/"${HOME_PARTITION}"
+
+            mkdir --parents $MOUNT_POINT/{efi,home,swap}
+
+            log_info "Montage : Partition Racine"
+            mount /dev/"${ROOT_PARTITION}" $MOUNT_POINT
+
+            log_info "Montage : Partition Home"
+            mount /dev/"${HOME_PARTITION}" $MOUNT_POINT/home
+
+            log_info "Montage : Partition Boot"
+            mount /dev/"${BOOT_PARTITION}" $MOUNT_POINT/efi 
 
             log_info "Création : fichier Swap"
             dd if=/dev/zero of=$MOUNT_POINT/swap bs=1M count=${SWAP_SIZE}  
@@ -287,6 +296,20 @@ if [[ "${MODE}" == "UEFI" ]]; then
             log_info "Formatage : Partition HOME"
             HOME_PARTITION=$(echo "$PARTITIONS" | sed -n '4p')
             mkfs.ext4 -F /dev/"${HOME_PARTITION}"
+
+            mkdir --parents $MOUNT_POINT/{efi,swap,home}
+
+            log_info "Montage : Partition Racine"
+            mount /dev/"${ROOT_PARTITION}" $MOUNT_POINT
+
+            log_info "Montage : Partition Home"
+            mount /dev/"${HOME_PARTITION}" $MOUNT_POINT/home
+
+            log_info "Montage : Partition Boot"
+            mount /dev/"${BOOT_PARTITION}" $MOUNT_POINT/efi 
+
+            log_info "Montage : Partition Swap"
+            mount /dev/"${SWAP_PARTITION}" $MOUNT_POINT/swap 
         fi
 
     else # Swap Off
@@ -310,20 +333,20 @@ if [[ "${MODE}" == "UEFI" ]]; then
         log_info "Formatage : Partition HOME"
         HOME_PARTITION=$(echo "$PARTITIONS" | sed -n '3p')
         mkfs.ext4 -F /dev/"${HOME_PARTITION}" 
+
+        mkdir --parents $MOUNT_POINT/{efi,home}
+
+        log_info "Montage : Partition Racine"
+        mount /dev/"${ROOT_PARTITION}" $MOUNT_POINT
+
+        log_info "Montage : Partition Home"
+        mount /dev/"${HOME_PARTITION}" $MOUNT_POINT/home
+
+        log_info "Montage : Partition Boot"
+        mount /dev/"${BOOT_PARTITION}" $MOUNT_POINT/efi 
     fi
 
-    log_info "Montage : Partition Racine"
-    mount /dev/"${ROOT_PARTITION}" $MOUNT_POINT
-
-    log_info "Montage : Partition Home"
-    mount /dev/"${HOME_PARTITION}" $MOUNT_POINT/home
-
-    log_info "Montage : Partition Boot"
-    mount /dev/"${BOOT_PARTITION}" $MOUNT_POINT/efi 
-
 else # BIOS
-
-    mkdir --parents $MOUNT_POINT/{boot,home}
 
     log_info "Création : Table de partitions MBR"
     parted --script -a optimal /dev/"${DISK}" mklabel msdos
@@ -356,6 +379,16 @@ else # BIOS
             HOME_PARTITION=$(echo "$PARTITIONS" | sed -n '3p')
             mkfs.ext4 -F /dev/"${HOME_PARTITION}"
 
+            mkdir --parents $MOUNT_POINT/{boot,home,swap}
+
+            log_info "Montage : Partition Racine"
+            mount /dev/"${ROOT_PARTITION}" $MOUNT_POINT
+
+            log_info "Montage : Partition Home"
+            mount /dev/"${HOME_PARTITION}" $MOUNT_POINT/home
+
+            log_info "Montage : Partition Boot"
+            mount /dev/"${BOOT_PARTITION}" $MOUNT_POINT/boot 
 
             log_info "Création : fichier Swap"
             dd if=/dev/zero of=$MOUNT_POINT/swap bs=1M count=${SWAP_SIZE}  
@@ -392,6 +425,20 @@ else # BIOS
             log_info "Formatage : Partition HOME"
             HOME_PARTITION=$(echo "$PARTITIONS" | sed -n '4p')
             mkfs.ext4 -F /dev/"${HOME_PARTITION}"
+
+            mkdir --parents $MOUNT_POINT/{boot,home,swap}
+
+            log_info "Montage : Partition Racine"
+            mount /dev/"${ROOT_PARTITION}" $MOUNT_POINT
+
+            log_info "Montage : Partition Home"
+            mount /dev/"${HOME_PARTITION}" $MOUNT_POINT/home
+
+            log_info "Montage : Partition Boot"
+            mount /dev/"${BOOT_PARTITION}" $MOUNT_POINT/boot 
+
+            log_info "Montage : Partition Swap"
+            mount /dev/"${SWAP_PARTITION}" $MOUNT_POINT/swap
         fi
 
     else # Swap Off
@@ -415,17 +462,19 @@ else # BIOS
         log_info "Formatage : Partition HOME"
         HOME_PARTITION=$(echo "$PARTITIONS" | sed -n '3p')
         mkfs.ext4 -F /dev/"${HOME_PARTITION}"
+
+        mkdir --parents $MOUNT_POINT/{boot,home}
+
+        log_info "Montage : Partition Racine"
+        mount /dev/"${ROOT_PARTITION}" $MOUNT_POINT
+
+        log_info "Montage : Partition Home"
+        mount /dev/"${HOME_PARTITION}" $MOUNT_POINT/home
+
+        log_info "Montage : Partition Boot"
+        mount /dev/"${BOOT_PARTITION}" $MOUNT_POINT/boot 
         
     fi
-
-    log_info "Montage : Partition Racine"
-    mount /dev/"${ROOT_PARTITION}" $MOUNT_POINT
-
-    log_info "Montage : Partition Home"
-    mount /dev/"${HOME_PARTITION}" $MOUNT_POINT/home
-
-    log_info "Montage : Partition Boot"
-    mount /dev/"${BOOT_PARTITION}" $MOUNT_POINT/boot 
   
 fi
 
