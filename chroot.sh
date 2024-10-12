@@ -33,10 +33,10 @@ GPU="$(lspci | grep VGA)"
 if [[ $(echo "${GPU}" | grep -q -i intel; echo $?) == 0 ]]; then
     echo 'VIDEO_CARDS="intel fbdev vesa"' >> /etc/portage/make.conf
 elif [[ "$(echo "${GPU}" | grep -q -i nvidia; echo $?)" == 0 ]]; then 
-    echo 'VIDEO_CARDS="nvidia nouveau"' >> /etc/portage/make.conf
+    echo 'VIDEO_CARDS="nvidia nouveau fbdev vesa"' >> /etc/portage/make.conf
     emerge --quiet x11-drivers/nvidia-drivers
 elif [[ "$(echo "${GPU}" | grep -q -i amd; echo $?)" == 0 ]]; then 
-    echo 'VIDEO_CARDS="amdgpu radeonsi radeon"' >> /etc/portage/make.conf
+    echo 'VIDEO_CARDS="amdgpu radeonsi radeon fbdev vesa"' >> /etc/portage/make.conf
 fi
 log_success "Configuration de VIDEO_CARDS terminée."
 
