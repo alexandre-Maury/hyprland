@@ -204,8 +204,7 @@ fi
 ##############################################################################
 
 if [[ "$SHRED" == "On" ]]; then
-    # shred -n "${SHRED_PASS}" -v "/dev/${DISK}"
-    # log_success "TERMINÉ"
+
     # Lister les partitions montées
     MOUNTED_PARTITIONS=$(lsblk --noheadings --output MOUNTPOINT "/dev/${DISK}" | grep -v "^$")
 
