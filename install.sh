@@ -87,11 +87,11 @@ log_info "Nombre de passes pour le nettoyage de /dev/$DISK :"
 if [[ "$SHRED" == "On" ]]; then
     while true; do
         # Demande à l'utilisateur de saisir le nombre de passes
-        export SHRED_PASS="$(prompt_value "[par défaut : $SHRED_PASS] : " "$SHRED_PASS")"
+        export SHRED_PASS="$(prompt_value "[ par défaut : ] : " "$SHRED_PASS")"
         
         # Vérifie si la valeur saisie est un nombre
         if [[ "$SHRED_PASS" =~ ^[0-9]+$ ]]; then
-            log_success "TERMINÉ"
+            log_success "Sélection du nombre de passes pour le nettoyage de /dev/$DISK terminée"
             break  # Sort de la boucle si la saisie est correcte
         else
             log_warning "veuillez saisir un nombre valide."  # Message d'erreur
@@ -99,7 +99,7 @@ if [[ "$SHRED" == "On" ]]; then
     done
 fi
 
-log_success "Sélection du nombre de passes pour le nettoyage de /dev/$DISK terminée"
+
 
 ##############################################################################
 ## Select size                                                         
