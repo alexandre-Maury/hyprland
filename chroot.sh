@@ -100,20 +100,20 @@ log_success "Configuration fstab terminée"
 ##############################################################################
 log_info "Installation et configuration de grub"
 
-if [[ "${MODE}" == "UEFI" ]]; then
+if [[ "$MODE" == "UEFI" ]]; then
     echo 'GRUB_PLATFORMS="efi-64"' >> /etc/portage/make.conf
     emerge --quiet sys-boot/grub
     grub-install --target=x86_64-efi --efi-directory=/efi
 	grub-mkconfig -o /boot/grub/grub.cfg
 
-elif [[ "${MODE}" == "BIOS" ]]; then
+elif [[ "$MODE" == "BIOS" ]]; then
     echo 'GRUB_PLATFORMS="pc"' >> /etc/portage/make.conf
     emerge --quiet sys-boot/grub
 	grub-install /dev/"${DISK}"
 	grub-mkconfig -o /boot/grub/grub.cfg
 
 else
-	log_error "An error occured at grub step. Exiting..."
+	log_error "Une erreur est survenue $MODE non reconnu"
 	exit 1
 fi
 
