@@ -262,10 +262,11 @@ if [[ "${MODE}" == "UEFI" ]]; then
             mount /dev/"${BOOT_PARTITION}" $MOUNT_POINT/efi 
 
             log_info "Création : fichier Swap"
-            dd if=/dev/zero of=$MOUNT_POINT/swap bs=1M count=${SWAP_SIZE}  
-            chmod 600 $MOUNT_POINT/swap                            
-            mkswap $MOUNT_POINT/swap                                
-            swapon $MOUNT_POINT/swap
+            fallocate -l "${SWAP_SIZE}MiB" $MOUNT_POINT/swap/swapfile
+            # dd if=/dev/zero of=$MOUNT_POINT/swap bs=1M count=${SWAP_SIZE}  
+            chmod 600 $MOUNT_POINT/swap/swapfile                            
+            mkswap $MOUNT_POINT/swap/swapfile                                
+            swapon $MOUNT_POINT/swap/swapfile
 
         else
 
@@ -391,10 +392,11 @@ else # BIOS
             mount /dev/"${BOOT_PARTITION}" $MOUNT_POINT/boot 
 
             log_info "Création : fichier Swap"
-            dd if=/dev/zero of=$MOUNT_POINT/swap bs=1M count=${SWAP_SIZE}  
-            chmod 600 $MOUNT_POINT/swap                            
-            mkswap $MOUNT_POINT/swap                                
-            swapon $MOUNT_POINT/swap  
+            fallocate -l "${SWAP_SIZE}MiB" $MOUNT_POINT/swap/swapfile
+            # dd if=/dev/zero of=$MOUNT_POINT/swap bs=1M count=${SWAP_SIZE}  
+            chmod 600 $MOUNT_POINT/swap/swapfile                            
+            mkswap $MOUNT_POINT/swap/swapfile                                
+            swapon $MOUNT_POINT/swap/swapfile  
 
         else
 
