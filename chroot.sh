@@ -4,8 +4,18 @@
 
 set -e  # Quitte immédiatement en cas d'erreur.
 
-source config.sh # Inclure le fichier de configuration.
 source functions.sh  # Charge les fonctions définies dans le fichier fonction.sh.
+
+##############################################################################
+## Arguments                                                     
+##############################################################################
+MODE="${1}"
+DISK="${2}"
+TIMEZONE="${3}"
+LOCALE="${4}"
+LANG="${5}"
+HOSTNAME="${6}"
+INTERFACE="${7}"
 
 chmod +x *.sh # Rendre les scripts exécutables.
 

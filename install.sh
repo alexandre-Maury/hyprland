@@ -51,7 +51,7 @@ log_info "Sélectionner un disque pour l'installation :"
 #     read -r OPTION
 # done
 
-# export DISK="$(echo "${LIST}" | grep "  ${OPTION})" | awk '{print $2}')"
+# DISK="$(echo "${LIST}" | grep "  ${OPTION})" | awk '{print $2}')"
 # log_success "TERMINÉ"
 
 # Générer la liste des disques physiques sans les disques loop et sr (CD/DVD)
@@ -67,11 +67,11 @@ while [[ -z "$(echo "${LIST}" | grep "  ${OPTION})")" ]]; do
     # Vérification si l'utilisateur a entré un numéro (choix dans la liste)
     if [[ -n "$(echo "${LIST}" | grep "  ${OPTION})")" ]]; then
         # Si l'utilisateur a choisi un numéro valide, récupérer le nom du disque correspondant
-        export DISK="$(echo "${LIST}" | grep "  ${OPTION})" | awk '{print $2}')"
+        DISK="$(echo "${LIST}" | grep "  ${OPTION})" | awk '{print $2}')"
         break
     else
         # Si l'utilisateur a entré quelque chose qui n'est pas dans la liste, considérer que c'est un nom de disque
-        export DISK="${OPTION}"
+        DISK="${OPTION}"
         break
     fi
 done
@@ -87,7 +87,7 @@ log_info "Nombre de passes pour le nettoyage de /dev/$DISK :"
 if [[ "$SHRED" == "On" ]]; then
     while true; do
         # Demande à l'utilisateur de saisir le nombre de passes
-        export SHRED_PASS="$(prompt_value "[ par défaut : ] : " "$SHRED_PASS")"
+        SHRED_PASS="$(prompt_value "[ par défaut : ] : " "$SHRED_PASS")"
         
         # Vérifie si la valeur saisie est un nombre
         if [[ "$SHRED_PASS" =~ ^[0-9]+$ ]]; then
@@ -108,21 +108,21 @@ fi
 log_info "Sélection des tailles de partition :"
 
 if [[ -n $(ls /sys/firmware/efi/efivars 2>/dev/null) ]];then
-    export MODE="UEFI"
-    export EFI_SIZE="$(prompt_value "Taille de la partition EFI en MiB [ par défaut : ]" "$EFI_SIZE")"
+    MODE="UEFI"
+    EFI_SIZE="$(prompt_value "Taille de la partition EFI en MiB [ par défaut : ]" "$EFI_SIZE")"
 else
-    export MODE="BIOS"
-    export MBR_SIZE="$(prompt_value "Taille de la partition BIOS en MiB [ par défaut : ]" "$MBR_SIZE")"
+    MODE="BIOS"
+    MBR_SIZE="$(prompt_value "Taille de la partition BIOS en MiB [ par défaut : ]" "$MBR_SIZE")"
 fi
 
-export ROOT_SIZE="$(prompt_value "Taille de la partition Racine en GiB [ par défaut : ]" "$ROOT_SIZE")"
-export HOME_SIZE="$(prompt_value "Taille de la partition Home en %  [ par défaut : ]" "$HOME_SIZE")"
+ROOT_SIZE="$(prompt_value "Taille de la partition Racine en GiB [ par défaut : ]" "$ROOT_SIZE")"
+HOME_SIZE="$(prompt_value "Taille de la partition Home en %  [ par défaut : ]" "$HOME_SIZE")"
 
 if [[ "$SWAP" == "On" ]]; then
     if [[ "$SWAP_FILE" == "On" ]]; then
-        export SWAP_SIZE="$(prompt_value "Taille du fichier Swap en MiB [ par défaut : ]" "$SWAP_SIZE")"
+        SWAP_SIZE="$(prompt_value "Taille du fichier Swap en MiB [ par défaut : ]" "$SWAP_SIZE")"
     else
-        export SWAP_SIZE="$(prompt_value "Taille de la partition Swap en MiB [ par défaut : ]" "$SWAP_SIZE")"
+        SWAP_SIZE="$(prompt_value "Taille de la partition Swap en MiB [ par défaut : ]" "$SWAP_SIZE")"
     fi
 fi
 
@@ -134,25 +134,16 @@ log_success "Sélection des tailles de partition terminée"
 
 log_info "Sélectionner vos configurations systéme :"
 
-export TIMEZONE="$(prompt_value "Fuseau horaire du système [ par défaut : ]" "$TIMEZONE")"
-export LOCALE="$(prompt_value "Locale du système [ par défaut : ]" "$LOCALE")"
-export HOSTNAME="$(prompt_value "Nom d'hôte du système [ par défaut : ]" "$HOSTNAME")"
-export INTERFACE="$(prompt_value "Nom de l'interface réseau [ par défaut : ]" "$INTERFACE")"
-export KEYMAP="$(prompt_value "Disposition du clavier à utiliser [ par défaut : ]" "$KEYMAP")"
-export LANG
+TIMEZONE="$(prompt_value "Fuseau horaire du système [ par défaut : ]" "$TIMEZONE")"
+LOCALE="$(prompt_value "Locale du système [ par défaut : ]" "$LOCALE")"
+HOSTNAME="$(prompt_value "Nom d'hôte du système [ par défaut : ]" "$HOSTNAME")"
+INTERFACE="$(prompt_value "Nom de l'interface réseau [ par défaut : ]" "$INTERFACE")"
+KEYMAP="$(prompt_value "Disposition du clavier à utiliser [ par défaut : ]" "$KEYMAP")"
 
-export ROOT_PASSWORD="$(prompt_value "Créer votre mot de passe root [ par défaut : ]" "$ROOT_PASSWORD")"
-export USERNAME="$(prompt_value "Saisir votre nom d'utilisateur [ par défaut : ]" "$USERNAME")"
-export USERNAME_PASSWORD="$(prompt_value "Saisir votre mot de passe [ par défaut : ]" "$USERNAME_PASSWORD")"
 
-export COMMON_FLAGS
-export CPU_FLAGS
-export MAKEOPTS
-export USE
-export L10N
-export INPUT_DEVICES
-
-export MOUNT_POINT
+ROOT_PASSWORD="$(prompt_value "Créer votre mot de passe root [ par défaut : ]" "$ROOT_PASSWORD")"
+USERNAME="$(prompt_value "Saisir votre nom d'utilisateur [ par défaut : ]" "$USERNAME")"
+USERNAME_PASSWORD="$(prompt_value "Saisir votre mot de passe [ par défaut : ]" "$USERNAME_PASSWORD")"
 
 log_success "Configurations systéme terminée"
 
@@ -573,7 +564,6 @@ log_success "TERMINÉ"
 ##############################################################################
 ## Copying DNS info                                                 
 ##############################################################################
-
 log_info "Copie des informations DNS"
 cp --dereference /etc/resolv.conf $MOUNT_POINT/etc/
 log_success "TERMINÉ"
@@ -581,7 +571,6 @@ log_success "TERMINÉ"
 ##############################################################################
 ## Mounting the necessary filesystems                                                 
 ##############################################################################
-
 log_info "Montage des systèmes de fichiers nécessaires"
 mount --types proc /proc /mnt/gentoo/proc
 mount --rbind /sys /mnt/gentoo/sys
@@ -598,12 +587,10 @@ log_success "TERMINÉ"
 log_info "Copie de la deuxième partie du script d'installation dans le nouvel environnement"
 cp chroot.sh $MOUNT_POINT
 cp functions.sh $MOUNT_POINT
-cp config.sh $MOUNT_POINT
-log_success "TERMINÉ"
-
 
 log_info "Entrée dans le nouvel environnement et exécution de la deuxième partie du script"
-chroot $MOUNT_POINT /bin/bash -c "./chroot.sh"
+
+chroot $MOUNT_POINT /bin/bash -c "./chroot.sh $MODE $DISK $TIMEZONE $LOCALE $LANG $HOSTNAME $INTERFACE"
 log_success "INSTALLATION TERMINÉ : après redémarrage lancé bash -x post_install.sh"
 
 
