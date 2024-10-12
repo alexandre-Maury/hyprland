@@ -10,7 +10,6 @@ packages=("git" "tar" "curl" "wget" "chrony")
 GENTOO_BASE="https://distfiles.gentoo.org/releases/amd64/autobuilds/20240929T163611Z/stage3-amd64-systemd-20240929T163611Z.tar.xz"
 MOUNT_POINT="/mnt/gentoo"
 
-MODE=""               # <UEFI> ou <BIOS>  
 SHRED="On"            # <On> Nettoyage du disque
 SHRED_PASS="1"        # Nombre de passe pour le nettoyage
 
@@ -30,11 +29,6 @@ EFI_SIZE="512"        # Taille de la partition BOOT/EFI en MiB : /dev/sda1  
 ROOT_SIZE="100"       # Taille de la partition pour / en GiB   : /dev/sda2  ext4(8300)   100G     /Racine partition
 HOME_SIZE="100"       # Taille de la partition pour /home en % : /dev/sda3  ext4(8300)   100%     /Home partition
 SWAP_SIZE="4096"      # Taille du fichier SWAP en MiB
-
-BOOT_PARTITION=""      # Le script se charge d'assigner la valeur <install.sh>   
-ROOT_PARTITION=""     # Le script se charge d'assigner la valeur <install.sh> 
-HOME_PARTITION=""     # Le script se charge d'assigner la valeur <install.sh>  
-SWAP_PARTITION=""     # Le script se charge d'assigner la valeur <install.sh> 
 
 TIMEZONE="Europe/Paris"
 LOCALE="fr_FR.UTF-8 UTF-8"

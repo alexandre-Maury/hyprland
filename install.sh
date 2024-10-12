@@ -109,20 +109,20 @@ log_info "Sélection des tailles de partition :"
 
 if [[ -n $(ls /sys/firmware/efi/efivars 2>/dev/null) ]];then
     MODE="UEFI"
-    EFI_SIZE="$(prompt_value "Taille de la partition EFI en MiB [ par défaut : ]" "$EFI_SIZE")"
+    EFI_SIZE="$(prompt_value "Partition EFI en MiB [ par défaut : ]" "$EFI_SIZE")"
 else
     MODE="BIOS"
-    MBR_SIZE="$(prompt_value "Taille de la partition BIOS en MiB [ par défaut : ]" "$MBR_SIZE")"
+    MBR_SIZE="$(prompt_value "Partition BIOS en MiB [ par défaut : ]" "$MBR_SIZE")"
 fi
 
-ROOT_SIZE="$(prompt_value "Taille de la partition Racine en GiB [ par défaut : ]" "$ROOT_SIZE")"
-HOME_SIZE="$(prompt_value "Taille de la partition Home en %  [ par défaut : ]" "$HOME_SIZE")"
+ROOT_SIZE="$(prompt_value "Partition Racine en GiB [ par défaut : ]" "$ROOT_SIZE")"
+HOME_SIZE="$(prompt_value "Partition Home en %  [ par défaut : ]" "$HOME_SIZE")"
 
 if [[ "$SWAP" == "On" ]]; then
     if [[ "$SWAP_FILE" == "On" ]]; then
-        SWAP_SIZE="$(prompt_value "Taille du fichier Swap en MiB [ par défaut : ]" "$SWAP_SIZE")"
+        SWAP_SIZE="$(prompt_value "Fichier Swap en MiB [ par défaut : ]" "$SWAP_SIZE")"
     else
-        SWAP_SIZE="$(prompt_value "Taille de la partition Swap en MiB [ par défaut : ]" "$SWAP_SIZE")"
+        SWAP_SIZE="$(prompt_value "Partition Swap en MiB [ par défaut : ]" "$SWAP_SIZE")"
     fi
 fi
 
@@ -134,16 +134,16 @@ log_success "Sélection des tailles de partition terminée"
 
 log_info "Sélectionner vos configurations systéme :"
 
-TIMEZONE="$(prompt_value "Fuseau horaire du système [ par défaut : ]" "$TIMEZONE")"
-LOCALE="$(prompt_value "Locale du système [ par défaut : ]" "$LOCALE")"
-HOSTNAME="$(prompt_value "Nom d'hôte du système [ par défaut : ]" "$HOSTNAME")"
-INTERFACE="$(prompt_value "Nom de l'interface réseau [ par défaut : ]" "$INTERFACE")"
-KEYMAP="$(prompt_value "Disposition du clavier à utiliser [ par défaut : ]" "$KEYMAP")"
+TIMEZONE="$(prompt_value "Fuseau horaire [ par défaut : ]" "$TIMEZONE")"
+LOCALE="$(prompt_value "Locale [ par défaut : ]" "$LOCALE")"
+HOSTNAME="$(prompt_value "Nom d'hôte [ par défaut : ]" "$HOSTNAME")"
+INTERFACE="$(prompt_value "Interface réseau [ par défaut : ]" "$INTERFACE")"
+KEYMAP="$(prompt_value "Clavier [ par défaut : ]" "$KEYMAP")"
 
 
-ROOT_PASSWORD="$(prompt_value "Créer votre mot de passe root [ par défaut : ]" "$ROOT_PASSWORD")"
-USERNAME="$(prompt_value "Saisir votre nom d'utilisateur [ par défaut : ]" "$USERNAME")"
-USERNAME_PASSWORD="$(prompt_value "Saisir votre mot de passe [ par défaut : ]" "$USERNAME_PASSWORD")"
+ROOT_PASSWORD="$(prompt_value "Mot de passe root [ par défaut : ]" "$ROOT_PASSWORD")"
+USERNAME="$(prompt_value "Nom d'utilisateur [ par défaut : ]" "$USERNAME")"
+USERNAME_PASSWORD="$(prompt_value "Mot de passe [ par défaut : ]" "$USERNAME_PASSWORD")"
 
 log_success "Configurations systéme terminée"
 
@@ -153,34 +153,34 @@ log_success "Configurations systéme terminée"
 
 log_info "Vérification de la configuration :"
 echo ""
-echo "- Périphérique cible : --------------------------------------" "[ /dev/${DISK} ]"
-echo "- Mode Activé : ---------------------------------------------" "[ ${MODE} ]"
+echo "[ /dev/${DISK} ]"              "- Disque"
+echo "[ ${MODE} ]"                   "- Mode"
 
 if [[ "${MODE}" == "UEFI" ]]; then
-    echo "- Taille de la partition EFI en MiB : -------------------" "[ ${EFI_SIZE}MiB ]"
+    echo "[ ${EFI_SIZE}MiB ]"        "- Partition EFI en MiB" 
 else 
-    echo "- Taille de la partition BIOS en MiB : ------------------" "[ ${MBR_SIZE}MiB ]"
+    echo "[ ${MBR_SIZE}MiB ]"        "- Partition BIOS en MiB" 
 fi
 
-echo "- Taille de la partition Racine en GiB : --------------------" "[ ${ROOT_SIZE}GiB ]"
-echo "- Taille de la partition Home en % : ------------------------" "[ ${HOME_SIZE}% ]"
+echo "[ ${ROOT_SIZE}GiB ]"           "- Partition Racine en GiB" 
+echo "[ ${HOME_SIZE}% ]"             "- Partition Home en %" 
 
 if [[ "$SWAP" == "On" ]]; then
     if [[ "$SWAP_FILE" == "On" ]]; then
-        echo "- Taille du fichier swap en MiB : -------------------" "[ ${SWAP_SIZE}MiB ]"
+        echo "[ ${SWAP_SIZE}MiB ]"   "- Taille du fichier swap en MiB" 
     else
-        echo "- Taille de la partition Swap en MiB : --------------" "[ ${SWAP_SIZE}MiB ]"
+        echo "[ ${SWAP_SIZE}MiB ]"   "- Taille de la partition Swap en MiB" 
     fi
 fi
 
-echo "- Fuseau horaire : ------------------------------------------" "[ ${TIMEZONE} ]"
-echo "- Locale : --------------------------------------------------" "[ ${LOCALE} ]"
-echo "- Nom d'hôte : ----------------------------------------------" "[ ${HOSTNAME} ]"
-echo "- Interface : -----------------------------------------------" "[ ${INTERFACE} ]"
-echo "- Disposition du clavier : ----------------------------------" "[ ${KEYMAP} ]"
-echo "- Votre mot de passe ROOT : ---------------------------------" "[ ${ROOT_PASSWORD} ]"
-echo "- Votre utilisateur : ---------------------------------------" "[ ${USERNAME} ]"
-echo "- Votre mot de passe : --------------------------------------" "[ ${USERNAME_PASSWORD} ]"
+echo "[ ${TIMEZONE} ]"               "- Fuseau horaire" 
+echo "[ ${LOCALE} ]"                 "- Locale" 
+echo "[ ${HOSTNAME} ]"               "- Nom d'hôte" 
+echo "[ ${INTERFACE} ]"              "- Interface" 
+echo "[ ${KEYMAP} ]"                 "- Disposition du clavier" 
+echo "[ ${ROOT_PASSWORD} ]"          "- Votre mot de passe ROOT" 
+echo "[ ${USERNAME} ]"               "- Votre utilisateur" 
+echo "[ ${USERNAME_PASSWORD} ]"      "- Votre mot de passe" 
 echo ""
 
 # Demande à l'utilisateur de confirmer la configuration
@@ -585,12 +585,14 @@ log_success "TERMINÉ"
 ## Enter the new environment                                             
 ##############################################################################
 log_info "Copie de la deuxième partie du script d'installation dans le nouvel environnement"
-cp chroot.sh $MOUNT_POINT
+
 cp functions.sh $MOUNT_POINT
+cp config.sh $MOUNT_POINT
+cp chroot.sh $MOUNT_POINT
 
 log_info "Entrée dans le nouvel environnement et exécution de la deuxième partie du script"
 
-chroot $MOUNT_POINT /bin/bash -c "./chroot.sh $MODE $DISK $TIMEZONE $LOCALE $LANG $HOSTNAME $INTERFACE"
+chroot $MOUNT_POINT /bin/bash -c "./chroot.sh $MODE $DISK"
 log_success "INSTALLATION TERMINÉ : après redémarrage lancé bash -x post_install.sh"
 
 
