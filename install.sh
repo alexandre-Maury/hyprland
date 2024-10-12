@@ -236,10 +236,10 @@ if [[ "${MODE}" == "UEFI" ]]; then
 
         if [[ "$SWAP_FILE" == "On" ]]; then
 
-            log_info "Création : Partition Racine"
+            log_info "Création : Partition ROOT"
             parted --script -a optimal /dev/"${DISK}" mkpart ext4 ${EFI_SIZE}MiB $((EFI_SIZE + ROOT_SIZE_MB))MiB # Partition Racine
 
-            log_info "Création : Partition Home"
+            log_info "Création : Partition HOME"
             parted --script -a optimal /dev/"${DISK}" mkpart ext4 $((EFI_SIZE + ROOT_SIZE_MB))MiB ${HOME_SIZE}%  # Partition Home
 
             PARTITIONS=$(lsblk --list --noheadings /dev/"${DISK}" | tail -n +2 | awk '{print $1}')
@@ -256,19 +256,19 @@ if [[ "${MODE}" == "UEFI" ]]; then
             HOME_PARTITION=$(echo "$PARTITIONS" | sed -n '3p')
             mkfs.ext4 -F /dev/"${HOME_PARTITION}"
 
-            log_info "Montage : Partition Racine"
+            log_info "Montage : Partition ROOT"
             mkdir --parents $MOUNT_POINT
             mount /dev/"${ROOT_PARTITION}" $MOUNT_POINT
 
-            log_info "Montage : Partition Home"
+            log_info "Montage : Partition HOME"
             mkdir --parents $MOUNT_POINT/home
             mount /dev/"${HOME_PARTITION}" $MOUNT_POINT/home
 
-            log_info "Montage : Partition Boot"
+            log_info "Montage : Partition BOOT"
             mkdir --parents $MOUNT_POINT/efi
             mount /dev/"${BOOT_PARTITION}" $MOUNT_POINT/efi 
 
-            log_info "Création : fichier Swap"
+            log_info "Création : fichier SWAP"
             mkdir --parents $MOUNT_POINT/swap
             fallocate -l "${SWAP_SIZE}MiB" $MOUNT_POINT/swap/swapfile 
             chmod 600 $MOUNT_POINT/swap/swapfile                            
@@ -277,13 +277,13 @@ if [[ "${MODE}" == "UEFI" ]]; then
 
         else
 
-            log_info "Création : Partition Swap"
+            log_info "Création : Partition SWAP"
             parted --script -a optimal /dev/"${DISK}" mkpart linux-swap ${EFI_SIZE}MiB $((EFI_SIZE + SWAP_SIZE))MiB  # Partition Swap
 
-            log_info "Création : Partition Racine"
+            log_info "Création : Partition ROOT"
             parted --script -a optimal /dev/"${DISK}" mkpart ext4 $((EFI_SIZE + SWAP_SIZE))MiB ${ROOT_SIZE_MB}MiB    # Partition Racine
 
-            log_info "Création : Partition Home"
+            log_info "Création : Partition HOME"
             parted --script -a optimal /dev/"${DISK}" mkpart ext4 $((EFI_SIZE + ROOT_SIZE_MB))MiB ${HOME_SIZE}%      # Partition Home
 
             PARTITIONS=$(lsblk --list --noheadings /dev/"${DISK}" | tail -n +2 | awk '{print $1}')
@@ -305,29 +305,29 @@ if [[ "${MODE}" == "UEFI" ]]; then
             HOME_PARTITION=$(echo "$PARTITIONS" | sed -n '4p')
             mkfs.ext4 -F /dev/"${HOME_PARTITION}"
 
-            log_info "Montage : Partition Racine"
+            log_info "Montage : Partition ROOT"
             mkdir --parents $MOUNT_POINT
             mount /dev/"${ROOT_PARTITION}" $MOUNT_POINT
 
-            log_info "Montage : Partition Home"
+            log_info "Montage : Partition HOME"
             mkdir --parents $MOUNT_POINT/home
             mount /dev/"${HOME_PARTITION}" $MOUNT_POINT/home
 
-            log_info "Montage : Partition Boot"
+            log_info "Montage : Partition BOOT"
             mkdir --parents $MOUNT_POINT/efi
             mount /dev/"${BOOT_PARTITION}" $MOUNT_POINT/efi 
 
-            log_info "Montage : Partition Swap"
+            log_info "Montage : Partition SWAP"
             mkdir --parents $MOUNT_POINT/swap
             mount /dev/"${SWAP_PARTITION}" $MOUNT_POINT/swap 
         fi
 
     else # Swap Off
         
-        log_info "Création : Partition Racine"
+        log_info "Création : Partition ROOT"
         parted --script -a optimal /dev/"${DISK}" mkpart ext4 ${EFI_SIZE}MiB $((EFI_SIZE + ROOT_SIZE_MB))MiB # Partition Racine
 
-        log_info "Création : Partition Home"
+        log_info "Création : Partition HOME"
         parted --script -a optimal /dev/"${DISK}" mkpart ext4 $((EFI_SIZE + ROOT_SIZE_MB))MiB ${HOME_SIZE}%  # Partition Home
 
         PARTITIONS=$(lsblk --list --noheadings /dev/"${DISK}" | tail -n +2 | awk '{print $1}')
@@ -344,15 +344,15 @@ if [[ "${MODE}" == "UEFI" ]]; then
         HOME_PARTITION=$(echo "$PARTITIONS" | sed -n '3p')
         mkfs.ext4 -F /dev/"${HOME_PARTITION}" 
 
-        log_info "Montage : Partition Racine"
+        log_info "Montage : Partition ROOT"
         mkdir --parents $MOUNT_POINT
         mount /dev/"${ROOT_PARTITION}" $MOUNT_POINT
 
-        log_info "Montage : Partition Home"
+        log_info "Montage : Partition HOME"
         mkdir --parents $MOUNT_POINT/home
         mount /dev/"${HOME_PARTITION}" $MOUNT_POINT/home
 
-        log_info "Montage : Partition Boot"
+        log_info "Montage : Partition BOOT"
         mkdir --parents $MOUNT_POINT/efi
         mount /dev/"${BOOT_PARTITION}" $MOUNT_POINT/efi 
     fi
@@ -369,13 +369,12 @@ else # BIOS
 
         if [[ "$SWAP_FILE" == "On" ]]; then
 
-            log_info "Création : Partition Racine"
+            log_info "Création : Partition ROOT"
             parted --script -a optimal /dev/"${DISK}" mkpart ext4 ${MBR_SIZE}MiB $((MBR_SIZE + ROOT_SIZE_MB))MiB # Partition Racine
 
-            log_info "Création : Partition Home"
+            log_info "Création : Partition HOME"
             parted --script -a optimal /dev/"${DISK}" mkpart ext4 $((MBR_SIZE + ROOT_SIZE_MB))MiB ${HOME_SIZE}%  # Partition Home
 
-            ##### j'en suis ici -> avec le formatage
             PARTITIONS=$(lsblk --list --noheadings /dev/"${DISK}" | tail -n +2 | awk '{print $1}')
 
             log_info "Formatage : Partition BOOT"
@@ -390,19 +389,19 @@ else # BIOS
             HOME_PARTITION=$(echo "$PARTITIONS" | sed -n '3p')
             mkfs.ext4 -F /dev/"${HOME_PARTITION}"
 
-            log_info "Montage : Partition Racine"
+            log_info "Montage : Partition ROOT"
             mkdir --parents $MOUNT_POINT
             mount /dev/"${ROOT_PARTITION}" $MOUNT_POINT
 
-            log_info "Montage : Partition Home"
+            log_info "Montage : Partition HOME"
             mkdir --parents $MOUNT_POINT/home
             mount /dev/"${HOME_PARTITION}" $MOUNT_POINT/home
 
-            log_info "Montage : Partition Boot"
+            log_info "Montage : Partition BOOT"
             mkdir --parents $MOUNT_POINT/boot
             mount /dev/"${BOOT_PARTITION}" $MOUNT_POINT/boot 
 
-            log_info "Création : fichier Swap"
+            log_info "Création : fichier SWAP"
             mkdir --parents $MOUNT_POINT/swap
             fallocate -l "${SWAP_SIZE}MiB" $MOUNT_POINT/swap/swapfile
             # dd if=/dev/zero of=$MOUNT_POINT/swap bs=1M count=${SWAP_SIZE}  
@@ -412,13 +411,13 @@ else # BIOS
 
         else
 
-            log_info "Création : Partition Swap"
+            log_info "Création : Partition SWAP"
             parted --script -a optimal /dev/"${DISK}" mkpart linux-swap ${MBR_SIZE}MiB $((MBR_SIZE + SWAP_SIZE))MiB  # Partition Swap
 
-            log_info "Création : Partition Racine"
+            log_info "Création : Partition ROOT"
             parted --script -a optimal /dev/"${DISK}" mkpart ext4 $((MBR_SIZE + SWAP_SIZE))MiB ${ROOT_SIZE_MB}MiB    # Partition Racine
 
-            log_info "Création : Partition Home"
+            log_info "Création : Partition HOME"
             parted --script -a optimal /dev/"${DISK}" mkpart ext4 $((MBR_SIZE + ROOT_SIZE_MB))MiB ${HOME_SIZE}%      # Partition Home
 
             PARTITIONS=$(lsblk --list --noheadings /dev/"${DISK}" | tail -n +2 | awk '{print $1}')
@@ -440,19 +439,19 @@ else # BIOS
             HOME_PARTITION=$(echo "$PARTITIONS" | sed -n '4p')
             mkfs.ext4 -F /dev/"${HOME_PARTITION}"
 
-            log_info "Montage : Partition Racine"
+            log_info "Montage : Partition ROOT"
             mkdir --parents $MOUNT_POINT
             mount /dev/"${ROOT_PARTITION}" $MOUNT_POINT
 
-            log_info "Montage : Partition Home"
+            log_info "Montage : Partition HOME"
             mkdir --parents $MOUNT_POINT/home
             mount /dev/"${HOME_PARTITION}" $MOUNT_POINT/home
 
-            log_info "Montage : Partition Boot"
+            log_info "Montage : Partition BOOT"
             mkdir --parents $MOUNT_POINT/boot
             mount /dev/"${BOOT_PARTITION}" $MOUNT_POINT/boot 
 
-            log_info "Montage : Partition Swap"
+            log_info "Montage : Partition SWAP"
             mkdir --parents $MOUNT_POINT/swap
             mount /dev/"${SWAP_PARTITION}" $MOUNT_POINT/swap
         fi
@@ -461,10 +460,10 @@ else # BIOS
 
         mkdir --parents $MOUNT_POINT/{boot,home}
         
-        log_info "Création : Partition Racine"
+        log_info "Création : Partition ROOT"
         parted --script -a optimal /dev/"${DISK}" mkpart ext4 ${MBR_SIZE}MiB $((MBR_SIZE + ROOT_SIZE_MB))MiB # Partition Racine
 
-        log_info "Création : Partition Home"
+        log_info "Création : Partition HOME"
         parted --script -a optimal /dev/"${DISK}" mkpart ext4 $((MBR_SIZE + ROOT_SIZE_MB))MiB ${HOME_SIZE}%  # Partition Home
 
         PARTITIONS=$(lsblk --list --noheadings /dev/"${DISK}" | tail -n +2 | awk '{print $1}')
@@ -481,15 +480,15 @@ else # BIOS
         HOME_PARTITION=$(echo "$PARTITIONS" | sed -n '3p')
         mkfs.ext4 -F /dev/"${HOME_PARTITION}"
 
-        log_info "Montage : Partition Racine"
+        log_info "Montage : Partition ROOT"
         mkdir --parents $MOUNT_POINT
         mount /dev/"${ROOT_PARTITION}" $MOUNT_POINT
 
-        log_info "Montage : Partition Home"
+        log_info "Montage : Partition HOME"
         mkdir --parents $MOUNT_POINT/home
         mount /dev/"${HOME_PARTITION}" $MOUNT_POINT/home
 
-        log_info "Montage : Partition Boot"
+        log_info "Montage : Partition BOOT"
         mkdir --parents $MOUNT_POINT/boot
         mount /dev/"${BOOT_PARTITION}" $MOUNT_POINT/boot 
         
@@ -519,7 +518,7 @@ tar xpf stage3-*.tar.xz --xattrs-include='*.*' --numeric-owner
 rm stage3-*.tar.xz
 
 popd || exit 1
-log_success "TERMINÉ"
+log_success "décompression de l'archive stage3 terminé"
 
 ##############################################################################
 ## Configuring /etc/portage/make.conf                                                 
@@ -549,7 +548,7 @@ else
     echo "CPU_FLAGS_X86=\"${CPU_FLAGS}\"" >> "${MAKE_CONF}"
 fi
 
-log_success "TERMINÉ"
+log_success "Configuration du fichier /etc/portage/make.conf terminé"
 
 ##############################################################################
 ## Configure Gentoo ebuild repository                                                 
@@ -559,14 +558,14 @@ log_info "Configurer le dépôt ebuild de Gentoo"
 mkdir --parents /mnt/gentoo/etc/portage/repos.conf
 cp $MOUNT_POINT/usr/share/portage/config/repos.conf $MOUNT_POINT/etc/portage/repos.conf/gentoo.conf
 
-log_success "TERMINÉ"
+log_success "Configurer le dépôt ebuild de Gentoo terminé"
 
 ##############################################################################
 ## Copying DNS info                                                 
 ##############################################################################
 log_info "Copie des informations DNS"
 cp --dereference /etc/resolv.conf $MOUNT_POINT/etc/
-log_success "TERMINÉ"
+log_success "Copie des informations DNS terminé"
 
 ##############################################################################
 ## Mounting the necessary filesystems                                                 
@@ -579,7 +578,7 @@ mount --rbind /dev /mnt/gentoo/dev
 mount --make-rslave /mnt/gentoo/dev
 mount --bind /run /mnt/gentoo/run
 mount --make-slave /mnt/gentoo/run
-log_success "TERMINÉ"
+log_success "Montage des systèmes de fichiers nécessaires terminé"
 
 ##############################################################################
 ## Enter the new environment                                             
@@ -592,7 +591,8 @@ cp chroot.sh $MOUNT_POINT
 
 log_info "Entrée dans le nouvel environnement et exécution de la deuxième partie du script"
 
-chroot $MOUNT_POINT /bin/bash -c "./chroot.sh $MODE $DISK"
+# chroot $MOUNT_POINT /bin/bash -c "./chroot.sh $MODE $DISK"
+
 log_success "INSTALLATION TERMINÉ : après redémarrage lancé bash -x post_install.sh"
 
 
