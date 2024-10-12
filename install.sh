@@ -604,28 +604,8 @@ log_success "TERMINÉ"
 
 log_info "Entrée dans le nouvel environnement et exécution de la deuxième partie du script"
 chroot $MOUNT_POINT /bin/bash -c "./chroot.sh"
-log_success "INSTALLATION TERMINÉ"
+log_success "INSTALLATION TERMINÉ : après redémarrage lancé bash -x post_install.sh"
 
 
 
 
-
-
-
-
-
-
-
-
-
-# cp chroot.sh $MOUNT_POINT
-# cp functions.sh $MOUNT_POINT
-# cp config.sh $MOUNT_POINT
-    
-# # Exécution du script chroot.sh dans /mnt/gentoo
-# # (cd $MOUNT_POINT && bash chroot.sh)
-
-# log_info INFO "Installation terminée. Vous pouvez redémarrer votre machine."
-# log_info INFO "Aprés redémarrage -> eselect locale list"
-# log_info INFO "Aprés redémarrage -> hostnamectl"
-# log_info INFO "Aprés redémarrage -> passwd" # Set root password
