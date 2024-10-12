@@ -225,6 +225,8 @@ if [[ "$SHRED" == "On" ]]; then
     # shred -n "${SHRED_PASS}" -v "/dev/${DISK}"
     PARTITIONS=$(lsblk --list --noheadings /dev/"${DISK}" | tail -n +2 | awk '{print $1}')
     echo "$PARTITIONS"
+
+    sleep 25
 fi
 
 ##############################################################################
