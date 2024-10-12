@@ -42,10 +42,10 @@ log_success "Configuration du machine-id terminée"
 ## Problème des logiciels non-libres (Facultatif) + dépôts binaires                                           
 ##############################################################################
 log_info "Configuration des logiciels non-libres (Facultatif) + dépôts binaires"
-mkdir /etc/portage/package.license
+mkdir --parents /etc/portage/package.license
 echo "*/* *" >> /etc/portage/package.license/custom
 
-mkdir /etc/portage/binrepos.conf/
+mkdir --parents /etc/portage/binrepos.conf/
 echo '[binhost]' >> /etc/portage/binrepos.conf/gentoobinhost.conf
 echo 'priority = 9999' >> /etc/portage/binrepos.conf/gentoobinhost.conf
 echo 'sync-uri = https://distfiles.gentoo.org/releases/amd64/binpackages/23.0/x86-64/' >> /etc/portage/binrepos.conf/gentoobinhost.conf
@@ -99,7 +99,7 @@ log_success "Installation et configuration de grub terminée"
 log_info "Configurer et installer le kernel"
 echo "sys-kernel/installkernel dracut grub" >> /etc/portage/package.use/installkernel
 
-mkdir /etc/portage/package.license
+mkdir --parents /etc/portage/package.license
 echo "sys-kernel/linux-firmware linux-fw-redistributable no-source-code" >> /etc/portage/package.license/custom 
 
 emerge --quiet sys-kernel/installkernel
