@@ -50,6 +50,10 @@ if prompt_confirm "Souhaitez-vous nettoyer le disque ? (Y/n)"; then
   echo "Désactivation des partitions swap..."
   swapoff -a && echo "Toutes les partitions swap ont été désactivées."
 
+  echo "Lancement de shred sur /dev/"${DISK}" avec ${SHRED_PASS} passes..."
+  wipefs --all /dev/"${DISK}" && echo "Étiquettes et signatures supprimées avec succès."
+  shred -n "${SHRED_PASS}" -v "/dev/${DISK}"
+
   # Si des partitions sont montées, les démonter
   if [[ -n "${MOUNTED_PARTITIONS}" ]]; then
       echo "Démontage des partitions montées sur /dev/${DISK}..."
@@ -63,10 +67,6 @@ if prompt_confirm "Souhaitez-vous nettoyer le disque ? (Y/n)"; then
   else
       echo "Aucune partition montée sur /dev/${DISK}."
   fi
-
-  echo "Lancement de shred sur /dev/"${DISK}" avec ${SHRED_PASS} passes..."
-  wipefs --all /dev/"${DISK}" && echo "Étiquettes et signatures supprimées avec succès."
-  shred -n "${SHRED_PASS}" -v "/dev/${DISK}"
 fi
 
 
