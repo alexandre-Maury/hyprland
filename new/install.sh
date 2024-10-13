@@ -111,13 +111,23 @@ done
 
 echo "Partitions créées avec succès."
 
-# Montages des partitions
-mkdir -p /mnt/gentoo
-if [ "$boot_mode" = "UEFI" ]; then
-  mkdir -p /mnt/gentoo/efi
-  mount "${disk}1" /mnt/gentoo/efi  # Monter la partition EFI
-  echo "Partition EFI montée sur /mnt/gentoo/efi."
-fi
+# Demander le formatage de chaque partition
+for ((i = 1; i <= num_partitions; i++)); do
+  if [ "$boot_mode" = "UEFI" ] && [ "$i" -eq 1 ]; then
+    echo "La partition ${disk}1 est l'ESP, elle sera formatée en FAT32."
+    mkfs.fat -F32 "${disk}1"
+  else
+    read -p "Voulez-vous formater la partition ${disk}${i} en $partition_type ? (y/n) : " format_choice
+    if [ "$format_choice" = "y" ]; then
+      case $partition_type in
+        ext4) mkfs.ext4 "${disk}${i}" ;;
+        linux-swap) mkswap "${disk}${i}" ;;
+        *) echo "Type de partition $partition_type non pris en charge pour le formatage automatique." ;;
+      esac
+      echo "Partition ${disk}${i} formatée en $partition_type."
+    fi
+  fi
+done
 
 # Demander à l'utilisateur quelle partition sera utilisée pour la racine
 parted ${disk} print
@@ -134,16 +144,20 @@ mount "${disk}${root_partition_num}" /mnt/gentoo
 echo "Partition root montée sur /mnt/gentoo."
 
 # Demander à l'utilisateur s'il souhaite monter des partitions supplémentaires
-read -p "Souhaitez-vous monter des partitions supplémentaires ? (y/n) : " mount_additional
+read -p "Souhaitez-vous monter d'autres partitions ? (y/n) : " mount
 
-if [ "$mount_additional" = "y" ]; then
+if [ "$mount" = "y" ]; then
+
   for ((i = 1; i <= num_partitions; i++)); do
-    read -p "Voulez-vous monter la partition ${disk}${i} ? (y/n) : " mount_choice
+    if [[ "${root_partition_num}" != "${i}" ]]; then
+      read -p "Voulez-vous monter la partition ${disk}${i} ? (y/n) : " mount_choice
+      if [ "$mount_choice" = "y" ]; then
+        read -p "Nommer le point de montage de la partition ${disk}${i} (ex. efi - home ...): " partition_name
+        mkdir -p "/mnt/gentoo/$partition_name"
+        mount "${disk}${i}" "/mnt/gentoo/$partition_name"
 
-    if [ "$mount_choice" = "y" ]; then
-      mkdir -p "/mnt/gentoo/partition$i"
-      mount "${disk}${i}" "/mnt/gentoo/partition$i"
-      echo "Partition ${disk}${i} montée sur /mnt/gentoo/partition$i."
+        echo "Partition ${disk}${i} montée sur /mnt/gentoo/$partition_name."
+      fi
     fi
   done
 fi
