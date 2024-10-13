@@ -77,13 +77,13 @@ if prompt_confirm "Souhaitez-vous nettoyer le disque ? (Y/n)"; then
 
   # Si des partitions sont montées, les démonter
   if [[ -n "${MOUNTED_PARTITIONS}" ]]; then
-      echo "Démontage des partitions montées sur ${DISK}..."
+      echo "Démontage des partitions montées sur /dev/${DISK}..."
       for partition in ${MOUNTED_PARTITIONS}
       do
           umount "/dev/${partition}" && echo "Partition /dev/${partition} démontée avec succès."
       done
   else
-      echo "Aucune partition montée sur ${DISK}."
+      echo "Aucune partition montée sur /dev/${DISK}."
   fi
 
   echo "Lancement de shred sur /dev/"${DISK}" avec ${SHRED_PASS} passes..."
@@ -247,8 +247,8 @@ for ((i = 1; i <= num_partitions + 1; i++)); do
           ;;
       2)
           echo "Formatage de /dev/${DISK}${i} en swap  ..."
-          mkswap "${DISK}${i}"
-          swapon "${DISK}${i}"
+          mkswap "/dev/${DISK}${i}"
+          swapon "/dev/${DISK}${i}"
           ;;
       3)
           echo "Formatage de /dev/${DISK}${i} en ext4  ..."
@@ -272,7 +272,7 @@ for ((i = 1; i <= num_partitions + 1; i++)); do
 done
 
 # Demander à l'utilisateur quelle partition sera utilisée pour la racine
-parted ${DISK} print
+parted /dev/"${DISK}" print
 read -p "Entrez le numéro de la partition pour la racine (par exemple, 1 pour /dev/${DISK}1) : " root_partition_num
 
 # Vérifier que la partition spécifiée existe
