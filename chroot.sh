@@ -175,14 +175,9 @@ log_success "Activation du réseau terminée"
 ##############################################################################
 log_info "Changer le mot de passe root"
 
-echo "root:${ROOT_PASSWORD}" | chpasswd
-
-# Vérification
-if [ $? -eq 0 ]; then
-    echo "Le mot de passe root a été changé avec succès."
-else
-    echo "Erreur lors du changement du mot de passe root."
-fi
+while ! passwd ; do
+    sleep 1
+done
 
 log_success "Changer le mot de passe root terminée"
 
@@ -192,10 +187,23 @@ log_success "Changer le mot de passe root terminée"
 log_info "Configuration du compte utilisateur"
 
 
-useradd -m -G wheel,users,audio,video -s /bin/bash "${USERNAME}"
+NOM=""
+
+while [ -z "${NOM}" ]; do
+    printf "Entrez un nom pour l'utilisateur local : "
+    read -r NOM
+done
+
+log_info "Ajout de l'utilisateur aux groupes users, audio, video et wheel"
+useradd -m -G wheel,users,audio,video -s /bin/bash "${NOM}"
+
+log_info "Ajout du groupe wheel aux sudoers"
 echo "%wheel ALL=(ALL:ALL) ALL" >> /etc/sudoers
 
-echo "${USERNAME}:${USERNAME_PASSWORD}" | chpasswd
+log_info "Configuration du mot de passe pour l'utilisateur"
+while ! passwd "${NOM}"; do
+    sleep 1
+done
 
 log_success "Configuration du compte utilisateur terminée"
 
