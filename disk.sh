@@ -1,15 +1,41 @@
 #!/bin/bash
 
+# script disk.sh
+
+set -e  # Quitte immédiatement en cas d'erreur.
+
+source functions.sh  # Charge les fonctions définies dans le fichier fonction.sh.
+chmod +x *.sh # Rendre les scripts exécutables.
+
 # Détection du mode de démarrage (UEFI ou MBR)
 if [ -d /sys/firmware/efi ]; then
-  boot_mode="UEFI"
+  MODE="UEFI"
 else
-  boot_mode="MBR"
+  MODE="MBR"
 fi
 
-echo "Mode de démarrage détecté : $boot_mode"
+echo "Mode de démarrage détecté : $MODE"
 
-# Demande à l'utilisateur sur quel disque effectuer les modifications
+##############################################################################
+## Select Disk                                                          
+##############################################################################
+
+log_info "Sélectionner un disque pour l'installation :"
+
+# LIST="$(lsblk -d -n | grep -v -e "loop" -e "sr" | awk '{print $1, $4}' | nl -s") ")" 
+
+# echo "${LIST}"
+# OPTION=""
+
+# while [[ -z "$(echo "${LIST}" | grep "  ${OPTION})")" ]]; do
+#     printf "Choisissez un disque pour la suite de l'installation (ex : 1) : "
+#     read -r OPTION
+# done
+
+# DISK="$(echo "${LIST}" | grep "  ${OPTION})" | awk '{print $2}')"
+# log_success "TERMINÉ"
+
+# Générer la liste des disques physiques sans les disques loop et sr (CD/DVD)
 LIST="$(lsblk -d -n | grep -v -e "loop" -e "sr" | awk '{print $1, $4}' | nl -s") ")" 
 echo "${LIST}"
 OPTION=""
@@ -22,15 +48,16 @@ while [[ -z "$(echo "${LIST}" | grep "  ${OPTION})")" ]]; do
     # Vérification si l'utilisateur a entré un numéro (choix dans la liste)
     if [[ -n "$(echo "${LIST}" | grep "  ${OPTION})")" ]]; then
         # Si l'utilisateur a choisi un numéro valide, récupérer le nom du disque correspondant
-        DISK="/dev/$(echo "${LIST}" | grep "  ${OPTION})" | awk '{print $2}')"
+        DISK="$(echo "${LIST}" | grep "  ${OPTION})" | awk '{print $2}')"
         break
     else
         # Si l'utilisateur a entré quelque chose qui n'est pas dans la liste, considérer que c'est un nom de disque
-        DISK="/dev/${OPTION}"
+        DISK="${OPTION}"
         break
     fi
 done
 
+log_success "Sélection du disque $DISK pour l'installation terminée"
 
 # Vérifier si le disque existe
 if [ ! -b "$DISK" ]; then
@@ -38,18 +65,54 @@ if [ ! -b "$DISK" ]; then
   exit 1
 fi
 
-# Confirmation avant d'effacer les données
-read -p "ATTENTION : Toutes les données sur $DISK seront détruites. Voulez-vous continuer ? (y/n) : " confirm
-if [ "$confirm" != "y" ]; then
-  echo "Opération annulée."
-  exit 0
+##############################################################################
+## Formatting disk                                                       
+##############################################################################
+
+if prompt_confirm "Souhaitez-vous nettoyer le disque ? (Y/n)"; then
+
+  MOUNTED_PARTITIONS=$(lsblk --list --noheadings /dev/"${DISK}" | tail -n +2 | awk '{print $1}')
+
+  read -p "Combien de passe souhaitez-vous faire ? " SHRED_PASS
+
+  # Si des partitions sont montées, les démonter
+  if [[ -n "${MOUNTED_PARTITIONS}" ]]; then
+      echo "Démontage des partitions montées sur ${DISK}..."
+      for partition in ${MOUNTED_PARTITIONS}
+      do
+          umount "/dev/${partition}" && echo "Partition /dev/${partition} démontée avec succès."
+      done
+  else
+      echo "Aucune partition montée sur ${DISK}."
+  fi
+
+  echo "Lancement de shred sur ${DISK} avec ${SHRED_PASS} passes..."
+  wipefs --all /dev/"${DISK}" && echo "Étiquettes et signatures supprimées avec succès."
+  shred -n "${SHRED_PASS}" -v "/dev/${DISK}"
 fi
 
-# Effacer les données existantes avec shred
-shred -n 1 -v "$DISK"
+
+
+##############################################################################
+## Creating partionning, formatting + Mounting partitions                                                      
+##############################################################################
+
+# Comparaison entre Partition Swap et Fichier Swap :
+# Critère	    Partition Swap :	                                            Fichier Swap :
+# Performance	Généralement plus rapide en raison d'un accès direct.	        Moins rapide, mais souvent suffisant pour la plupart des usages.
+# Flexibilité	Taille fixe, nécessite un redimensionnement pour changer.	    Facile à redimensionner en ajoutant ou supprimant des fichiers.
+# Simplicité	Nécessite des opérations de partitionnement.	                Plus simple à configurer et à gérer.
+# Gestion	    Nécessite des outils de partitionnement pour la création.	    Peut être géré par des commandes simples.
+
+if prompt_confirm "Souhaitez-vous créer un fichier pour le swap ? (Y/n)"; then # <Y> Activation du swap avec fichier 
+  SWAP_FILE="On" 
+  SWAP_SIZE="$(prompt_value "Fichier Swap en MiB [ par défaut : ]" "4096")"
+else
+  SWAP_FILE="Off"
+fi
 
 # Initialiser la table des partitions avec parted
-if [ "$boot_mode" = "UEFI" ]; then
+if [ "$MODE" = "UEFI" ]; then
   parted --script -a optimal $DISK mklabel gpt
   echo "Table de partitions GPT créée pour le mode UEFI."
 else
@@ -58,7 +121,7 @@ else
 fi
 
 # Si UEFI, créer une partition EFI obligatoire
-if [ "$boot_mode" = "UEFI" ]; then
+if [ "$MODE" = "UEFI" ]; then
   read -p "Entrez la taille de la partition EFI (en Mo) : " efi_size
   if ! [[ "$efi_size" =~ ^[0-9]+$ ]]; then
     echo "Erreur : Taille de la partition EFI invalide."
@@ -74,7 +137,7 @@ else
 fi
 
 # Si MBR, proposer la création d'une partition /boot
-if [ "$boot_mode" = "MBR" ]; then
+if [ "$MODE" = "MBR" ]; then
   read -p "Souhaitez-vous créer une partition /boot séparée ? (y/n) : " create_boot
   if [ "$create_boot" = "y" ]; then
     read -p "Entrez la taille de la partition /boot (en Mo) : " boot_size
@@ -100,7 +163,32 @@ fi
 # Boucle pour demander les détails de chaque partition supplémentaire
 for ((i = 1; i <= num_partitions; i++)); do
   read -p "Entrez la taille de la partition (en GiB ou '100%' pour le reste du disque) : " partition_size
-  read -p "Entrez le type de la partition (par ex. ext4, linux-swap, etc.) : " partition_type
+
+  echo "Choisissez le type pour la partition ${DISK}${i} :"
+  echo "1) linux-swap" 
+  echo "2) ext4"  
+  echo "3) btrfs" 
+  echo "4) xfs"   
+  read -p "Entrez le numéro correspondant à votre choix : " format_choice
+
+  # Utiliser un switch case pour appliquer le bon formatage
+  case $format_choice in
+      1)
+          partition_type="linux-swap"
+          ;;
+      2)
+          partition_type="ext4"
+          ;;
+      3)
+          partition_type="btrfs"
+          ;;
+      4)
+          partition_type="xfs"
+          ;;
+      *)
+          echo "Choix invalide. Veuillez entrer un numéro valide."
+          ;;
+  esac
 
   # Vérification de la taille de la partition
   if [ "$partition_size" != "100%" ] && ! [[ "$partition_size" =~ ^[0-9]+(\.[0-9]+)?$ ]]; then
@@ -132,15 +220,15 @@ done
 echo "Partitions créées avec succès."
 
 # Demander le formatage de chaque partition
-for ((i = 1; i <= num_partitions; i++)); do
+for ((i = 1; i <= num_partitions + 1; i++)); do
 
   # Demander à l'utilisateur de choisir un type de formatage
   echo "Choisissez le type de formatage pour la partition ${DISK}${i} :"
-  echo "1) f32"   # mkfs.fat -F32 "${DISK}1"
-  echo "2) swap"  # mkswap "${DISK}${i}" + swapon "${DISK}${i}"
-  echo "3) ext4"  # mkfs.ext4 "${DISK}${i}"
-  echo "4) btrfs" # mkfs.btrfs
-  echo "5) xfs"   # mkfs.xfs
+  echo "1) f32"   
+  echo "2) swap"  
+  echo "3) ext4"  
+  echo "4) btrfs" 
+  echo "5) xfs"   
   read -p "Entrez le numéro correspondant à votre choix : " format_choice
 
   # Utiliser un switch case pour appliquer le bon formatage
@@ -156,7 +244,7 @@ for ((i = 1; i <= num_partitions; i++)); do
           ;;
       3)
           echo "Formatage de ${DISK}${i} en ext4  ..."
-          mkfs.ext4 "${DISK}${i}"
+          mkfs.ext4 -F "${DISK}${i}"
           ;;
       4)
           echo "Formatage de ${DISK}${i} en btrfs ..."
@@ -186,6 +274,7 @@ if [ ! -b "${DISK}${root_partition_num}" ]; then
 fi
 
 # Monter la partition root
+mkdir -p /mnt/gentoo
 mount "${DISK}${root_partition_num}" /mnt/gentoo
 echo "Partition root montée sur /mnt/gentoo."
 
@@ -194,7 +283,7 @@ read -p "Souhaitez-vous monter d'autres partitions ? (y/n) : " mount
 
 if [ "$mount" = "y" ]; then
 
-  for ((i = 1; i <= num_partitions; i++)); do
+  for ((i = 1; i <= num_partitions + 1; i++)); do
     if [[ "${root_partition_num}" != "${i}" ]]; then
       read -p "Voulez-vous monter la partition ${DISK}${i} ? (y/n) : " mount_choice
       if [ "$mount_choice" = "y" ]; then
@@ -208,3 +297,18 @@ if [ "$mount" = "y" ]; then
   done
 fi
 
+if [ "$SWAP_FILE" = "On" ]; then
+    echo "création du fichier swap"
+    mkdir --parents /mnt/gentoo/swap
+    fallocate -l "${SWAP_SIZE}MiB" /mnt/gentoo/swap/swapfile
+    # dd if=/dev/zero of=$MOUNT_POINT/swap bs=1M count=${SWAP_SIZE}  
+    chmod 600 /mnt/gentoo/swap/swapfile                            
+    mkswap /mnt/gentoo/swap/swapfile                                
+    swapon /mnt/gentoo/swap/swapfile  
+fi
+
+
+##############################################################################
+## RETURN VALUE                                                      
+##############################################################################
+export $DISK
