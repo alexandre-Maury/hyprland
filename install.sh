@@ -6,7 +6,7 @@ set -e  # Quitte immédiatement en cas d'erreur.
 
 source config.sh # Inclure le fichier de configuration.
 source functions.sh  # Charge les fonctions définies dans le fichier fonction.sh.
-source disk.sh
+# source disk.sh
 
 
 chmod +x *.sh # Rendre les scripts exécutables.
@@ -39,9 +39,9 @@ echo ""
 ##############################################################################
 ## Creating partionning, formatting + Mounting partitions                                                      
 ##############################################################################
-# log_info "Exécution du script disk.sh"
-# # read DISK <<< $(bash disk.sh)
-# bash disk.sh
+log_info "Exécution du script disk.sh"
+# read DISK <<< $(bash disk.sh)
+bash disk.sh
 
 ##############################################################################
 ## Check config                                                         
