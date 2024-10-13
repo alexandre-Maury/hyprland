@@ -10,30 +10,50 @@ fi
 echo "Mode de démarrage détecté : $boot_mode"
 
 # Demande à l'utilisateur sur quel disque effectuer les modifications
-read -p "Sur quel disque souhaitez-vous créer les partitions ? (ex: /dev/sda) " disk
+LIST="$(lsblk -d -n | grep -v -e "loop" -e "sr" | awk '{print $1, $4}' | nl -s") ")" 
+echo "${LIST}"
+OPTION=""
+
+# Boucle pour que l'utilisateur puisse choisir un disque ou en entrer un manuellement
+while [[ -z "$(echo "${LIST}" | grep "  ${OPTION})")" ]]; do
+    printf "Choisissez un disque pour la suite de l'installation (ex : 1) ou entrez manuellement le nom du disque (ex : sda) : "
+    read -r OPTION
+
+    # Vérification si l'utilisateur a entré un numéro (choix dans la liste)
+    if [[ -n "$(echo "${LIST}" | grep "  ${OPTION})")" ]]; then
+        # Si l'utilisateur a choisi un numéro valide, récupérer le nom du disque correspondant
+        DISK="/dev/$(echo "${LIST}" | grep "  ${OPTION})" | awk '{print $2}')"
+        break
+    else
+        # Si l'utilisateur a entré quelque chose qui n'est pas dans la liste, considérer que c'est un nom de disque
+        DISK="/dev/${OPTION}"
+        break
+    fi
+done
+
 
 # Vérifier si le disque existe
-if [ ! -b "$disk" ]; then
-  echo "Erreur : Le disque $disk n'existe pas."
+if [ ! -b "$DISK" ]; then
+  echo "Erreur : Le disque $DISK n'existe pas."
   exit 1
 fi
 
 # Confirmation avant d'effacer les données
-read -p "ATTENTION : Toutes les données sur $disk seront détruites. Voulez-vous continuer ? (y/n) : " confirm
+read -p "ATTENTION : Toutes les données sur $DISK seront détruites. Voulez-vous continuer ? (y/n) : " confirm
 if [ "$confirm" != "y" ]; then
   echo "Opération annulée."
   exit 0
 fi
 
 # Effacer les données existantes avec shred
-shred -n 1 -v "$disk"
+shred -n 1 -v "$DISK"
 
 # Initialiser la table des partitions avec parted
 if [ "$boot_mode" = "UEFI" ]; then
-  parted --script -a optimal $disk mklabel gpt
+  parted --script -a optimal $DISK mklabel gpt
   echo "Table de partitions GPT créée pour le mode UEFI."
 else
-  parted --script -a optimal $disk mklabel msdos
+  parted --script -a optimal $DISK mklabel msdos
   echo "Table de partitions MSDOS créée pour le mode MBR."
 fi
 
@@ -44,8 +64,8 @@ if [ "$boot_mode" = "UEFI" ]; then
     echo "Erreur : Taille de la partition EFI invalide."
     exit 1
   fi
-  parted --script -a optimal $disk mkpart ESP fat32 1MiB ${efi_size}MiB
-  parted --script -a optimal $disk set 1 esp on
+  parted --script -a optimal $DISK mkpart ESP fat32 1MiB ${efi_size}MiB
+  parted --script -a optimal $DISK set 1 esp on
   echo "Partition EFI créée de ${efi_size}Mo."
 
   start_point=$efi_size  # Définir la fin de la partition EFI comme point de départ pour les autres partitions
@@ -62,7 +82,7 @@ if [ "$boot_mode" = "MBR" ]; then
       echo "Erreur : Taille de la partition /boot invalide."
       exit 1
     fi
-    parted --script -a optimal $disk mkpart primary ext4 1MiB ${boot_size}MiB
+    parted --script -a optimal $DISK mkpart primary ext4 1MiB ${boot_size}MiB
     echo "Partition /boot créée de ${boot_size}Mo."
     start_point=$boot_size  # Définir la fin de la partition /boot comme point de départ
   fi
@@ -90,7 +110,7 @@ for ((i = 1; i <= num_partitions; i++)); do
 
   # Si l'utilisateur veut que la partition prenne tout l'espace disponible
   if [ "$partition_size" = "100%" ]; then
-    parted --script -a optimal $disk mkpart primary $partition_type ${start_point}MiB 100%
+    parted --script -a optimal $DISK mkpart primary $partition_type ${start_point}MiB 100%
     echo "Partition créée en occupant 100 % de l'espace disponible."
     break  # Arrêter la boucle car tout l'espace est utilisé
 
@@ -101,7 +121,7 @@ for ((i = 1; i <= num_partitions; i++)); do
     end_point=$((start_point + partition_size_mb))
     
     # Créer la partition avec la taille spécifiée
-    parted --script -a optimal $disk mkpart primary $partition_type ${start_point}MiB ${end_point}MiB
+    parted --script -a optimal $DISK mkpart primary $partition_type ${start_point}MiB ${end_point}MiB
     echo "Partition de taille ${partition_size_mb}Mo et de type $partition_type créée."
     
     # Mettre à jour le point de départ pour la prochaine partition
@@ -115,10 +135,10 @@ echo "Partitions créées avec succès."
 for ((i = 1; i <= num_partitions; i++)); do
 
   # Demander à l'utilisateur de choisir un type de formatage
-  echo "Choisissez le type de formatage pour la partition ${disk}${i} :"
-  echo "1) f32"   # mkfs.fat -F32 "${disk}1"
-  echo "2) swap"  # mkswap "${disk}${i}" + swapon "${disk}${i}"
-  echo "3) ext4"  # mkfs.ext4 "${disk}${i}"
+  echo "Choisissez le type de formatage pour la partition ${DISK}${i} :"
+  echo "1) f32"   # mkfs.fat -F32 "${DISK}1"
+  echo "2) swap"  # mkswap "${DISK}${i}" + swapon "${DISK}${i}"
+  echo "3) ext4"  # mkfs.ext4 "${DISK}${i}"
   echo "4) btrfs" # mkfs.btrfs
   echo "5) xfs"   # mkfs.xfs
   read -p "Entrez le numéro correspondant à votre choix : " format_choice
@@ -126,47 +146,47 @@ for ((i = 1; i <= num_partitions; i++)); do
   # Utiliser un switch case pour appliquer le bon formatage
   case $format_choice in
       1)
-          echo "Formatage de ${disk}${i} en fat32 ..."
-          mkfs.fat -F32 "${disk}${i}"
+          echo "Formatage de ${DISK}${i} en fat32 ..."
+          mkfs.fat -F32 "${DISK}${i}"
           ;;
       2)
-          echo "Formatage de ${disk}${i} en swap  ..."
-          mkswap "${disk}${i}"
-          swapon "${disk}${i}"
+          echo "Formatage de ${DISK}${i} en swap  ..."
+          mkswap "${DISK}${i}"
+          swapon "${DISK}${i}"
           ;;
       3)
-          echo "Formatage de ${disk}${i} en ext4  ..."
-          mkfs.ext4 "${disk}${i}"
+          echo "Formatage de ${DISK}${i} en ext4  ..."
+          mkfs.ext4 "${DISK}${i}"
           ;;
       4)
-          echo "Formatage de ${disk}${i} en btrfs ..."
-          mkfs.btrfs "${disk}${i}"
+          echo "Formatage de ${DISK}${i} en btrfs ..."
+          mkfs.btrfs "${DISK}${i}"
           ;;
       5)
-          echo "Formatage de ${disk}${i} en xfs   ..."
-          mkfs.xfs "${disk}${i}"
+          echo "Formatage de ${DISK}${i} en xfs   ..."
+          mkfs.xfs "${DISK}${i}"
           ;;
       *)
           echo "Choix invalide. Veuillez entrer un numéro valide."
           ;;
   esac
 
-  echo "Formatage ${disk}${i} terminé."
+  echo "Formatage ${DISK}${i} terminé."
 
 done
 
 # Demander à l'utilisateur quelle partition sera utilisée pour la racine
-parted ${disk} print
-read -p "Entrez le numéro de la partition pour la racine (par exemple, 1 pour ${disk}1) : " root_partition_num
+parted ${DISK} print
+read -p "Entrez le numéro de la partition pour la racine (par exemple, 1 pour ${DISK}1) : " root_partition_num
 
 # Vérifier que la partition spécifiée existe
-if [ ! -b "${disk}${root_partition_num}" ]; then
-  echo "Erreur : La partition ${disk}${root_partition_num} n'existe pas."
+if [ ! -b "${DISK}${root_partition_num}" ]; then
+  echo "Erreur : La partition ${DISK}${root_partition_num} n'existe pas."
   exit 1
 fi
 
 # Monter la partition root
-mount "${disk}${root_partition_num}" /mnt/gentoo
+mount "${DISK}${root_partition_num}" /mnt/gentoo
 echo "Partition root montée sur /mnt/gentoo."
 
 # Demander à l'utilisateur s'il souhaite monter des partitions supplémentaires
@@ -176,13 +196,13 @@ if [ "$mount" = "y" ]; then
 
   for ((i = 1; i <= num_partitions; i++)); do
     if [[ "${root_partition_num}" != "${i}" ]]; then
-      read -p "Voulez-vous monter la partition ${disk}${i} ? (y/n) : " mount_choice
+      read -p "Voulez-vous monter la partition ${DISK}${i} ? (y/n) : " mount_choice
       if [ "$mount_choice" = "y" ]; then
-        read -p "Nommer le point de montage de la partition ${disk}${i} (ex. efi - home ...): " partition_name
+        read -p "Nommer le point de montage de la partition ${DISK}${i} (ex. efi - home ...): " partition_name
         mkdir -p "/mnt/gentoo/$partition_name"
-        mount "${disk}${i}" "/mnt/gentoo/$partition_name"
+        mount "${DISK}${i}" "/mnt/gentoo/$partition_name"
 
-        echo "Partition ${disk}${i} montée sur /mnt/gentoo/$partition_name."
+        echo "Partition ${DISK}${i} montée sur /mnt/gentoo/$partition_name."
       fi
     fi
   done
