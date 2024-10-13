@@ -10,8 +10,8 @@ source config.sh
 ##############################################################################
 ## Arguments                                                     
 ##############################################################################
-MODE="${1}"
-DISK="${2}"
+# MODE="${1}"
+DISK="${1}"
 
 chmod +x *.sh # Rendre les scripts exécutables.
 
@@ -169,17 +169,6 @@ echo 'DHCP=yes' >> /etc/systemd/network/50-dhcp.network
 systemctl enable systemd-networkd.service
 systemctl enable systemd-resolved.service
 log_success "Activation du réseau terminée"
-
-##############################################################################
-## Change root password                                              
-##############################################################################
-log_info "Changer le mot de passe root"
-
-while ! passwd ; do
-    sleep 1
-done
-
-log_success "Changer le mot de passe root terminée"
 
 ##############################################################################
 ## Set user and password                                               

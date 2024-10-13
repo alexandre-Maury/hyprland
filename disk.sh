@@ -160,15 +160,12 @@ if ! [[ "$num_partitions" =~ ^[0-9]+$ ]] || [ "$num_partitions" -le 0 ]; then
   exit 1
 fi
 
-
-
-
 # Boucle pour demander les détails de chaque partition supplémentaire
 for ((i = 1; i <= num_partitions + 1; i++)); do
 
-  if [[ "${num_partitions}" != "1" ]]; then
+  if [[ "${i}" != "1" ]]; then
 
-    read -p "Entrez la taille de la partition (en GiB ou '100%' pour le reste du disque) : " partition_size
+    read -p "Entrez la taille de la partition (en GiB ou '100%' pour le reste du disque) pour /dev/${DISK}${i} : " partition_size
     echo "Choisissez le type pour la partition /dev/${DISK}${i} :"
     echo "1) linux-swap" 
     echo "2) ext4"  
