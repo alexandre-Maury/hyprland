@@ -57,7 +57,7 @@ while [[ -z "$(echo "${LIST}" | grep "  ${OPTION})")" ]]; do
     fi
 done
 
-log_success "Sélection du disque $DISK pour l'installation terminée"
+log_success "Sélection du disque /dev/$DISK pour l'installation terminée"
 
 # Vérifier si le disque existe
 if [ ! -b "/dev/$DISK" ]; then
@@ -160,64 +160,72 @@ if ! [[ "$num_partitions" =~ ^[0-9]+$ ]] || [ "$num_partitions" -le 0 ]; then
   exit 1
 fi
 
+
+
+
 # Boucle pour demander les détails de chaque partition supplémentaire
-for ((i = 1; i <= num_partitions; i++)); do
-  read -p "Entrez la taille de la partition (en GiB ou '100%' pour le reste du disque) : " partition_size
+for ((i = 1; i <= num_partitions + 1; i++)); do
 
-  echo "Choisissez le type pour la partition /dev/${DISK}${i} :"
-  echo "1) linux-swap" 
-  echo "2) ext4"  
-  echo "3) btrfs" 
-  echo "4) xfs"   
-  read -p "Entrez le numéro correspondant à votre choix : " format_choice
+  if [[ "${num_partitions}" != "1" ]]; then
 
-  # Utiliser un switch case pour appliquer le bon formatage
-  case $format_choice in
-      1)
-          partition_type="linux-swap"
-          ;;
-      2)
-          partition_type="ext4"
-          ;;
-      3)
-          partition_type="btrfs"
-          ;;
-      4)
-          partition_type="xfs"
-          ;;
-      *)
-          echo "Choix invalide. Veuillez entrer un numéro valide."
-          ;;
-  esac
+    read -p "Entrez la taille de la partition (en GiB ou '100%' pour le reste du disque) : " partition_size
+    echo "Choisissez le type pour la partition /dev/${DISK}${i} :"
+    echo "1) linux-swap" 
+    echo "2) ext4"  
+    echo "3) btrfs" 
+    echo "4) xfs"   
+    read -p "Entrez le numéro correspondant à votre choix : " format_choice
 
-  # Vérification de la taille de la partition
-  if [ "$partition_size" != "100%" ] && ! [[ "$partition_size" =~ ^[0-9]+(\.[0-9]+)?$ ]]; then
-    echo "Erreur : Taille de la partition invalide."
-    exit 1
+    # Utiliser un switch case pour appliquer le bon formatage
+    case $format_choice in
+        1)
+            partition_type="linux-swap"
+            ;;
+        2)
+            partition_type="ext4"
+            ;;
+        3)
+            partition_type="btrfs"
+            ;;
+        4)
+            partition_type="xfs"
+            ;;
+        *)
+            echo "Choix invalide. Veuillez entrer un numéro valide."
+            ;;
+    esac
+
+    # Vérification de la taille de la partition
+    if [ "$partition_size" != "100%" ] && ! [[ "$partition_size" =~ ^[0-9]+(\.[0-9]+)?$ ]]; then
+      echo "Erreur : Taille de la partition invalide."
+      exit 1
+    fi
+
+    # Si l'utilisateur veut que la partition prenne tout l'espace disponible
+    if [ "$partition_size" = "100%" ]; then
+      parted --script -a optimal /dev/"${DISK}" mkpart primary $partition_type ${start_point}MiB 100%
+      echo "Partition créée en occupant 100 % de l'espace disponible."
+      break  # Arrêter la boucle car tout l'espace est utilisé
+
+    else
+      partition_size_mb=$((partition_size * 1024))  # Conversion GiB en MiB
+
+      # Calculer le point de fin pour la partition actuelle
+      end_point=$((start_point + partition_size_mb))
+      
+      # Créer la partition avec la taille spécifiée
+      parted --script -a optimal /dev/"${DISK}" mkpart primary $partition_type ${start_point}MiB ${end_point}MiB
+      echo "Partition de taille ${partition_size_mb}Mo et de type $partition_type créée."
+      
+      # Mettre à jour le point de départ pour la prochaine partition
+      start_point=$end_point
+    fi
+
+    echo "Partitions créées avec succès."
+
   fi
 
-  # Si l'utilisateur veut que la partition prenne tout l'espace disponible
-  if [ "$partition_size" = "100%" ]; then
-    parted --script -a optimal /dev/"${DISK}" mkpart primary $partition_type ${start_point}MiB 100%
-    echo "Partition créée en occupant 100 % de l'espace disponible."
-    break  # Arrêter la boucle car tout l'espace est utilisé
-
-  else
-    partition_size_mb=$((partition_size * 1024))  # Conversion GiB en MiB
-
-    # Calculer le point de fin pour la partition actuelle
-    end_point=$((start_point + partition_size_mb))
-    
-    # Créer la partition avec la taille spécifiée
-    parted --script -a optimal /dev/"${DISK}" mkpart primary $partition_type ${start_point}MiB ${end_point}MiB
-    echo "Partition de taille ${partition_size_mb}Mo et de type $partition_type créée."
-    
-    # Mettre à jour le point de départ pour la prochaine partition
-    start_point=$end_point
-  fi
 done
-
-echo "Partitions créées avec succès."
 
 # Demander le formatage de chaque partition
 for ((i = 1; i <= num_partitions + 1; i++)); do
