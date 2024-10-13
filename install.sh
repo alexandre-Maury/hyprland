@@ -203,8 +203,6 @@ log_info "Entrée dans le nouvel environnement et exécution de la deuxième par
 
 log_success "INSTALLATION TERMINÉ : après redémarrage lancé bash -x post_install.sh"
 
-echo "TEST DE RENVOI : $DISK"
-
 
 
 

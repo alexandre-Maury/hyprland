@@ -41,13 +41,24 @@ if prompt_confirm "Souhaitez-vous nettoyer le disque ? (Y/n)"; then
   MOUNTED_PARTITIONS=$(lsblk --list --noheadings /dev/"${DISK}" | tail -n +2 | awk '{print $1}')
 
   read -p "Combien de passe souhaitez-vous faire ? " SHRED_PASS
+  if ! [[ "$SHRED_PASS" =~ ^[0-9]+$ ]]; then
+      echo "Erreur : veuillez entrer un nombre valide de passes."
+      exit 1
+  fi
+
+  # Désactiver toutes les partitions swap
+  echo "Désactivation des partitions swap..."
+  swapoff -a && echo "Toutes les partitions swap ont été désactivées."
 
   # Si des partitions sont montées, les démonter
   if [[ -n "${MOUNTED_PARTITIONS}" ]]; then
       echo "Démontage des partitions montées sur /dev/${DISK}..."
-      for partition in ${MOUNTED_PARTITIONS}
-      do
-          umount "/dev/${partition}" && echo "Partition /dev/${partition} démontée avec succès."
+      for partition in ${MOUNTED_PARTITIONS}; do
+        if umount "/dev/${partition}"; then
+          echo "Partition /dev/${partition} démontée avec succès."
+        else
+          echo "Erreur lors du démontage de /dev/${partition}. Assurez-vous qu'elle n'est pas utilisée."
+        fi
       done
   else
       echo "Aucune partition montée sur /dev/${DISK}."
