@@ -248,7 +248,7 @@ for ((i = 1; i <= num_partitions + 1; i++)); do
       2)
           echo "Formatage de /dev/${DISK}${i} en swap  ..."
           mkswap "/dev/${DISK}${i}"
-          swapon "/dev/${DISK}${i}"
+          swapon -a "/dev/${DISK}${i}"
           ;;
       3)
           echo "Formatage de /dev/${DISK}${i} en ext4  ..."
@@ -273,7 +273,7 @@ done
 
 # Demander à l'utilisateur quelle partition sera utilisée pour la racine
 parted /dev/"${DISK}" print
-read -p "Entrez le numéro de la partition pour la racine (par exemple, 1 pour /dev/${DISK}1) : " root_partition_num
+read -p "Entrez le numéro de la partition racine (par exemple, 1 pour /dev/${DISK}1) : " root_partition_num
 
 # Vérifier que la partition spécifiée existe
 if [ ! -b "/dev/${DISK}${root_partition_num}" ]; then
