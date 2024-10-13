@@ -76,7 +76,11 @@ while [[ -z "$(echo "${LIST}" | grep "  ${OPTION})")" ]]; do
     fi
 done
 
-bash disk.sh $DISK
+bash disk.sh $DISK $MOUNT_POINT
+clear
+parted /dev/"${DISK}" print
+
+log_success "Préparation du disque /dev/$DISK pour l'installation terminée"
 
 ##############################################################################
 ## Check config                                                         

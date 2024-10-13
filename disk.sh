@@ -7,7 +7,15 @@ set -e  # Quitte immédiatement en cas d'erreur.
 source functions.sh  # Charge les fonctions définies dans le fichier fonction.sh.
 chmod +x *.sh # Rendre les scripts exécutables.
 
-# Détection du mode de démarrage (UEFI ou MBR)
+##############################################################################
+## Arguments                                                    
+##############################################################################
+$DISK="${1}"
+$MOUNT_POINT="${2}"
+
+##############################################################################
+## Detection of boot mode (UEFI or MBR)                                                     
+##############################################################################
 if [ -d /sys/firmware/efi ]; then
   MODE="UEFI"
 else
@@ -16,9 +24,10 @@ fi
 
 echo "Mode de démarrage détecté : $MODE"
 
-log_success "Sélection du disque /dev/$DISK pour l'installation terminée"
 
-# Vérifier si le disque existe
+##############################################################################
+##  Check if the disk exists                                                    
+##############################################################################
 if [ ! -b "/dev/$DISK" ]; then
   echo "Erreur : Le disque /dev/$DISK n'existe pas."
   exit 1
@@ -27,7 +36,6 @@ fi
 ##############################################################################
 ## Formatting disk                                                       
 ##############################################################################
-
 if prompt_confirm "Souhaitez-vous nettoyer le disque ? (Y/n)"; then
 
   MOUNTED_PARTITIONS=$(lsblk --list --noheadings /dev/"${DISK}" | tail -n +2 | awk '{print $1}')
@@ -53,7 +61,7 @@ fi
 
 
 ##############################################################################
-## Creating partionning, formatting + Mounting partitions                                                      
+## Swap File                                                    
 ##############################################################################
 
 # Comparaison entre Partition Swap et Fichier Swap :
@@ -70,7 +78,9 @@ else
   SWAP_FILE="Off"
 fi
 
-# Initialiser la table des partitions avec parted
+##############################################################################
+## Initialize the partition table with parted                                                         
+##############################################################################
 if [ "$MODE" = "UEFI" ]; then
   parted --script -a optimal /dev/"${DISK}" mklabel gpt
   echo "Table de partitions GPT créée pour le mode UEFI."
@@ -79,7 +89,9 @@ else
   echo "Table de partitions MSDOS créée pour le mode MBR."
 fi
 
-# Si UEFI, créer une partition EFI obligatoire
+##############################################################################
+## If UEFI, create a mandatory EFI partition                                                        
+##############################################################################
 if [ "$MODE" = "UEFI" ]; then
   read -p "Entrez la taille de la partition EFI (en Mo) : " efi_size
   if ! [[ "$efi_size" =~ ^[0-9]+$ ]]; then
@@ -95,22 +107,24 @@ else
   start_point=1          # Départ à 1MiB pour MBR
 fi
 
-# Si MBR, proposer la création d'une partition /boot
+##############################################################################
+## If MBR, create a mandatory boot partition                                                        
+##############################################################################
 if [ "$MODE" = "MBR" ]; then
-  read -p "Souhaitez-vous créer une partition /boot séparée ? (y/n) : " create_boot
-  if [ "$create_boot" = "y" ]; then
-    read -p "Entrez la taille de la partition /boot (en Mo) : " boot_size
-    if ! [[ "$boot_size" =~ ^[0-9]+$ ]]; then
-      echo "Erreur : Taille de la partition /boot invalide."
-      exit 1
-    fi
-    parted --script -a optimal /dev/"${DISK}" mkpart primary ext4 1MiB ${boot_size}MiB
-    echo "Partition /boot créée de ${boot_size}Mo."
-    start_point=$boot_size  # Définir la fin de la partition /boot comme point de départ
+  read -p "Entrez la taille de la partition boot (en Mo) : " boot_size
+  if ! [[ "$boot_size" =~ ^[0-9]+$ ]]; then
+    echo "Erreur : Taille de la partition /boot invalide."
+    exit 1
   fi
+  parted --script -a optimal /dev/"${DISK}" mkpart primary ext4 1MiB ${boot_size}MiB
+  echo "Partition /boot créée de ${boot_size}Mo."
+  start_point=$boot_size  # Définir la fin de la partition /boot comme point de départ
 fi
 
-# Demander à l'utilisateur le nombre de partitions à créer
+
+##############################################################################
+## Ask the user how many additional partitions to create                                                      
+##############################################################################
 read -p "Combien de partitions supplémentaires souhaitez-vous créer ? " num_partitions
 
 # Vérifier si le nombre est valide (un entier positif)
@@ -183,7 +197,9 @@ for ((i = 1; i <= num_partitions + 1; i++)); do
 
 done
 
-# Demander le formatage de chaque partition
+##############################################################################
+## Ask for the formatting of each partition                                                        
+##############################################################################
 for ((i = 1; i <= num_partitions + 1; i++)); do
 
   # Demander à l'utilisateur de choisir un type de formatage
@@ -227,7 +243,10 @@ for ((i = 1; i <= num_partitions + 1; i++)); do
 
 done
 
-# Demander à l'utilisateur quelle partition sera utilisée pour la racine
+
+##############################################################################
+## Mounting of the different partitions                                                 
+##############################################################################
 parted /dev/"${DISK}" print
 read -p "Entrez le numéro de la partition racine (par exemple, 1 pour /dev/${DISK}1) : " root_partition_num
 
@@ -238,9 +257,9 @@ if [ ! -b "/dev/${DISK}${root_partition_num}" ]; then
 fi
 
 # Monter la partition root
-mkdir -p /mnt/gentoo
-mount "/dev/${DISK}${root_partition_num}" /mnt/gentoo
-echo "Partition root montée sur /mnt/gentoo."
+mkdir -p $MOUNT_POINT
+mount "/dev/${DISK}${root_partition_num}" $MOUNT_POINT
+echo "Partition root montée sur $MOUNT_POINT."
 
 # Demander à l'utilisateur s'il souhaite monter des partitions supplémentaires
 read -p "Souhaitez-vous monter d'autres partitions ? (y/n) : " mount
@@ -259,30 +278,27 @@ if [ "$mount" = "y" ]; then
       read -p "Voulez-vous monter la partition /dev/${DISK}${i} ? (y/n) : " mount_choice
       if [ "$mount_choice" = "y" ]; then
         read -p "Nommer le point de montage de la partition /dev/${DISK}${i} (ex. efi - home ...): " partition_name
-        mkdir -p "/mnt/gentoo/$partition_name"
-        mount "/dev/${DISK}${i}" "/mnt/gentoo/$partition_name"
+        mkdir -p "$MOUNT_POINT/$partition_name"
+        mount "/dev/${DISK}${i}" "$MOUNT_POINT/$partition_name"
 
-        echo "Partition /dev/${DISK}${i} montée sur /mnt/gentoo/$partition_name."
+        echo "Partition /dev/${DISK}${i} montée sur $MOUNT_POINT/$partition_name."
       fi
     fi
 
   done
 fi
 
-
-
+##############################################################################
+## Creation of the swap file                                                
+##############################################################################
 if [ "$SWAP_FILE" = "On" ]; then
     echo "création du fichier swap"
-    mkdir --parents /mnt/gentoo/swap
-    fallocate -l "${SWAP_SIZE}MiB" /mnt/gentoo/swap/swapfile
+    mkdir --parents $MOUNT_POINT/swap
+    fallocate -l "${SWAP_SIZE}MiB" $MOUNT_POINT/swap/swapfile
     # dd if=/dev/zero of=$MOUNT_POINT/swap bs=1M count=${SWAP_SIZE}  
-    chmod 600 /mnt/gentoo/swap/swapfile                            
-    mkswap /mnt/gentoo/swap/swapfile                                
-    swapon /mnt/gentoo/swap/swapfile  
+    chmod 600 $MOUNT_POINT/swap/swapfile                            
+    mkswap $MOUNT_POINT/swap/swapfile                                
+    swapon $MOUNT_POINT/swap/swapfile  
 fi
 
 
-##############################################################################
-## RETURN VALUE                                                      
-##############################################################################
-echo "${DISK}"
