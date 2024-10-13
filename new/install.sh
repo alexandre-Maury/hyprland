@@ -113,20 +113,46 @@ echo "Partitions créées avec succès."
 
 # Demander le formatage de chaque partition
 for ((i = 1; i <= num_partitions; i++)); do
-  if [ "$boot_mode" = "UEFI" ] && [ "$i" -eq 1 ]; then
-    echo "La partition ${disk}1 est l'ESP, elle sera formatée en FAT32."
-    mkfs.fat -F32 "${disk}1"
-  else
-    read -p "Voulez-vous formater la partition ${disk}${i} en $partition_type ? (y/n) : " format_choice
-    if [ "$format_choice" = "y" ]; then
-      case $partition_type in
-        ext4) mkfs.ext4 "${disk}${i}" ;;
-        linux-swap) mkswap "${disk}${i}" ;;
-        *) echo "Type de partition $partition_type non pris en charge pour le formatage automatique." ;;
-      esac
-      echo "Partition ${disk}${i} formatée en $partition_type."
-    fi
-  fi
+
+  # Demander à l'utilisateur de choisir un type de formatage
+  echo "Choisissez le type de formatage pour la partition ${disk}${i} :"
+  echo "1) f32"   # mkfs.fat -F32 "${disk}1"
+  echo "2) swap"  # mkswap "${disk}${i}" + swapon "${disk}${i}"
+  echo "3) ext4"  # mkfs.ext4 "${disk}${i}"
+  echo "4) btrfs" # mkfs.btrfs
+  echo "5) xfs"   # mkfs.xfs
+  read -p "Entrez le numéro correspondant à votre choix : " format_choice
+
+  # Utiliser un switch case pour appliquer le bon formatage
+  case $format_choice in
+      1)
+          echo "Formatage de ${disk}${i} en fat32 ..."
+          mkfs.fat -F32 "${disk}${i}"
+          ;;
+      2)
+          echo "Formatage de ${disk}${i} en swap  ..."
+          mkswap "${disk}${i}"
+          swapon "${disk}${i}"
+          ;;
+      3)
+          echo "Formatage de ${disk}${i} en ext4  ..."
+          mkfs.ext4 "${disk}${i}"
+          ;;
+      4)
+          echo "Formatage de ${disk}${i} en btrfs ..."
+          mkfs.btrfs "${disk}${i}"
+          ;;
+      5)
+          echo "Formatage de ${disk}${i} en xfs   ..."
+          mkfs.xfs "${disk}${i}"
+          ;;
+      *)
+          echo "Choix invalide. Veuillez entrer un numéro valide."
+          ;;
+  esac
+
+  echo "Formatage ${disk}${i} terminé."
+
 done
 
 # Demander à l'utilisateur quelle partition sera utilisée pour la racine
