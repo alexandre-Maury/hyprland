@@ -39,9 +39,44 @@ echo ""
 ##############################################################################
 ## Creating partionning, formatting + Mounting partitions                                                      
 ##############################################################################
-log_info "Exécution du script disk.sh"
-# read DISK <<< $(bash disk.sh)
-DISK=$(bash disk.sh)
+log_info "Sélectionner un disque pour l'installation :"
+
+# LIST="$(lsblk -d -n | grep -v -e "loop" -e "sr" | awk '{print $1, $4}' | nl -s") ")" 
+
+# echo "${LIST}"
+# OPTION=""
+
+# while [[ -z "$(echo "${LIST}" | grep "  ${OPTION})")" ]]; do
+#     printf "Choisissez un disque pour la suite de l'installation (ex : 1) : "
+#     read -r OPTION
+# done
+
+# DISK="$(echo "${LIST}" | grep "  ${OPTION})" | awk '{print $2}')"
+# log_success "TERMINÉ"
+
+# Générer la liste des disques physiques sans les disques loop et sr (CD/DVD)
+LIST="$(lsblk -d -n | grep -v -e "loop" -e "sr" | awk '{print $1, $4}' | nl -s") ")" 
+echo "${LIST}"
+OPTION=""
+
+# Boucle pour que l'utilisateur puisse choisir un disque ou en entrer un manuellement
+while [[ -z "$(echo "${LIST}" | grep "  ${OPTION})")" ]]; do
+    printf "Choisissez un disque pour la suite de l'installation (ex : 1) ou entrez manuellement le nom du disque (ex : sda) : "
+    read -r OPTION
+
+    # Vérification si l'utilisateur a entré un numéro (choix dans la liste)
+    if [[ -n "$(echo "${LIST}" | grep "  ${OPTION})")" ]]; then
+        # Si l'utilisateur a choisi un numéro valide, récupérer le nom du disque correspondant
+        DISK="$(echo "${LIST}" | grep "  ${OPTION})" | awk '{print $2}')"
+        break
+    else
+        # Si l'utilisateur a entré quelque chose qui n'est pas dans la liste, considérer que c'est un nom de disque
+        DISK="${OPTION}"
+        break
+    fi
+done
+
+bash disk.sh $DISK
 
 ##############################################################################
 ## Check config                                                         
