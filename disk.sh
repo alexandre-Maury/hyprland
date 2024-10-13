@@ -287,9 +287,16 @@ echo "Partition root montée sur /mnt/gentoo."
 read -p "Souhaitez-vous monter d'autres partitions ? (y/n) : " mount
 
 if [ "$mount" = "y" ]; then
-
   for ((i = 1; i <= num_partitions + 1; i++)); do
+
     if [[ "${root_partition_num}" != "${i}" ]]; then
+
+      # Vérifier si la partition est une partition swap
+      if blkid "/dev/${DISK}${i}" | grep -q "TYPE=\"swap\""; then
+        echo "La partition /dev/${DISK}${i} est une partition swap, elle sera activée automatiquement."
+        continue  # Passer à la partition suivante sans demander de point de montage
+      fi
+
       read -p "Voulez-vous monter la partition /dev/${DISK}${i} ? (y/n) : " mount_choice
       if [ "$mount_choice" = "y" ]; then
         read -p "Nommer le point de montage de la partition /dev/${DISK}${i} (ex. efi - home ...): " partition_name
@@ -299,8 +306,11 @@ if [ "$mount" = "y" ]; then
         echo "Partition /dev/${DISK}${i} montée sur /mnt/gentoo/$partition_name."
       fi
     fi
+
   done
 fi
+
+
 
 if [ "$SWAP_FILE" = "On" ]; then
     echo "création du fichier swap"
