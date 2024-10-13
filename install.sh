@@ -37,6 +37,13 @@ log_info "Bienvenue dans le script d'installation de Gentoo !" # Affiche un mess
 echo ""
 
 ##############################################################################
+## Creating partionning, formatting + Mounting partitions                                                      
+##############################################################################
+# log_info "Exécution du script disk.sh"
+# # read DISK <<< $(bash disk.sh)
+# bash disk.sh
+
+##############################################################################
 ## Check config                                                         
 ##############################################################################
 
@@ -59,13 +66,6 @@ if ! prompt_confirm "Vérifiez que les informations ci-dessus sont correctes (Y/
     log_warning "Annulation de l'installation."
     exit 0
 fi
-
-##############################################################################
-## Creating partionning, formatting + Mounting partitions                                                      
-##############################################################################
-log_info "Exécution du script disk.sh"
-# read DISK <<< $(bash disk.sh)
-bash disk.sh
 
 ##############################################################################
 ## Configuring date                                                    
