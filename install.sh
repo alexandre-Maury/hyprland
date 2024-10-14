@@ -61,7 +61,7 @@ OPTION=""
 
 # Boucle pour que l'utilisateur puisse choisir un disque ou en entrer un manuellement
 while [[ -z "$(echo "${LIST}" | grep "  ${OPTION})")" ]]; do
-    printf "Choisissez un disque pour la suite de l'installation (ex : 1) ou entrez manuellement le nom du disque (ex : sda) : "
+    log_info "Choisissez un disque pour la suite de l'installation (ex : 1) : "
     read -r OPTION
 
     # Vérification si l'utilisateur a entré un numéro (choix dans la liste)

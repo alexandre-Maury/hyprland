@@ -149,7 +149,7 @@ for ((i = 1; i <= num_partitions + 1; i++)); do
     log_info "3) xfs" 
 
     if [[ "$SWAP_FILE" == "Off" ]]; then
-        echo "4) linux-swap" # Afficher l'option linux-swap seulement si SWAP_FILE est "Off"
+        log_info "4) linux-swap" # Afficher l'option linux-swap seulement si SWAP_FILE est "Off"
     fi
 
     echo ""
