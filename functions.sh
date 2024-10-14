@@ -37,8 +37,11 @@ prompt_value() {
     local prompt="$1"
     local default_value="$2"
 
+    printf "%b[ %-7s ] %s: %s%b\n" "${LIGHT_CYAN}" "INFO" "$(date +"%Y-%m-%d %H:%M:%S")" "${prompt}" "[${default_value}]:" "${RESET}"
+    read value
+
     # Appliquer la couleur LIGHT_CYAN au prompt et réinitialiser après la saisie
-    read -p "${LIGHT_CYAN}${prompt} [${default_value}]: ${RESET}" value
+    # read -p "${LIGHT_CYAN}${prompt} [${default_value}]: ${RESET}" value
     echo "${value:-$default_value}"
 }
 
