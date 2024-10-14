@@ -5,23 +5,18 @@
 set -e  # Quitte immédiatement en cas d'erreur.
 
 source functions.sh  # Charge les fonctions définies dans le fichier fonction.sh.
+source config.sh # Inclure le fichier de configuration.
 chmod +x *.sh # Rendre les scripts exécutables.
 
 ##############################################################################
 ## Arguments                                                    
 ##############################################################################
 DISK="${1}"
-MOUNT_POINT="${2}"
+chmod +x *.sh # Rendre les scripts exécutables.
 
 ##############################################################################
 ## Detection of boot mode (UEFI or MBR)                                                     
 ##############################################################################
-if [ -d /sys/firmware/efi ]; then
-  MODE="UEFI"
-else
-  MODE="MBR"
-fi
-
 echo "Mode de démarrage détecté : $MODE"
 
 

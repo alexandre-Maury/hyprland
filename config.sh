@@ -3,8 +3,6 @@
 # script config.sh
 
 
-
-
 # Détection du mode de démarrage (UEFI ou MBR)
 if [ -d /sys/firmware/efi ]; then
   MODE="UEFI"

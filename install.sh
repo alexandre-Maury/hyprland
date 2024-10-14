@@ -199,7 +199,7 @@ cp chroot.sh $MOUNT_POINT
 
 log_info "Entrée dans le nouvel environnement et exécution de la deuxième partie du script"
 
-# chroot $MOUNT_POINT /bin/bash -c "./chroot.sh $DISK"
+chroot $MOUNT_POINT /bin/bash -c "./chroot.sh $DISK"
 
 log_success "INSTALLATION TERMINÉ : après redémarrage lancé bash -x post_install.sh"
 
