@@ -17,7 +17,53 @@ chmod +x *.sh # Rendre les scripts exécutables.
 ##############################################################################
 ## Detection of boot mode (UEFI or MBR)                                                     
 ##############################################################################
+# if [ -d /sys/firmware/efi ]; then
+#   MODE="UEFI"
+# else
+#   MODE="MBR"
+# fi
+
 echo "Mode de démarrage détecté : $MODE"
+
+##############################################################################
+## Creating partionning, formatting + Mounting partitions                                                      
+##############################################################################
+# log_info "Sélectionner un disque pour l'installation :"
+
+# LIST="$(lsblk -d -n | grep -v -e "loop" -e "sr" | awk '{print $1, $4}' | nl -s") ")" 
+
+# echo "${LIST}"
+# OPTION=""
+
+# while [[ -z "$(echo "${LIST}" | grep "  ${OPTION})")" ]]; do
+#     printf "Choisissez un disque pour la suite de l'installation (ex : 1) : "
+#     read -r OPTION
+# done
+
+# DISK="$(echo "${LIST}" | grep "  ${OPTION})" | awk '{print $2}')"
+# log_success "TERMINÉ"
+
+# Générer la liste des disques physiques sans les disques loop et sr (CD/DVD)
+# LIST="$(lsblk -d -n | grep -v -e "loop" -e "sr" | awk '{print $1, $4}' | nl -s") ")" 
+# echo "${LIST}"
+# OPTION=""
+
+# # Boucle pour que l'utilisateur puisse choisir un disque ou en entrer un manuellement
+# while [[ -z "$(echo "${LIST}" | grep "  ${OPTION})")" ]]; do
+#     printf "Choisissez un disque pour la suite de l'installation (ex : 1) ou entrez manuellement le nom du disque (ex : sda) : "
+#     read -r OPTION
+
+#     # Vérification si l'utilisateur a entré un numéro (choix dans la liste)
+#     if [[ -n "$(echo "${LIST}" | grep "  ${OPTION})")" ]]; then
+#         # Si l'utilisateur a choisi un numéro valide, récupérer le nom du disque correspondant
+#         DISK="$(echo "${LIST}" | grep "  ${OPTION})" | awk '{print $2}')"
+#         break
+#     else
+#         # Si l'utilisateur a entré quelque chose qui n'est pas dans la liste, considérer que c'est un nom de disque
+#         DISK="${OPTION}"
+#         break
+#     fi
+# done
 
 
 ##############################################################################
@@ -77,12 +123,12 @@ fi
 # Simplicité	Nécessite des opérations de partitionnement.	                Plus simple à configurer et à gérer.
 # Gestion	    Nécessite des outils de partitionnement pour la création.	    Peut être géré par des commandes simples.
 
-if prompt_confirm "Souhaitez-vous créer un fichier pour le swap ? (Y/n)"; then # <Y> Activation du swap avec fichier 
-  SWAP_FILE="On" 
-  SWAP_SIZE="$(prompt_value "Fichier Swap en MiB [ par défaut : ]" "4096")"
-else
-  SWAP_FILE="Off"
-fi
+# if prompt_confirm "Souhaitez-vous créer un fichier pour le swap ? (Y/n)"; then # <Y> Activation du swap avec fichier 
+#   SWAP_FILE="On" 
+#   SWAP_FILE_SIZE="$(prompt_value "Fichier Swap en MiB [ par défaut : ]" "4096")"
+# else
+#   SWAP_FILE="Off"
+# fi
 
 ##############################################################################
 ## Initialize the partition table with parted                                                         
@@ -90,15 +136,7 @@ fi
 if [ "$MODE" = "UEFI" ]; then
   parted --script -a optimal /dev/"${DISK}" mklabel gpt
   echo "Table de partitions GPT créée pour le mode UEFI."
-else
-  parted --script -a optimal /dev/"${DISK}" mklabel msdos
-  echo "Table de partitions MSDOS créée pour le mode MBR."
-fi
 
-##############################################################################
-## If UEFI, create a mandatory EFI partition                                                        
-##############################################################################
-if [ "$MODE" = "UEFI" ]; then
   read -p "Entrez la taille de la partition EFI (en Mo) : " efi_size
   if ! [[ "$efi_size" =~ ^[0-9]+$ ]]; then
     echo "Erreur : Taille de la partition EFI invalide."
@@ -109,14 +147,11 @@ if [ "$MODE" = "UEFI" ]; then
   echo "Partition EFI créée de ${efi_size}Mo."
 
   start_point=$efi_size  # Définir la fin de la partition EFI comme point de départ pour les autres partitions
-else
-  start_point=1          # Départ à 1MiB pour MBR
-fi
 
-##############################################################################
-## If MBR, create a mandatory boot partition                                                        
-##############################################################################
-if [ "$MODE" = "MBR" ]; then
+else
+  parted --script -a optimal /dev/"${DISK}" mklabel msdos
+  echo "Table de partitions MSDOS créée pour le mode MBR."
+
   read -p "Entrez la taille de la partition boot (en Mo) : " boot_size
   if ! [[ "$boot_size" =~ ^[0-9]+$ ]]; then
     echo "Erreur : Taille de la partition /boot invalide."
@@ -125,6 +160,7 @@ if [ "$MODE" = "MBR" ]; then
   parted --script -a optimal /dev/"${DISK}" mkpart primary ext4 1MiB ${boot_size}MiB
   echo "Partition /boot créée de ${boot_size}Mo."
   start_point=$boot_size  # Définir la fin de la partition /boot comme point de départ
+
 fi
 
 
@@ -146,25 +182,35 @@ for ((i = 1; i <= num_partitions + 1; i++)); do
 
     read -p "Entrez la taille de la partition (en GiB ou '100%' pour le reste du disque) pour /dev/${DISK}${i} : " partition_size
     echo "Choisissez le type pour la partition /dev/${DISK}${i} :"
-    echo "1) linux-swap" 
-    echo "2) ext4"  
-    echo "3) btrfs" 
-    echo "4) xfs"   
+    echo "1) ext4" 
+    echo "2) btrfs"  
+    echo "3) xfs" 
+
+    if [[ "$SWAP_FILE" == "Off" ]]; then
+        echo "4) linux-swap" # Afficher l'option linux-swap seulement si SWAP_FILE est "Off"
+    fi
+
+
     read -p "Entrez le numéro correspondant à votre choix : " format_choice
 
-    # Utiliser un switch case pour appliquer le bon formatage
+    # Utiliser un switch case pour appliquer le bon formatage 
     case $format_choice in
         1)
-            partition_type="linux-swap"
-            ;;
-        2)
             partition_type="ext4"
             ;;
-        3)
+        2)
             partition_type="btrfs"
             ;;
-        4)
+        3)
             partition_type="xfs"
+            ;;
+        4)
+            if [[ "$SWAP_FILE" == "Off" ]]; then
+                partition_type="linux-swap"
+            else
+                echo "L'option linux-swap n'est pas disponible car un fichier swap est activé."
+                exit 1
+            fi
             ;;
         *)
             echo "Choix invalide. Veuillez entrer un numéro valide."
@@ -208,46 +254,55 @@ done
 ##############################################################################
 for ((i = 1; i <= num_partitions + 1; i++)); do
 
-  # Demander à l'utilisateur de choisir un type de formatage
-  echo "Choisissez le type de formatage pour la partition /dev/${DISK}${i} :"
-  echo "1) f32"   
-  echo "2) swap"  
-  echo "3) ext4"  
-  echo "4) btrfs" 
-  echo "5) xfs"   
-  read -p "Entrez le numéro correspondant à votre choix : " format_choice
+echo "Choisissez le type de formatage pour la partition /dev/${DISK}${i} :"
+echo "1) fat32"   
+echo "2) ext4"  
+echo "3) xfs"  
+echo "4) btrfs"
 
-  # Utiliser un switch case pour appliquer le bon formatage
-  case $format_choice in
-      1)
-          echo "Formatage de /dev/${DISK}${i} en fat32 ..."
-          mkfs.fat -F32 "/dev/${DISK}${i}"
-          ;;
-      2)
-          echo "Formatage de /dev/${DISK}${i} en swap  ..."
-          mkswap "/dev/${DISK}${i}"
-          swapon -a "/dev/${DISK}${i}"
-          ;;
-      3)
-          echo "Formatage de /dev/${DISK}${i} en ext4  ..."
-          mkfs.ext4 -F "/dev/${DISK}${i}"
-          ;;
-      4)
-          echo "Formatage de /dev/${DISK}${i} en btrfs ..."
-          mkfs.btrfs "/dev/${DISK}${i}"
-          ;;
-      5)
-          echo "Formatage de /dev/${DISK}${i} en xfs   ..."
-          mkfs.xfs "/dev/${DISK}${i}"
-          ;;
-      *)
-          echo "Choix invalide. Veuillez entrer un numéro valide."
-          ;;
-  esac
+if [[ "$SWAP_FILE" == "Off" ]]; then
+  echo "5) linux-swap" # Afficher l'option linux-swap seulement si SWAP_FILE est "Off"
+fi
 
-  echo "Formatage /dev/${DISK}${i} terminé."
+read -p "Entrez le numéro correspondant à votre choix : " format_choice
+
+# Utiliser un switch case pour appliquer le bon formatage
+case $format_choice in
+    1)
+        echo "Formatage de /dev/${DISK}${i} en fat32 ..."
+        mkfs.fat -F32 "/dev/${DISK}${i}"
+        ;;
+    2)
+        echo "Formatage de /dev/${DISK}${i} en ext4 ..."
+        mkfs.ext4 -F "/dev/${DISK}${i}"
+        ;;
+    3)
+        echo "Formatage de /dev/${DISK}${i} en xfs ..."
+        mkfs.xfs "/dev/${DISK}${i}"
+        ;;
+    4)
+        echo "Formatage de /dev/${DISK}${i} en btrfs ..."
+        mkfs.btrfs "/dev/${DISK}${i}"
+        ;;
+    5)
+        if [[ "$SWAP_FILE" == "Off" ]]; then
+            echo "Formatage de /dev/${DISK}${i} en swap ..."
+            mkswap "/dev/${DISK}${i}"
+            swapon "/dev/${DISK}${i}"
+        else
+            echo "L'option linux-swap n'est pas disponible car un fichier swap est déjà activé."
+            exit 1
+        fi
+        ;;
+    *)
+        echo "Choix invalide. Veuillez entrer un numéro valide."
+        ;;
+esac
+
+echo "Formatage de /dev/${DISK}${i} terminé."
 
 done
+
 
 
 ##############################################################################
@@ -300,8 +355,8 @@ fi
 if [ "$SWAP_FILE" = "On" ]; then
     echo "création du fichier swap"
     mkdir --parents $MOUNT_POINT/swap
-    fallocate -l "${SWAP_SIZE}MiB" $MOUNT_POINT/swap/swapfile
-    # dd if=/dev/zero of=$MOUNT_POINT/swap bs=1M count=${SWAP_SIZE}  
+    fallocate -l "${SWAP_FILE_SIZE}MiB" $MOUNT_POINT/swap/swapfile
+    # dd if=/dev/zero of=$MOUNT_POINT/swap bs=1M count=${SWAP_FILE_SIZE}  
     chmod 600 $MOUNT_POINT/swap/swapfile                            
     mkswap $MOUNT_POINT/swap/swapfile                                
     swapon $MOUNT_POINT/swap/swapfile  

@@ -10,12 +10,26 @@ else
   MODE="MBR"
 fi
 
+# Comparaison entre Partition Swap et Fichier Swap :
+# Critère	    Partition Swap :	                                            Fichier Swap :
+# Performance	Généralement plus rapide en raison d'un accès direct.	        Moins rapide, mais souvent suffisant pour la plupart des usages.
+# Flexibilité	Taille fixe, nécessite un redimensionnement pour changer.	    Facile à redimensionner en ajoutant ou supprimant des fichiers.
+# Simplicité	Nécessite des opérations de partitionnement.	                Plus simple à configurer et à gérer.
+# Gestion	    Nécessite des outils de partitionnement pour la création.	    Peut être géré par des commandes simples.
+
+SWAP_FILE="On" 
+SWAP_FILE_SIZE="4096"
+
 # Liste des programmes requis pour l'installation
 packages=("git" "tar" "curl" "wget" "chrony")
 
 #Gentoo Base
 GENTOO_BASE="https://distfiles.gentoo.org/releases/amd64/autobuilds/20240929T163611Z/stage3-amd64-systemd-20240929T163611Z.tar.xz"
 MOUNT_POINT="/mnt/gentoo"
+
+# SWAP_FILE="On"
+# SWAP_PART="Off"
+# SWAP_SIZE="4096"
 
 TIMEZONE="Europe/Paris"
 LOCALE="fr_FR.UTF-8 UTF-8"
