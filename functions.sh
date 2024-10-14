@@ -24,7 +24,11 @@ check_and_install() {
 prompt_confirm() {
     local prompt="$1"
     # Appliquer la couleur LIGHT_CYAN au prompt et réinitialiser après la saisie
-    read -r -p "${LIGHT_CYAN}${prompt}${RESET} " response
+    # read -r -p "${LIGHT_CYAN}${prompt}${RESET} " response
+
+    printf "%b[ %-7s ] %s: %s%b\n" ${LIGHT_CYAN} ${prompt} ${RESET}" "
+    read response
+
     [[ "$response" =~ ^(y|Y|yes|YES)$ ]]
 }
 
