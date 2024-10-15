@@ -41,17 +41,6 @@ prompt_confirm() {
     [[ "$response" =~ ^(y|Y|yes|YES)$ ]]
 }
 
-# Saisie avec valeur par défaut
-prompt_value() {
-    local prompt="$1"
-    local default_value="$2"
-
-    echo -ne "${LIGHT_CYAN} [ INFO ] $(date +"%Y-%m-%d %H:%M:%S") ${prompt} [${default_value}]: ${RESET}"
-    read value
-
-    echo "${value:-$default_value}"
-}
-
 
 log_prompt() {
 
@@ -82,6 +71,6 @@ log_prompt() {
             ;;
     esac
 
-    echo -ne "${log_color} [ ${log_status} ] "${log_date}" ${log_message} ${RESET}"
+    echo -ne "${log_color} [ ${log_status} ] "${log_date}" ${RESET} ==> ${log_message}"
 
 }
