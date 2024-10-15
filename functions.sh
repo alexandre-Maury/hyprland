@@ -82,5 +82,5 @@ log_prompt() {
             ;;
     esac
 
-    echo -ne "${log_color} [ ${log_status} ] "${log_date}" ${log_message} ${RESET}"
+    read -p "${log_color} [ ${log_status} ] "${log_date}" ${log_message} ${RESET}"
 }

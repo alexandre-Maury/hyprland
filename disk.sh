@@ -49,7 +49,7 @@ if prompt_confirm "Souhaitez-vous nettoyer le disque ? (Y/n)"; then
 
   log_prompt "INFO" "Lancement de shred sur /dev/"${DISK}" avec ${SHRED_PASS} passes..."
   echo ""
-  wipefs --all /dev/"${DISK}" && log_prompt "SUCCESS" "Terminée"
+  wipefs --all /dev/"${DISK}" && log_prompt "SUCCESS" "Terminée" && echo ""
   shred -n "${SHRED_PASS}" -v "/dev/${DISK}"
 
   # Si des partitions sont montées, les démonter
@@ -66,8 +66,7 @@ if prompt_confirm "Souhaitez-vous nettoyer le disque ? (Y/n)"; then
         fi
       done
   else
-      log_prompt "SUCCESS" "Terminée"
-      echo ""
+      log_prompt "SUCCESS" "Terminée" && echo ""
   fi
 fi
 
@@ -110,14 +109,13 @@ if [ "$MODE" = "UEFI" ]; then
   parted --script -a optimal /dev/"${DISK}" mkpart ESP fat32 1MiB ${efi_size}MiB
   parted --script -a optimal /dev/"${DISK}" set 1 esp on
 
-  log_prompt "SUCCESS" "Terminée"
+  log_prompt "SUCCESS" "Terminée" && echo ""
 
   start_point=$efi_size  # Définir la fin de la partition EFI comme point de départ pour les autres partitions
 
 else
   parted --script -a optimal /dev/"${DISK}" mklabel msdos
-  log_prompt "SUCCESS" "Terminée"
-  echo ""
+  log_prompt "SUCCESS" "Terminée" && echo ""
 
   log_prompt "INFO" "Entrez la taille de la partition boot (en Mo) : " 
   read boot_size
@@ -129,8 +127,7 @@ else
 
   parted --script -a optimal /dev/"${DISK}" mkpart primary ext4 1MiB ${boot_size}MiB
 
-  log_prompt "SUCCESS" "Terminée"
-  echo ""
+  log_prompt "SUCCESS" "Terminée" && echo ""
   start_point=$boot_size  # Définir la fin de la partition /boot comme point de départ
 
 fi
