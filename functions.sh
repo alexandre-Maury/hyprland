@@ -14,12 +14,15 @@ check_and_install() {
     if ! command -v "$package" &> /dev/null; then
         if command -v apt &> /dev/null; then
             log_prompt "INFO" "Installation de $package via apt"
+            echo ""
             apt install -y "$package"
         elif command -v emerge &> /dev/null; then
             log_prompt "INFO" "Installation de $package via emerge"
+            echo ""
             emerge "$package"
         elif command -v pacman &> /dev/null; then
             log_prompt "INFO" "Installation de $package via pacman"
+            echo ""
             pacman -S --noconfirm "$package"
         fi
     fi
