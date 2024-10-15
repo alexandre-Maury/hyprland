@@ -82,6 +82,6 @@ log_prompt() {
             ;;
     esac
 
-    echo -e "${log_color} [ ${log_status} ] "${log_date}" ${log_message} ${RESET}"
-    read -p "Press Enter to continue..."
+    echo -ne "${log_color} [ ${log_status} ] "${log_date}" ${log_message} ${RESET}"
+
 }
