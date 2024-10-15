@@ -16,12 +16,12 @@ chmod +x *.sh # Rendre les scripts exécutables.
 ## Check internet                                                          
 ##############################################################################
 
-log_info "Vérification de la connexion Internet"
+log_prompt "INFO" "Vérification de la connexion Internet"
 if ! ping -c1 -w1 1.1.1.1 > /dev/null 2>&1; then
-    log_error "Pas de connexion Internet"
+    log_prompt "ERROR" "Pas de connexion Internet"
     exit 1
 else
-    log_success "Connecté à Internet"
+    log_prompt "SUCCESS" "Connecté à Internet"
 fi
 
 ##############################################################################
@@ -33,13 +33,13 @@ for pkg in "${packages[@]}"; do
 done
 
 clear 
-log_info "Bienvenue dans le script d'installation de Gentoo !" # Affiche un message de bienvenue pour l'utilisateur.
+log_prompt "INFO" "Bienvenue dans le script d'installation de Gentoo !" # Affiche un message de bienvenue pour l'utilisateur.
 echo ""
 
 ##############################################################################
 ## Creating partionning, formatting + Mounting partitions                                                      
 ##############################################################################
-log_info "Sélectionner un disque pour l'installation :"
+log_prompt "INFO" "Sélectionner un disque pour l'installation :"
 
 # LIST="$(lsblk -d -n | grep -v -e "loop" -e "sr" | awk '{print $1, $4}' | nl -s") ")" 
 
@@ -61,7 +61,7 @@ OPTION=""
 
 # Boucle pour que l'utilisateur puisse choisir un disque ou en entrer un manuellement
 while [[ -z "$(echo "${LIST}" | grep "  ${OPTION})")" ]]; do
-    log_info "Choisissez un disque pour la suite de l'installation (ex : 1) : "
+    log_prompt "INFO" "Choisissez un disque pour la suite de l'installation (ex : 1) : "
     read -r OPTION
 
     # Vérification si l'utilisateur a entré un numéro (choix dans la liste)
@@ -80,13 +80,13 @@ bash disk.sh $DISK $MOUNT_POINT
 clear
 parted /dev/"${DISK}" print
 
-log_success "Préparation du disque /dev/$DISK pour l'installation terminée"
+log_prompt "SUCCESS" "Préparation du disque /dev/$DISK pour l'installation terminée"
 
 ##############################################################################
 ## Check config                                                         
 ##############################################################################
 
-log_info "Vérification de la configuration :"
+log_prompt "INFO" "Vérification de la configuration :"
 echo ""
 echo "[ ${DISK} ]"                   "- Disque"
 echo "[ ${MODE} ]"                   "- Mode"
@@ -110,15 +110,15 @@ fi
 ## Configuring date                                                    
 ##############################################################################
 
-log_info "Configurer l'heure avec chrony"
+log_prompt "INFO" "Configurer l'heure avec chrony"
 chronyd -q
-log_success "TERMINÉ"
+log_prompt "SUCCESS" "Configurer l'heure terminée"
 
 ##############################################################################
 ## Downloading and unarchiving stage3 tarball                                                  
 ##############################################################################
 
-log_info "Téléchargement et décompression de l'archive stage3"
+log_prompt "INFO" "Téléchargement et décompression de l'archive stage3"
 pushd $MOUNT_POINT || exit 1
 
 wget "${GENTOO_BASE}"
@@ -126,13 +126,14 @@ tar xpf stage3-*.tar.xz --xattrs-include='*.*' --numeric-owner
 rm stage3-*.tar.xz
 
 popd || exit 1
-log_success "décompression de l'archive stage3 terminé"
+log_prompt "SUCCESS" "décompression de l'archive stage3 terminé"
 
 ##############################################################################
 ## Configuring /etc/portage/make.conf                                                 
 ##############################################################################
 
-log_info "Configuration du fichier /etc/portage/make.conf"
+log_prompt "INFO" "Configuration du fichier /etc/portage/make.conf"
+
 MAKE_CONF="$MOUNT_POINT/etc/portage/make.conf"
 
 echo 'COMMON_FLAGS="-O2 -pipe -march=native"' >> "${MAKE_CONF}"
@@ -156,29 +157,29 @@ else
     echo "CPU_FLAGS_X86=\"${CPU_FLAGS}\"" >> "${MAKE_CONF}"
 fi
 
-log_success "Configuration du fichier /etc/portage/make.conf terminé"
+log_prompt "SUCCESS" "Configuration du fichier /etc/portage/make.conf terminée"
 
 ##############################################################################
 ## Configure Gentoo ebuild repository                                                 
 ##############################################################################
 
-log_info "Configurer le dépôt ebuild de Gentoo"
+log_prompt "INFO" "Configurer le dépôt ebuild de Gentoo"
 mkdir --parents /mnt/gentoo/etc/portage/repos.conf
 cp $MOUNT_POINT/usr/share/portage/config/repos.conf $MOUNT_POINT/etc/portage/repos.conf/gentoo.conf
 
-log_success "Configurer le dépôt ebuild de Gentoo terminé"
+log_prompt "SUCCESS" "Configurer le dépôt ebuild de Gentoo terminé"
 
 ##############################################################################
 ## Copying DNS info                                                 
 ##############################################################################
-log_info "Copie des informations DNS"
+log_prompt "INFO" "Copie des informations DNS"
 cp --dereference /etc/resolv.conf $MOUNT_POINT/etc/
-log_success "Copie des informations DNS terminé"
+log_prompt "SUCCESS" "Copie des informations DNS terminé"
 
 ##############################################################################
 ## Mounting the necessary filesystems                                                 
 ##############################################################################
-log_info "Montage des systèmes de fichiers nécessaires"
+log_prompt "INFO" "Montage des systèmes de fichiers nécessaires"
 mount --types proc /proc /mnt/gentoo/proc
 mount --rbind /sys /mnt/gentoo/sys
 mount --make-rslave /mnt/gentoo/sys
@@ -186,22 +187,22 @@ mount --rbind /dev /mnt/gentoo/dev
 mount --make-rslave /mnt/gentoo/dev
 mount --bind /run /mnt/gentoo/run
 mount --make-slave /mnt/gentoo/run
-log_success "Montage des systèmes de fichiers nécessaires terminé"
+log_prompt "SUCCESS" "Montage des systèmes de fichiers nécessaires terminé"
 
 ##############################################################################
 ## Enter the new environment                                             
 ##############################################################################
-log_info "Copie de la deuxième partie du script d'installation dans le nouvel environnement"
+log_prompt "INFO" "Copie de la deuxième partie du script d'installation dans le nouvel environnement"
 
 cp functions.sh $MOUNT_POINT
 cp config.sh $MOUNT_POINT
 cp chroot.sh $MOUNT_POINT
 
-log_info "Entrée dans le nouvel environnement et exécution de la deuxième partie du script"
+log_prompt "INFO" "Entrée dans le nouvel environnement et exécution de la deuxième partie du script"
 
 chroot $MOUNT_POINT /bin/bash -c "./chroot.sh $DISK"
 
-log_success "INSTALLATION TERMINÉ : après redémarrage lancé bash -x post_install.sh"
+log_prompt "SUCCESS" "INSTALLATION TERMINÉ : après redémarrage lancé bash -x post_install.sh"
 
 
 

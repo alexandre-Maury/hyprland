@@ -2,6 +2,12 @@
 
 # script functions.sh
 
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+LIGHT_CYAN='\033[0;96m'
+RESET='\033[0m'
+
 # Vérifie et installe un package si absent
 check_and_install() {
     local package="$1"
@@ -44,22 +50,13 @@ prompt_value() {
 }
 
 
-# Fonction pour définir les couleurs de log
-log_colors() {
-    RED='\033[0;31m'
-    GREEN='\033[0;32m'
-    YELLOW='\033[0;33m'
-    LIGHT_CYAN='\033[0;96m'
-    RESET='\033[0m'
-}
+log_prompt() {
 
-# Fonction principale de log
-log_it() {
-    local log_color=''
-    local log_status=''
-    local log_message="$*"
+    local log_level="$1" # INFO - WARNING - ERROR - SUCCESS
+    local log_message="$2" 
+    local log_date="$(date +"%Y-%m-%d %H:%M:%S")"
 
-    case "${LOG_LEVEL_FUNCTION}" in
+    case "${log_level}" in
         "SUCCESS")
             log_color="${GREEN}"
             log_status='SUCCESS'
@@ -82,19 +79,5 @@ log_it() {
             ;;
     esac
 
-    local date_stamp
-    date_stamp="$(date +"%Y-%m-%d %H:%M:%S")"
-
-    if [ -n "${log_message}" ]; then
-        printf "%b[ %-7s ] %s: %s%b\n" "${log_color}" "${log_status}" "${date_stamp}" "${log_message}" "${RESET}"
-    fi
+    echo -ne "${log_color} [ ${log_status} ] "${log_date}" ${log_message} ${RESET}"
 }
-
-# Fonctions de raccourci pour chaque niveau de log
-log_success() { LOG_LEVEL_FUNCTION="SUCCESS"; log_it "$@"; }
-log_warning() { LOG_LEVEL_FUNCTION="WARNING"; log_it "$@"; }
-log_error()   { LOG_LEVEL_FUNCTION="ERROR"; log_it "$@"; }
-log_info()    { LOG_LEVEL_FUNCTION="INFO"; log_it "$@"; }
-
-# Appel pour définir les couleurs
-log_colors

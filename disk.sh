@@ -14,13 +14,13 @@ chmod +x *.sh # Rendre les scripts exécutables.
 DISK="${1}"
 chmod +x *.sh # Rendre les scripts exécutables.
 
-log_info "Mode de démarrage détecté : $MODE"
+log_prompt "INFO" "Mode de démarrage détecté : $MODE"
 
 ##############################################################################
 ##  Check if the disk exists                                                    
 ##############################################################################
 if [ ! -b "/dev/$DISK" ]; then
-  log_error "Erreur : Le disque /dev/$DISK n'existe pas."
+  log_prompt "ERROR" "Le disque /dev/$DISK n'existe pas."
   exit 1
 fi
 
@@ -31,33 +31,33 @@ if prompt_confirm "Souhaitez-vous nettoyer le disque ? (Y/n)"; then
 
   MOUNTED_PARTITIONS=$(lsblk --list --noheadings /dev/"${DISK}" | tail -n +2 | awk '{print $1}')
 
-  log_info "Combien de passe souhaitez-vous faire ? "
+  log_prompt "INFO" "Combien de passe souhaitez-vous faire ? "
   read SHRED_PASS 
   if ! [[ "$SHRED_PASS" =~ ^[0-9]+$ ]]; then
-      log_error "Erreur : veuillez entrer un nombre valide de passes."
+      log_prompt "ERROR" "veuillez entrer un nombre valide de passes."
       exit 1
   fi
 
   # Désactiver toutes les partitions swap
-  log_info "Désactivation des partitions swap..."
-  swapoff -a && log_success "Toutes les partitions swap ont été désactivées."
+  log_prompt "INFO" "Désactivation des partitions swap..."
+  swapoff -a && log_prompt "SUCCESS" "Toutes les partitions swap ont été désactivées."
 
-  log_info "Lancement de shred sur /dev/"${DISK}" avec ${SHRED_PASS} passes..."
-  wipefs --all /dev/"${DISK}" && log_success "Étiquettes et signatures supprimées avec succès."
+  log_prompt "INFO" "Lancement de shred sur /dev/"${DISK}" avec ${SHRED_PASS} passes..."
+  wipefs --all /dev/"${DISK}" && log_prompt "SUCCESS" "Étiquettes et signatures supprimées avec succès."
   shred -n "${SHRED_PASS}" -v "/dev/${DISK}"
 
   # Si des partitions sont montées, les démonter
   if [[ -n "${MOUNTED_PARTITIONS}" ]]; then
-      log_info "Démontage des partitions montées sur /dev/${DISK}..."
+      log_prompt "INFO" "Démontage des partitions montées sur /dev/${DISK}..."
       for partition in ${MOUNTED_PARTITIONS}; do
         if umount "/dev/${partition}"; then
-          log_success "Partition /dev/${partition} démontée avec succès."
+          log_prompt "SUCCESS" "Partition /dev/${partition} démontée avec succès."
         else
-          log_warning "Erreur lors du démontage de /dev/${partition}. Assurez-vous qu'elle n'est pas utilisée."
+          log_prompt "ERROR" "La partition /dev/${partition} n'a pas pu etre démonté."
         fi
       done
   else
-      log_success "Aucune partition montée sur /dev/${DISK}."
+      log_prompt "SUCCESS" "Aucune partition montée sur /dev/${DISK}."
   fi
 fi
 
@@ -86,37 +86,37 @@ fi
 ##############################################################################
 if [ "$MODE" = "UEFI" ]; then
   parted --script -a optimal /dev/"${DISK}" mklabel gpt
-  log_success "Table de partitions GPT créée pour le mode UEFI."
+  log_prompt "SUCCESS" "Table de partitions GPT créée pour le mode UEFI."
 
-  log_info "Entrez la taille de la partition EFI (en Mo) : " 
+  log_prompt "INFO" "Entrez la taille de la partition EFI (en Mo) : " 
   read efi_size
 
   if ! [[ "$efi_size" =~ ^[0-9]+$ ]]; then
-    log_error "Taille de la partition EFI invalide."
+    log_prompt "ERROR" "Taille de la partition EFI invalide."
     exit 1
   fi
   parted --script -a optimal /dev/"${DISK}" mkpart ESP fat32 1MiB ${efi_size}MiB
   parted --script -a optimal /dev/"${DISK}" set 1 esp on
 
-  log_success "Partition EFI créée de taille ${efi_size}Mo."
+  log_prompt "SUCCESS" "Création de la Partition EFI de taille ${efi_size}Mo."
 
   start_point=$efi_size  # Définir la fin de la partition EFI comme point de départ pour les autres partitions
 
 else
   parted --script -a optimal /dev/"${DISK}" mklabel msdos
-  log_success "Table de partitions MSDOS créée pour le mode MBR."
+  log_prompt "SUCCESS" "Table de partitions MSDOS créée pour le mode MBR."
 
-  log_info "Entrez la taille de la partition boot (en Mo) : " 
+  log_prompt "INFO" "Entrez la taille de la partition boot (en Mo) : " 
   read boot_size
 
   if ! [[ "$boot_size" =~ ^[0-9]+$ ]]; then
-    log_error "Taille de la partition /boot invalide."
+    log_prompt "ERROR" "Taille de la partition /boot invalide."
     exit 1
   fi
 
   parted --script -a optimal /dev/"${DISK}" mkpart primary ext4 1MiB ${boot_size}MiB
 
-  log_success "Partition /boot créée de taille ${boot_size}Mo."
+  log_prompt "SUCCESS" "Création de la Partition EFI de taille ${boot_size}MiB."
   start_point=$boot_size  # Définir la fin de la partition /boot comme point de départ
 
 fi
@@ -125,12 +125,12 @@ fi
 ##############################################################################
 ## Ask the user how many additional partitions to create                                                      
 ##############################################################################
-log_info "Combien de partitions supplémentaires souhaitez-vous créer ? " 
+log_prompt "INFO" "Combien de partitions supplémentaires souhaitez-vous créer ? " 
 read num_partitions
 
 # Vérifier si le nombre est valide (un entier positif)
 if ! [[ "$num_partitions" =~ ^[0-9]+$ ]] || [ "$num_partitions" -le 0 ]; then
-  log_error "Veuillez entrer un nombre entier positif."
+  log_prompt "ERROR" "Veuillez entrer un nombre entier positif."
   exit 1
 fi
 
@@ -139,21 +139,21 @@ for ((i = 1; i <= num_partitions + 1; i++)); do
 
   if [[ "${i}" != "1" ]]; then
 
-    log_info "Entrez la taille de la partition [ en GiB ou '100%' ] pour /dev/${DISK}${i} : " 
+    log_prompt "INFO" "Entrez la taille de la partition [ en GiB ou '100%' ] pour /dev/${DISK}${i} : " 
     read partition_size
     echo ""
     
-    log_info "Choisissez le type pour la partition /dev/${DISK}${i} :"
-    log_info "1) ext4" 
-    log_info "2) btrfs"  
-    log_info "3) xfs" 
+    log_prompt "INFO" "Choisissez le type pour la partition /dev/${DISK}${i} :"
+    log_prompt "INFO" "1) ext4" 
+    log_prompt "INFO" "2) btrfs"  
+    log_prompt "INFO" "3) xfs" 
 
     if [[ "$SWAP_FILE" == "Off" ]]; then
-        log_info "4) linux-swap" # Afficher l'option linux-swap seulement si SWAP_FILE est "Off"
+        log_prompt "INFO" "4) linux-swap" # Afficher l'option linux-swap seulement si SWAP_FILE est "Off"
     fi
 
     echo ""
-    log_info "Entrez le numéro correspondant à votre choix : " 
+    log_prompt "INFO" "Entrez le numéro correspondant à votre choix : " 
     read format_choice
 
     # Utiliser un switch case pour appliquer le bon formatage 
@@ -171,25 +171,25 @@ for ((i = 1; i <= num_partitions + 1; i++)); do
             if [[ "$SWAP_FILE" == "Off" ]]; then
                 partition_type="linux-swap"
             else
-                log_warning "L'option linux-swap n'est pas disponible car un fichier swap est activé."
+                log_prompt "WARNING" "L'option linux-swap n'est pas disponible car un fichier swap est activé."
                 exit 1
             fi
             ;;
         *)
-            log_error "Choix invalide. Veuillez entrer un numéro valide."
+            log_prompt "ERROR" "Choix invalide. Veuillez entrer un numéro valide."
             ;;
     esac
 
     # Vérification de la taille de la partition
     if [ "$partition_size" != "100%" ] && ! [[ "$partition_size" =~ ^[0-9]+(\.[0-9]+)?$ ]]; then
-      log_error "Erreur : Taille de la partition invalide."
+      log_prompt "ERROR" "Taille de la partition invalide."
       exit 1
     fi
 
     # Si l'utilisateur veut que la partition prenne tout l'espace disponible
     if [ "$partition_size" = "100%" ]; then
       parted --script -a optimal /dev/"${DISK}" mkpart primary $partition_type ${start_point}MiB 100%
-      log_success "Partition créée en occupant $partition_size de l'espace disponible et de type $partition_type."
+      log_prompt "SUCCESS" "Partition créée en occupant $partition_size de l'espace disponible et de type $partition_type."
       break  # Arrêter la boucle car tout l'espace est utilisé
 
     else
@@ -200,16 +200,12 @@ for ((i = 1; i <= num_partitions + 1; i++)); do
       
       # Créer la partition avec la taille spécifiée
       parted --script -a optimal /dev/"${DISK}" mkpart primary $partition_type ${start_point}MiB ${end_point}MiB
-      log_success "Partition de taille ${partition_size_mb}Mo et de type $partition_type créée."
+      log_prompt "SUCCESS" "Partition de taille ${partition_size_mb}Mo et de type $partition_type créée."
       
       # Mettre à jour le point de départ pour la prochaine partition
       start_point=$end_point
     fi
-
-    log_success "Partitions créées avec succès."
-
   fi
-
 done
 
 ##############################################################################
@@ -217,53 +213,53 @@ done
 ##############################################################################
 for ((i = 1; i <= num_partitions + 1; i++)); do
 
-  log_info "Choisissez le type de formatage pour la partition /dev/${DISK}${i} :"
-  log_info "1) fat32"   
-  log_info "2) ext4"  
-  log_info "3) xfs"  
-  log_info "4) btrfs"
+  log_prompt "INFO" "Choisissez le type de formatage pour la partition /dev/${DISK}${i} :"
+  log_prompt "INFO" "1) fat32"   
+  log_prompt "INFO" "2) ext4"  
+  log_prompt "INFO" "3) xfs"  
+  log_prompt "INFO" "4) btrfs"
 
   if [[ "$SWAP_FILE" == "Off" ]]; then
-    log_info "5) linux-swap" # Afficher l'option linux-swap seulement si SWAP_FILE est "Off"
+    log_prompt "INFO" "5) linux-swap" # Afficher l'option linux-swap seulement si SWAP_FILE est "Off"
   fi
 
-  log_info "Entrez le numéro correspondant à votre choix : " 
+  log_prompt "INFO" "Entrez le numéro correspondant à votre choix : " 
   read format_choice
 
   # Utiliser un switch case pour appliquer le bon formatage
   case $format_choice in
       1)
-          log_info "Formatage de /dev/${DISK}${i} en fat32 ..."
+          log_prompt "INFO" "Formatage de /dev/${DISK}${i} en fat32 ..."
           mkfs.fat -F32 "/dev/${DISK}${i}"
           ;;
       2)
-          log_info "Formatage de /dev/${DISK}${i} en ext4 ..."
+          log_prompt "INFO" "Formatage de /dev/${DISK}${i} en ext4 ..."
           mkfs.ext4 -F "/dev/${DISK}${i}"
           ;;
       3)
-          log_info "Formatage de /dev/${DISK}${i} en xfs ..."
+          log_prompt "INFO" "Formatage de /dev/${DISK}${i} en xfs ..."
           mkfs.xfs "/dev/${DISK}${i}"
           ;;
       4)
-          log_info "Formatage de /dev/${DISK}${i} en btrfs ..."
+          log_prompt "INFO" "Formatage de /dev/${DISK}${i} en btrfs ..."
           mkfs.btrfs "/dev/${DISK}${i}"
           ;;
       5)
           if [[ "$SWAP_FILE" == "Off" ]]; then
-              log_info "Formatage de /dev/${DISK}${i} en swap ..."
+              log_prompt "INFO" "Formatage de /dev/${DISK}${i} en swap ..."
               mkswap "/dev/${DISK}${i}"
               swapon "/dev/${DISK}${i}"
           else
-              log_error "L'option linux-swap n'est pas disponible car un fichier swap est déjà activé."
+              log_prompt "WARNING" "L'option linux-swap n'est pas disponible car un fichier swap est déjà activé."
               exit 1
           fi
           ;;
       *)
-          log_error "Choix invalide. Veuillez entrer un numéro valide."
+          log_prompt "ERROR" "Choix invalide. Veuillez entrer un numéro valide."
           ;;
   esac
 
-  log_success "Formatage de /dev/${DISK}${i} terminé."
+  log_prompt "SUCCESS" "Formatage de /dev/${DISK}${i} terminé."
 
 done
 
@@ -273,12 +269,12 @@ done
 ## Mounting of the different partitions                                                 
 ##############################################################################
 parted /dev/"${DISK}" print
-log_info "Entrez le numéro de la partition racine (par exemple, 1 pour /dev/${DISK}1) : " 
+log_prompt "INFO" "Entrez le numéro de la partition racine (par exemple, 1 pour /dev/${DISK}1) : " 
 read root_partition_num
 
 # Vérifier que la partition spécifiée existe
 if [ ! -b "/dev/${DISK}${root_partition_num}" ]; then
-  log_error "Erreur : La partition /dev/${DISK}${root_partition_num} n'existe pas."
+  log_prompt "ERROR" "La partition /dev/${DISK}${root_partition_num} n'existe pas."
   exit 1
 fi
 
@@ -286,10 +282,10 @@ fi
 mkdir -p $MOUNT_POINT
 mount "/dev/${DISK}${root_partition_num}" $MOUNT_POINT
 
-log_success "Partition root montée sur $MOUNT_POINT."
+log_prompt "SUCCESS" "Partition root montée sur $MOUNT_POINT."
 
 # Demander à l'utilisateur s'il souhaite monter des partitions supplémentaires
-log_info "Souhaitez-vous monter d'autres partitions ? (y/n) : " 
+log_prompt "INFO" "Souhaitez-vous monter d'autres partitions ? (y/n) : " 
 read mount
 
 if [ "$mount" = "y" ]; then
@@ -299,22 +295,22 @@ if [ "$mount" = "y" ]; then
 
       # Vérifier si la partition est une partition swap
       if blkid "/dev/${DISK}${i}" | grep -q "TYPE=\"swap\""; then
-        log_warning "La partition /dev/${DISK}${i} est une partition swap, elle sera activée automatiquement."
+        log_prompt "WARNING" "La partition /dev/${DISK}${i} est une partition swap, elle sera activée automatiquement."
         continue  # Passer à la partition suivante sans demander de point de montage
       fi
 
-      log_info "Voulez-vous monter la partition /dev/${DISK}${i} ? (y/n) : " 
+      log_prompt "INFO" "Voulez-vous monter la partition /dev/${DISK}${i} ? (y/n) : " 
       read mount_choice
       echo ""
 
       if [ "$mount_choice" = "y" ]; then
-        log_info "Nommer le point de montage de la partition /dev/${DISK}${i} (ex. efi - home ...): " 
+        log_prompt "INFO" "Nommer le point de montage de la partition /dev/${DISK}${i} (ex. efi - home ...): " 
         read partition_name
 
         mkdir -p "$MOUNT_POINT/$partition_name"
         mount "/dev/${DISK}${i}" "$MOUNT_POINT/$partition_name"
 
-        log_success "Partition /dev/${DISK}${i} montée sur $MOUNT_POINT/$partition_name."
+        log_prompt "SUCCESS" "Partition /dev/${DISK}${i} montée sur $MOUNT_POINT/$partition_name."
       fi
     fi
 
@@ -325,13 +321,14 @@ fi
 ## Creation of the swap file                                                
 ##############################################################################
 if [ "$SWAP_FILE" = "On" ]; then
-    log_info "création du fichier swap"
+    log_prompt "INFO" "création du fichier swap"
     mkdir --parents $MOUNT_POINT/swap
     fallocate -l "${SWAP_FILE_SIZE}MiB" $MOUNT_POINT/swap/swapfile
     # dd if=/dev/zero of=$MOUNT_POINT/swap bs=1M count=${SWAP_FILE_SIZE}  
     chmod 600 $MOUNT_POINT/swap/swapfile                            
     mkswap $MOUNT_POINT/swap/swapfile                                
     swapon $MOUNT_POINT/swap/swapfile  
+    log_prompt "SUCCESS" "création du fichier swap terminée"
 fi
 
 
