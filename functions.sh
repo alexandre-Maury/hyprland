@@ -13,13 +13,13 @@ check_and_install() {
     local package="$1"
     if ! command -v "$package" &> /dev/null; then
         if command -v apt &> /dev/null; then
-            log_info "${YELLOW}Installation de $package via apt${RESET}"
+            log_prompt "INFO" "Installation de $package via apt"
             apt install -y "$package"
         elif command -v emerge &> /dev/null; then
-            log_info "${YELLOW}Installation de $package via emerge${RESET}"
+            log_prompt "INFO" "Installation de $package via emerge"
             emerge "$package"
         elif command -v pacman &> /dev/null; then
-            log_info "${YELLOW}Installation de $package via pacman${RESET}"
+            log_prompt "INFO" "Installation de $package via pacman"
             pacman -S --noconfirm "$package"
         fi
     fi
