@@ -13,16 +13,13 @@ check_and_install() {
     local package="$1"
     if ! command -v "$package" &> /dev/null; then
         if command -v apt &> /dev/null; then
-            log_prompt "INFO" "Installation de $package via apt"
-            echo ""
+            log_prompt "INFO" && echo "Installation de $package via apt" && echo ""
             apt install -y "$package"
         elif command -v emerge &> /dev/null; then
-            log_prompt "INFO" "Installation de $package via emerge"
-            echo ""
+            log_prompt "INFO" && echo "Installation de $package via emerge" && echo ""
             emerge "$package"
         elif command -v pacman &> /dev/null; then
-            log_prompt "INFO" "Installation de $package via pacman"
-            echo ""
+            log_prompt "INFO" && echo "Installation de $package via pacman" && echo ""
             pacman -S --noconfirm "$package"
         fi
     fi
@@ -45,10 +42,10 @@ prompt_confirm() {
 log_prompt() {
 
     local log_level="$1" # INFO - WARNING - ERROR - SUCCESS
-    local log_message="$2" 
     local log_date="$(date +"%Y-%m-%d %H:%M:%S")"
 
     case "${log_level}" in
+
         "SUCCESS")
             log_color="${GREEN}"
             log_status='SUCCESS'
@@ -71,6 +68,6 @@ log_prompt() {
             ;;
     esac
 
-    echo -ne "${log_color} [ ${log_status} ] "${log_date}" ${RESET} ==> ${log_message}"
+    echo -ne "${log_color} [ ${log_status} ] "${log_date}" ==> ${RESET}"
 
 }

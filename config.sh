@@ -45,9 +45,8 @@ USE="minimal"
 L10N="fr"
 INPUT_DEVICES="libinput synaptics keyboard mouse joystick wacom"
 
-ROOT_PASSWORD="toor"
 USERNAME="alexandre"
-USERNAME_PASSWORD="azerty"
+
 
 
 
