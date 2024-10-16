@@ -101,9 +101,7 @@ echo "[ ${LOCALE} ]"                 "- Locale"
 echo "[ ${HOSTNAME} ]"               "- Nom d'hôte" 
 echo "[ ${INTERFACE} ]"              "- Interface" 
 echo "[ ${KEYMAP} ]"                 "- Disposition du clavier" 
-echo "[ ${ROOT_PASSWORD} ]"          "- Votre mot de passe ROOT" 
 echo "[ ${USERNAME} ]"               "- Votre utilisateur" 
-echo "[ ${USERNAME_PASSWORD} ]"      "- Votre mot de passe" 
 echo ""
 
 # Demande à l'utilisateur de confirmer la configuration

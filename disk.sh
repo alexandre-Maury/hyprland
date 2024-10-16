@@ -54,8 +54,6 @@ if prompt_confirm "Souhaitez-vous nettoyer le disque ? (Y/n)"; then
   echo ""
 
   wipefs --all /dev/"${DISK}"
-  log_prompt "SUCCESS" && echo "Terminée"
-  echo ""
 
   shred -n "${SHRED_PASS}" -v "/dev/${DISK}"
 
@@ -161,12 +159,12 @@ for ((i = 1; i <= num_partitions + 1; i++)); do
     
     log_prompt "INFO" && echo "Choisissez le type pour la partition /dev/${DISK}${i} :"
     echo ""
-    log_prompt "INFO" "1) ext4" 
-    log_prompt "INFO" "2) btrfs"  
-    log_prompt "INFO" "3) xfs" 
+    log_prompt "INFO" && echo "1) ext4" 
+    log_prompt "INFO" && echo "2) btrfs"  
+    log_prompt "INFO" && echo "3) xfs" 
 
     if [[ "$SWAP_FILE" == "Off" ]]; then
-        log_prompt "INFO" "4) linux-swap" # Afficher l'option linux-swap seulement si SWAP_FILE est "Off"
+        log_prompt "INFO" && echo "4) linux-swap" # Afficher l'option linux-swap seulement si SWAP_FILE est "Off"
     fi
 
     echo ""
@@ -233,13 +231,13 @@ for ((i = 1; i <= num_partitions + 1; i++)); do
 
   log_prompt "INFO" && echo "Choisissez le type de formatage pour la partition /dev/${DISK}${i} :"
   echo ""
-  log_prompt "INFO" "1) fat32"
-  log_prompt "INFO" "2) ext4" 
-  log_prompt "INFO" "3) xfs"
-  log_prompt "INFO" "4) btrfs"
+  log_prompt "INFO" && echo "1) fat32"
+  log_prompt "INFO" && echo "2) ext4" 
+  log_prompt "INFO" && echo "3) xfs"
+  log_prompt "INFO" && echo "4) btrfs"
 
   if [[ "$SWAP_FILE" == "Off" ]]; then
-    log_prompt "INFO" "5) linux-swap" # Afficher l'option linux-swap seulement si SWAP_FILE est "Off"
+    log_prompt "INFO" && echo "5) linux-swap" # Afficher l'option linux-swap seulement si SWAP_FILE est "Off"
   fi
 
   echo ""
@@ -328,7 +326,7 @@ if [ "$mount" = "y" ]; then
       echo ""
 
       if [ "$mount_choice" = "y" ]; then
-        log_prompt "INFO" && read -p "Nommer le point de montage de la partition /dev/${DISK}${i} (ex. efi - home ...): " partition_name 
+        log_prompt "INFO" && read -p "Nommer le point de montage de la partition /dev/${DISK}${i} (ex. efi - [ sans le "/" ]): " partition_name 
         echo ""
 
         mkdir -p "$MOUNT_POINT/$partition_name"
