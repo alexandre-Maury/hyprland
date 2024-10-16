@@ -171,6 +171,13 @@ systemctl enable systemd-resolved.service
 log_prompt "SUCCESS" && echo "Terminée"
 
 ##############################################################################
+## Installation Sudo                                  
+##############################################################################
+log_prompt "INFO" && echo "Installation de sudo" && echo ""
+emerge --quiet app-admin/sudo
+log_prompt "SUCCESS" && echo "Terminée"
+
+##############################################################################
 ## Set root and password                                               
 ##############################################################################
 log_prompt "INFO" && echo "Configuration du compte root" && echo ""
