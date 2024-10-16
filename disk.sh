@@ -41,10 +41,14 @@ if prompt_confirm "Souhaitez-vous nettoyer le disque ? (Y/n)"; then
   fi
 
   # Désactiver toutes les partitions swap
-  log_prompt "INFO" && echo "Désactivation des partitions swap..."
-  echo ""
-  swapoff -a && log_prompt "SUCCESS" && echo "Terminée"
-  echo ""
+  log_prompt "INFO" && echo "Désactivation des partitions swap..." && echo ""
+  
+  # Désactive tous les swaps
+  swapoff -a
+  # Vérifie si le swap est désactivé
+  if ! grep -q "swap" /proc/swaps; then
+      log_prompt "SUCCESS" && echo "Terminée" && echo ""
+  fi
 
   log_prompt "INFO" && echo "Lancement de shred sur /dev/"${DISK}" avec ${SHRED_PASS} passes..."
   echo ""
@@ -73,7 +77,6 @@ if prompt_confirm "Souhaitez-vous nettoyer le disque ? (Y/n)"; then
       echo ""
   fi
 fi
-
 
 
 ##############################################################################
