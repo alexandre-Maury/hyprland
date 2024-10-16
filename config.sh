@@ -27,9 +27,6 @@ packages=("git" "tar" "curl" "wget" "chrony")
 GENTOO_BASE="https://distfiles.gentoo.org/releases/amd64/autobuilds/20240929T163611Z/stage3-amd64-systemd-20240929T163611Z.tar.xz"
 MOUNT_POINT="/mnt/gentoo"
 
-# SWAP_FILE="On"
-# SWAP_PART="Off"
-# SWAP_SIZE="4096"
 
 TIMEZONE="Europe/Paris"
 LOCALE="fr_FR.UTF-8 UTF-8"
@@ -41,7 +38,7 @@ KEYMAP="fr"
 COMMON_FLAGS="-O2 -pipe -march=native"
 CPU_FLAGS=$(grep -m1 "flags" /proc/cpuinfo | cut -d' ' -f2-)
 MAKEOPTS="-j$(nproc) -l$(nproc)"
-USE="minimal"
+USE="systemd git curl wget tar"
 L10N="fr"
 INPUT_DEVICES="libinput synaptics keyboard mouse joystick wacom"
 

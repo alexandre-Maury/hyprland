@@ -191,8 +191,6 @@ log_prompt "SUCCESS" && echo "Terminée"
 ##############################################################################
 ## Set user and password                                               
 ##############################################################################
-log_prompt "INFO" && echo "Configuration du compte utilisateur" && echo ""
-
 log_prompt "INFO" && echo "Ajout de l'utilisateur aux groupes users, audio, video et wheel" && echo ""
 useradd -m -G wheel,users,audio,video -s /bin/bash "${USERNAME}"
 
@@ -204,7 +202,12 @@ while ! passwd "${USERNAME}"; do
     sleep 1
 done
 
-log_prompt "SUCCESS" && echo "Terminée"
+# Appliquer immédiatement l'ajout au groupe sans déconnexion
+log_prompt "INFO" && echo "Appliquer les groupes sans déconnexion" && echo ""
+usermod -aG wheel "${USERNAME}"
+newgrp wheel
+
+log_prompt "SUCCESS" && echo "Terminée" && echo ""
 
 
 ##############################################################################
