@@ -54,14 +54,19 @@ log_prompt "INFO" && echo "Bienvenue dans le script d'installation de Gentoo !" 
 
 # Générer la liste des disques physiques sans les disques loop et sr (CD/DVD)
 LIST="$(lsblk -d -n | grep -v -e "loop" -e "sr" | awk '{print $1, $4}' | nl -s") ")" 
-log_prompt "INFO" && echo "Choisissez un disque pour l'installation (ex : 1) : " && echo ""
-echo "${LIST}"
+
+if [[ -z "${LIST}" ]]; then
+    log_prompt "ERROR" && echo "Aucun disque disponible pour l'installation."
+    exit 1  # Arrête le script ou effectue une autre action en cas d'erreur
+else
+    log_prompt "INFO" && echo "Choisissez un disque pour l'installation (ex : 1) : " && echo ""
+    echo "${LIST}" && echo ""
+fi
 
 
 # Boucle pour que l'utilisateur puisse choisir un disque ou en entrer un manuellement
 OPTION=""
 while [[ -z "$(echo "${LIST}" | grep "  ${OPTION})")" ]]; do
-    echo ""
     log_prompt "INFO" && read -p "Votre Choix : " OPTION
     echo ""
 
