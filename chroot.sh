@@ -256,5 +256,8 @@ log_prompt "SUCCESS" && echo "Terminée" && echo ""
 exit
 
 
+# libpwquality
+
+
 
 
