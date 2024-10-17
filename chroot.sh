@@ -178,11 +178,41 @@ emerge --quiet app-admin/sudo
 log_prompt "SUCCESS" && echo "Terminée"
 
 ##############################################################################
+## Configuration de PAM                                  
+##############################################################################
+log_prompt "INFO" && echo "Configuration de PAM" && echo ""
+
+# Modifier /etc/pam.d/system-auth pour ajouter la politique pam_pwquality
+PAM_FILE="/etc/pam.d/system-auth"
+
+if grep -q "pam_pwquality.so" "$PAM_FILE"; then
+    log_prompt "INFO" && echo "Le module pam_pwquality est déjà configuré dans $PAM_FILE"
+else
+    log_prompt "INFO" && echo "Ajout de la configuration pam_pwquality dans $PAM_FILE"
+    # Ajoute la ligne pour forcer une longueur minimale et d'autres options de sécurité
+    echo "password requisite pam_pwquality.so retry=3 minlen=${PASSWORD_MIN_LEN} difok=3" >> "$PAM_FILE"
+fi
+
+# Créer ou modifier le fichier /etc/security/pwquality.conf pour définir minlen
+PWQUALITY_FILE="/etc/security/pwquality.conf"
+
+if [[ -f "$PWQUALITY_FILE" ]]; then
+    log_prompt "INFO" && echo "Le fichier $PWQUALITY_FILE existe déjà, mise à jour de la valeur minlen"
+    sed -i "/^minlen/c\minlen = ${PASSWORD_MIN_LEN}" "$PWQUALITY_FILE"
+else
+    log_prompt "INFO" && echo "Création du fichier $PWQUALITY_FILE avec la politique de mot de passe"
+    echo "minlen = ${PASSWORD_MIN_LEN}" > "$PWQUALITY_FILE"
+fi
+
+log_prompt "SUCCESS" && echo "Terminée"
+
+##############################################################################
 ## Set root and password                                               
 ##############################################################################
 
 
 if prompt_confirm "Souhaitez-vous modifier le mot de passe root (Y/n)"; then
+    
     log_prompt "INFO" && echo "Configuration du compte root" && echo ""
 
     while ! passwd ; do
@@ -196,36 +226,34 @@ fi
 ## Set user and password                                               
 ##############################################################################
 
-if prompt_confirm "Souhaitez-vous créer un utilisateur ${USERNAME} (Y/n)"; then
+log_prompt "INFO" && echo "Les mots de passe devront désormais contenir au moins $MINLEN caractères."
 
-    log_prompt "INFO" && echo "Ajout de l'utilisateur aux groupes users, audio, video et wheel" && echo ""
-    useradd -m -G wheel,users,audio,video -s /bin/bash "${USERNAME}"
+log_prompt "INFO" && read -p "Saisir le nom d'utilisateur souhaité :" USERNAME 
+echo ""
 
-    log_prompt "INFO" && echo "Ajout du groupe wheel aux sudoers" && echo ""
-    echo "%wheel ALL=(ALL:ALL) ALL" >> /etc/sudoers
+log_prompt "INFO" && echo "Ajout de l'utilisateur aux groupes users, audio, video et wheel" && echo ""
+useradd -m -G wheel,users,audio,video -s /bin/bash "${USERNAME}"
 
-    log_prompt "INFO" && echo "Configuration du mot de passe pour l'utilisateur" && echo ""
-    while ! passwd "${USERNAME}"; do
-        sleep 1
-    done
+log_prompt "INFO" && echo "Ajout du groupe wheel aux sudoers" && echo ""
+echo "%wheel ALL=(ALL:ALL) ALL" >> /etc/sudoers
 
-    # Appliquer immédiatement l'ajout au groupe sans déconnexion
-    log_prompt "INFO" && echo "Appliquer les groupes sans déconnexion" && echo ""
-    usermod -aG wheel "${USERNAME}"
-    newgrp wheel
+log_prompt "INFO" && echo "Configuration du mot de passe pour l'utilisateur" && echo ""
+while ! passwd "${USERNAME}"; do
+    sleep 1
+done
 
-    log_prompt "SUCCESS" && echo "Terminée" && echo ""
+# Appliquer immédiatement l'ajout au groupe sans déconnexion
+log_prompt "INFO" && echo "Appliquer les groupes sans déconnexion" && echo ""
+usermod -aG wheel "${USERNAME}"
+newgrp wheel
 
-fi
+log_prompt "SUCCESS" && echo "Terminée" && echo ""
 
 
 ##############################################################################
 ## quit                                               
 ##############################################################################
 exit
-
-
-
 
 
 

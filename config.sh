@@ -36,13 +36,14 @@ INTERFACE="$(ip link show | awk -F': ' '/^[0-9]+: / && !/lo/ {print $2; exit}')"
 KEYMAP="fr"
 
 COMMON_FLAGS="-O2 -pipe -march=native"
-CPU_FLAGS=$(grep -m1 "flags" /proc/cpuinfo | cut -d' ' -f2-)
-MAKEOPTS="-j$(nproc) -l$(nproc)"
-USE="systemd git curl wget tar"
+CPU_FLAGS=$(grep -m1 "flags" /proc/cpuinfo | cut -d' ' -f2-) # Automatique
+MAKEOPTS="-j$(nproc) -l$(nproc)" # Automatique
+USE="systemd pam git curl wget tar"
 L10N="fr"
 INPUT_DEVICES="libinput synaptics keyboard mouse joystick wacom"
 
 USERNAME="alexandre"
+PASSWORD_MIN_LEN="4"
 
 
 
