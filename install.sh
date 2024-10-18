@@ -87,7 +87,7 @@ clear
 
 parted /dev/"${DISK}" print
 
-log_prompt "SUCCESS" && print "Terminée" && echo ""
+log_prompt "SUCCESS" && echo "Terminée" && echo ""
 
 ##############################################################################
 ## Check config                                                         

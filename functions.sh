@@ -9,20 +9,32 @@ LIGHT_CYAN='\033[0;96m'
 RESET='\033[0m'
 
 # Vérifie et installe un package si absent
+
 check_and_install() {
     local package="$1"
-    if ! command -v "$package" &> /dev/null; then
-        if command -v apt &> /dev/null; then
-            log_prompt "INFO" && echo "Installation de $package via apt" && echo ""
-            apt install -y "$package"
-        elif command -v emerge &> /dev/null; then
-            log_prompt "INFO" && echo "Installation de $package via emerge" && echo ""
-            emerge "$package"
-        elif command -v pacman &> /dev/null; then
-            log_prompt "INFO" && echo "Installation de $package via pacman" && echo ""
-            pacman -S --noconfirm "$package"
-        fi
+    local install_command=""
+
+    # Déterminer le gestionnaire de paquets disponible
+    if command -v emerge &> /dev/null; then
+        install_command="emerge $package"
+    elif command -v pacman &> /dev/null; then
+        install_command="pacman -S --noconfirm $package"
+    else
+        echo "Aucun gestionnaire de paquets compatible trouvé."
+        return 1
     fi
+
+    # Réessayer l'installation tant que le package n'est pas disponible
+    until command -v "$package" &> /dev/null; do
+        log_prompt "INFO" && echo "Installation de $package..."
+        eval "$install_command"
+
+        if command -v "$package" &> /dev/null; then
+            log_prompt "SUCCESS" && echo "$package a été installé avec succès."
+        else
+            log_prompt "ERROR" && echo "L'installation de $package a échoué. Nouvelle tentative..."
+        fi
+    done
 }
 
 

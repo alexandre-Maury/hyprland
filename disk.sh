@@ -95,10 +95,13 @@ fi
 #   SWAP_FILE="Off"
 # fi
 
+echo ""
+
 ##############################################################################
 ## Initialize the partition table with parted                                                         
 ##############################################################################
 if [ "$MODE" = "UEFI" ]; then
+  log_prompt "INFO" && echo "Création de table de partition gpt"
   parted --script -a optimal /dev/"${DISK}" mklabel gpt
   log_prompt "SUCCESS" && echo "Terminée"
   echo ""
@@ -118,6 +121,7 @@ if [ "$MODE" = "UEFI" ]; then
   start_point=$efi_size  # Définir la fin de la partition EFI comme point de départ pour les autres partitions
 
 else
+  log_prompt "INFO" && echo "Création de table de partition mbr"
   parted --script -a optimal /dev/"${DISK}" mklabel msdos
   log_prompt "SUCCESS" && echo "Terminée" && echo ""
 
