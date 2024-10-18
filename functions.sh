@@ -18,7 +18,7 @@ check_and_install() {
     if command -v emerge &> /dev/null; then
         install_command="emerge $package"
     elif command -v pacman &> /dev/null; then
-        install_command="pacman -S --noconfirm $package"
+        install_command="pacman -Sy --noconfirm $package"
     else
         echo "Aucun gestionnaire de paquets compatible trouvé."
         return 1
