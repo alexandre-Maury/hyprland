@@ -206,11 +206,22 @@ for ((i = 1; i <= num_partitions; i++)); do
 
   # Si c'est la première partition EFI, définir l'option esp
   if [[ "$partition_type" == "ESP" ]]; then
-    parted --script -a optimal /dev/"${DISK}" mkpart primary "$partition_type" fat32 "$start_point" "$partition_size" || { log_prompt "ERROR" && echo "Échec de la création de la partition EFI."; exit 1; }
+    parted --script -a optimal /dev/"${DISK}" mkpart "$partition_type" fat32 "$start_point" "$partition_size" || { log_prompt "ERROR" && echo "Échec de la création de la partition EFI."; exit 1; }
     parted --script -a optimal /dev/"${DISK}" set "$i" esp on || { log_prompt "ERROR" && echo "Échec de la configuration de la partition EFI."; exit 1; }
+    
+    # mkfs.fat -F32 "/dev/${DISK}${i}"
+    
     echo "test ok"
   else
     parted --script -a optimal /dev/"${DISK}" mkpart primary "$partition_type" "$start_point" "$partition_size" || { log_prompt "ERROR" && echo "Échec de la création de la partition."; exit 1; }
+  
+    # if [[ "$partition_type" == "linux-swap" ]]; then
+    #   mkswap "/dev/${DISK}${i}"
+    #   swapon "/dev/${DISK}${i}"
+    # else
+    #   mkfs."${partition_type}" "/dev/${DISK}${i}"
+    # fi
+
   fi
 
   # Mettre à jour le point de départ pour la prochaine partition
@@ -221,4 +232,6 @@ for ((i = 1; i <= num_partitions; i++)); do
   
 
 done
+
+
 
