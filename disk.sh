@@ -108,7 +108,7 @@ if ! [[ "$num_partitions" =~ ^[0-9]+$ ]] || [ "$num_partitions" -le 0 ]; then
 fi
 
 # Initialisation du point de départ
-start_point=0%
+start_point="1MiB"
 
 # Validation de la taille de la partition avec recommandation pour EFI/Boot
 for ((i = 1; i <= num_partitions; i++)); do
