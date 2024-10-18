@@ -180,31 +180,31 @@ log_prompt "SUCCESS" && echo "Terminée"
 ##############################################################################
 ## Configuration de PAM                                  
 ##############################################################################
-log_prompt "INFO" && echo "Configuration de PAM" && echo ""
+# log_prompt "INFO" && echo "Configuration de PAM" && echo ""
 
-# Modifier /etc/pam.d/system-auth pour ajouter la politique pam_pwquality
-PAM_FILE="/etc/pam.d/system-auth"
+# # Modifier /etc/pam.d/system-auth pour ajouter la politique pam_pwquality
+# PAM_FILE="/etc/pam.d/system-auth"
 
-if grep -q "pam_pwquality.so" "$PAM_FILE"; then
-    log_prompt "INFO" && echo "Le module pam_pwquality est déjà configuré dans $PAM_FILE"
-else
-    log_prompt "INFO" && echo "Ajout de la configuration pam_pwquality dans $PAM_FILE"
-    # Ajoute la ligne pour forcer une longueur minimale et d'autres options de sécurité
-    echo "password requisite pam_pwquality.so retry=3 minlen=${PASSWORD_MIN_LEN} difok=3" >> "$PAM_FILE"
-fi
+# if grep -q "pam_pwquality.so" "$PAM_FILE"; then
+#     log_prompt "INFO" && echo "Le module pam_pwquality est déjà configuré dans $PAM_FILE"
+# else
+#     log_prompt "INFO" && echo "Ajout de la configuration pam_pwquality dans $PAM_FILE"
+#     # Ajoute la ligne pour forcer une longueur minimale et d'autres options de sécurité
+#     echo "password requisite pam_pwquality.so retry=3 minlen=${PASSWORD_MIN_LEN} difok=3" >> "$PAM_FILE"
+# fi
 
-# Créer ou modifier le fichier /etc/security/pwquality.conf pour définir minlen
-PWQUALITY_FILE="/etc/security/pwquality.conf"
+# # Créer ou modifier le fichier /etc/security/pwquality.conf pour définir minlen
+# PWQUALITY_FILE="/etc/security/pwquality.conf"
 
-if [[ -f "$PWQUALITY_FILE" ]]; then
-    log_prompt "INFO" && echo "Le fichier $PWQUALITY_FILE existe déjà, mise à jour de la valeur minlen"
-    sed -i "/^minlen/c\minlen = ${PASSWORD_MIN_LEN}" "$PWQUALITY_FILE"
-else
-    log_prompt "INFO" && echo "Création du fichier $PWQUALITY_FILE avec la politique de mot de passe"
-    echo "minlen = ${PASSWORD_MIN_LEN}" > "$PWQUALITY_FILE"
-fi
+# if [[ -f "$PWQUALITY_FILE" ]]; then
+#     log_prompt "INFO" && echo "Le fichier $PWQUALITY_FILE existe déjà, mise à jour de la valeur minlen"
+#     sed -i "/^minlen/c\minlen = ${PASSWORD_MIN_LEN}" "$PWQUALITY_FILE"
+# else
+#     log_prompt "INFO" && echo "Création du fichier $PWQUALITY_FILE avec la politique de mot de passe"
+#     echo "minlen = ${PASSWORD_MIN_LEN}" > "$PWQUALITY_FILE"
+# fi
 
-log_prompt "SUCCESS" && echo "Terminée"
+# log_prompt "SUCCESS" && echo "Terminée"
 
 ##############################################################################
 ## Set root and password                                               
@@ -226,7 +226,7 @@ fi
 ## Set user and password                                               
 ##############################################################################
 
-log_prompt "INFO" && echo "Les mots de passe devront désormais contenir au moins $MINLEN caractères."
+# log_prompt "INFO" && echo "Les mots de passe devront désormais contenir au moins $MINLEN caractères."
 
 log_prompt "INFO" && read -p "Saisir le nom d'utilisateur souhaité :" USERNAME 
 echo ""
