@@ -2,6 +2,8 @@
 
 # script disk.sh
 
+# Mettre un mode verbose pour la création de partition et le formatage pour que l'utilisateur sache ou il en ait ...
+
 set -e  # Quitte immédiatement en cas d'erreur.
 
 source functions.sh  # Charge les fonctions définies dans le fichier fonction.sh.
@@ -102,6 +104,7 @@ echo ""
 ##############################################################################
 if [ "$MODE" = "UEFI" ]; then
   log_prompt "INFO" && echo "Création de table de partition gpt"
+  echo ""
   parted --script -a optimal /dev/"${DISK}" mklabel gpt
   log_prompt "SUCCESS" && echo "Terminée"
   echo ""
@@ -123,6 +126,7 @@ if [ "$MODE" = "UEFI" ]; then
 else
   log_prompt "INFO" && echo "Création de table de partition mbr"
   parted --script -a optimal /dev/"${DISK}" mklabel msdos
+  echo ""
   log_prompt "SUCCESS" && echo "Terminée" && echo ""
 
   log_prompt "INFO" && read -p "Entrez la taille de la partition boot (en Mo) : " boot_size
@@ -144,6 +148,8 @@ fi
 ##############################################################################
 ## Ask the user how many additional partitions to create                                                      
 ##############################################################################
+clear && parted /dev/"${DISK}" print
+
 log_prompt "INFO" && read -p "Combien de partitions supplémentaires souhaitez-vous créer ? " num_partitions
 echo ""
 
@@ -155,6 +161,8 @@ fi
 
 # Boucle pour demander les détails de chaque partition supplémentaire
 for ((i = 1; i <= num_partitions + 1; i++)); do
+
+  clear && parted /dev/"${DISK}" print
 
   if [[ "${i}" != "1" ]]; then
 
@@ -233,6 +241,8 @@ done
 ##############################################################################
 for ((i = 1; i <= num_partitions + 1; i++)); do
 
+  clear && parted /dev/"${DISK}" print
+
   log_prompt "INFO" && echo "Choisissez le type de formatage pour la partition /dev/${DISK}${i} :"
   echo ""
   log_prompt "INFO" && echo "1) fat32"
@@ -295,7 +305,7 @@ done
 parted /dev/"${DISK}" print
 echo ""
 
-log_prompt "INFO" && read -p "Entrez le numéro de la partition racine (par exemple, 1 pour /dev/${DISK}1) : " root_partition_num
+log_prompt "INFO" && read -p "Entrez le numéro de la partition root (par exemple, 1 pour /dev/${DISK}1) : " root_partition_num
 echo ""
 
 # Vérifier que la partition spécifiée existe
