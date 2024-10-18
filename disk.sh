@@ -194,7 +194,7 @@ for ((i = 1; i <= num_partitions; i++)); do
     echo "Vous avez entrer : $partition_size"
 
     # Vérifier la validité de la taille entrée
-    if [[ "$partition_size" =~ ^[0-9]+[MmGg][IiBb]?$ ]] || [ "$partition_size" == "100%" ]; then
+    if [[ "$partition_size" =~ ^[0-9]+(MiB|GiB)$ || "$partition_size" == "100%" ]]; then
       break
     else
       log_prompt "ERROR" && echo "Taille de partition invalide. Veuillez entrer une taille valide (ex: 10GiB, 512MiB ou 100%)."
