@@ -225,7 +225,7 @@ for ((i = 1; i <= num_partitions; i++)); do
   fi
 
   # Mettre à jour le point de départ pour la prochaine partition
-  start_point=$(parted /dev/"${DISK}" print | tail -1 | awk '{print $3}')  # Récupérer la fin de la dernière partition
+  	start_point=$(parted /dev/"${DISK}" print | grep "^ " | tail -1 | awk '{print $3}')  # Récupérer la fin de la dernière partition
 
   log_prompt "SUCCESS" && echo "Partition /dev/${DISK}${i} créée avec succès."
 
