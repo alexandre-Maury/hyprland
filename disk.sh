@@ -184,7 +184,7 @@ for ((i = 1; i <= num_partitions; i++)); do
   # Validation de la taille de la partition
   while true; do
     if [[ "$partition_type" == "ESP" ]]; then
-      log_prompt "INFO" && read -p "Veuillez entrer une taille de partition pour /dev/${DISK}${i} [par défaut : 512 MiB] : " partition_size && echo ""
+      log_prompt "INFO" && read -p "Veuillez entrer une taille de partition pour /dev/${DISK}${i} [par défaut : 512MiB] : " partition_size && echo ""
       partition_size=${partition_size:-512MiB}  # Taille par défaut
     else
       log_prompt "INFO" && read -p "Veuillez entrer une taille de partition (ex: 10GiB ou 100%) pour /dev/${DISK}${i} : " partition_size && echo ""
