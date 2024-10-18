@@ -120,18 +120,18 @@ for ((i = 1; i <= num_partitions; i++)); do
     log_prompt "INFO" && echo "Choisissez le type de partition pour /dev/${DISK}${i} :"
 
     # Options communes
-    log_prompt "INFO" && echo "1) ext4"
-    log_prompt "INFO" && echo "2) btrfs"
-    log_prompt "INFO" && echo "3) xfs"
+    log_prompt "INFO" && echo "1) EXT4"
+    log_prompt "INFO" && echo "2) BTRFS"
+    log_prompt "INFO" && echo "3) XFS"
 
     # Option spécifique à UEFI
     if [[ "$MODE" == "UEFI" ]]; then
-      log_prompt "INFO" && echo "4) efi" # Option efi seulement en mode UEFI
+      log_prompt "INFO" && echo "4) ESP [UEFI BOOT]" # Option efi seulement en mode UEFI
     fi
 
     # Option partition swap si SWAP_FILE est désactivé
     if [[ "$SWAP_FILE" == "Off" ]]; then
-      log_prompt "INFO" && echo "$(( $MODE == "UEFI" ? 5 : 4 ))) linux-swap" # Option swap seulement si SWAP_FILE = "Off"
+      log_prompt "INFO" && echo "$(( $MODE == "UEFI" ? 5 : 4 ))) LINUX-SWAP" # Option swap seulement si SWAP_FILE = "Off"
     fi
 
     # Demande du choix utilisateur
@@ -153,7 +153,7 @@ for ((i = 1; i <= num_partitions; i++)); do
         ;;
       4)
         if [[ "$MODE" == "UEFI" ]]; then
-          partition_type="efi"
+          partition_type="ESP"
           break
         elif [[ "$SWAP_FILE" == "Off" ]]; then
           partition_type="linux-swap"
@@ -181,7 +181,7 @@ for ((i = 1; i <= num_partitions; i++)); do
 
   # Validation de la taille de la partition
   while true; do
-    if [[ "$partition_type" == "efi" ]]; then
+    if [[ "$partition_type" == "ESP" ]]; then
       log_prompt "INFO" && read -p "Veuillez entrer une taille de partition pour /dev/${DISK}${i} [par défaut : 512 MiB] : " partition_size && echo ""
       partition_size=${partition_size:-512MiB}  # Taille par défaut
     else
@@ -190,8 +190,6 @@ for ((i = 1; i <= num_partitions; i++)); do
 
     # Supprimer les espaces avant et après la saisie de l'utilisateur
     partition_size=$(echo "$partition_size" | xargs)
-
-    echo "Vous avez entrer : $partition_size"
 
     # Vérifier la validité de la taille entrée
     if [[ "$partition_size" =~ ^[0-9]+(MiB|GiB)$ || "$partition_size" == "100%" ]]; then
@@ -205,8 +203,8 @@ for ((i = 1; i <= num_partitions; i++)); do
   log_prompt "INFO" && echo "Création de la partition /dev/${DISK}${i} de type $partition_type avec une taille de $partition_size"
 
   # Si c'est la première partition EFI, définir l'option esp
-  if [[ "$partition_type" == "efi" ]]; then
-    parted --script -a optimal /dev/"${DISK}" mkpart primary "$partition_type" "$start_point" "$partition_size" || { log_prompt "ERROR" && echo "Échec de la création de la partition EFI."; exit 1; }
+  if [[ "$partition_type" == "ESP" ]]; then
+    parted --script -a optimal /dev/"${DISK}" mkpart primary "$partition_type" fat32 "$start_point" "$partition_size" || { log_prompt "ERROR" && echo "Échec de la création de la partition EFI."; exit 1; }
     parted --script -a optimal /dev/"${DISK}" set "$i" esp on || { log_prompt "ERROR" && echo "Échec de la configuration de la partition EFI."; exit 1; }
   
   else
