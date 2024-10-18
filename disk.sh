@@ -208,7 +208,7 @@ for ((i = 1; i <= num_partitions; i++)); do
   if [[ "$partition_type" == "ESP" ]]; then
     parted --script -a optimal /dev/"${DISK}" mkpart primary "$partition_type" fat32 "$start_point" "$partition_size" || { log_prompt "ERROR" && echo "Échec de la création de la partition EFI."; exit 1; }
     parted --script -a optimal /dev/"${DISK}" set "$i" esp on || { log_prompt "ERROR" && echo "Échec de la configuration de la partition EFI."; exit 1; }
-  
+    echo "test ok"
   else
     parted --script -a optimal /dev/"${DISK}" mkpart primary "$partition_type" "$start_point" "$partition_size" || { log_prompt "ERROR" && echo "Échec de la création de la partition."; exit 1; }
   fi
