@@ -188,6 +188,9 @@ for ((i = 1; i <= num_partitions; i++)); do
       log_prompt "INFO" && read -p "Veuillez entrer une taille de partition (ex: 10GiB ou 100%) pour /dev/${DISK}${i} : " partition_size && echo ""
     fi
 
+    # Supprimer les espaces avant et après la saisie de l'utilisateur
+    partition_size=$(echo "$partition_size" | xargs)
+
     echo "Vous avez entrer : $partition_size"
 
     # Vérifier la validité de la taille entrée
