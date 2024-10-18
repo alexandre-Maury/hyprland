@@ -115,6 +115,8 @@ for ((i = 1; i <= num_partitions; i++)); do
 
   clear && parted /dev/"${DISK}" print
 
+  echo "le point de depart : $start_point"
+
   while true; do
 
     log_prompt "INFO" && echo "Choisissez le type de partition pour /dev/${DISK}${i} :"
@@ -216,7 +218,7 @@ for ((i = 1; i <= num_partitions; i++)); do
 
   log_prompt "SUCCESS" && echo "Partition /dev/${DISK}${i} créée avec succès."
 
-  echo "le point de depart : $start_point"
+  
 
 done
 
