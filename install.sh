@@ -114,9 +114,9 @@ fi
 ## Configuring date                                                    
 ##############################################################################
 
-log_prompt "INFO" && echo "Configurer l'heure avec chrony" && echo ""
-chronyd -q
-log_prompt "SUCCESS" && echo "Terminée" && echo ""
+# log_prompt "INFO" && echo "Configurer l'heure avec chrony" && echo ""
+# chronyd -q
+# log_prompt "SUCCESS" && echo "Terminée" && echo ""
 
 ##############################################################################
 ## Downloading and unarchiving stage3 tarball                                                  

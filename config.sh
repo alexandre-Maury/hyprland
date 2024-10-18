@@ -21,7 +21,7 @@ SWAP_FILE="Off"
 SWAP_FILE_SIZE="4096"
 
 # Liste des programmes requis pour l'installation
-packages=("git" "tar" "curl" "wget" "chrony")
+packages=("git" "tar" "curl" "wget")
 
 #Gentoo Base
 GENTOO_BASE="https://distfiles.gentoo.org/releases/amd64/autobuilds/20240929T163611Z/stage3-amd64-systemd-20240929T163611Z.tar.xz"
