@@ -148,7 +148,7 @@ fi
 ##############################################################################
 ## Ask the user how many additional partitions to create                                                      
 ##############################################################################
-clear && parted /dev/"${DISK}" print
+clear && parted /dev/"${DISK}" print # OK
 
 log_prompt "INFO" && read -p "Combien de partitions supplémentaires souhaitez-vous créer ? " num_partitions
 echo ""
@@ -302,7 +302,7 @@ done
 ##############################################################################
 ## Mounting of the different partitions                                                 
 ##############################################################################
-parted /dev/"${DISK}" print
+clear && parted /dev/"${DISK}" print
 echo ""
 
 log_prompt "INFO" && read -p "Entrez le numéro de la partition root (par exemple, 1 pour /dev/${DISK}1) : " root_partition_num
