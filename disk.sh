@@ -131,7 +131,7 @@ for ((i = 1; i <= num_partitions; i++)); do
 
     # Option partition swap si SWAP_FILE est désactivé
     if [[ "$SWAP_FILE" == "Off" ]]; then
-      log_prompt "INFO" && echo "$(( $MODE == "UEFI" ? 5 : 4 )) ) linux-swap" # Option swap seulement si SWAP_FILE = "Off"
+      log_prompt "INFO" && echo "$(( $MODE == "UEFI" ? 5 : 4 ))) linux-swap" # Option swap seulement si SWAP_FILE = "Off"
     fi
 
     # Demande du choix utilisateur
@@ -187,6 +187,8 @@ for ((i = 1; i <= num_partitions; i++)); do
     else
       log_prompt "INFO" && read -p "Veuillez entrer une taille de partition (ex: 10GiB ou 100%) pour /dev/${DISK}${i} : " partition_size && echo ""
     fi
+
+    echo "Vous avez entrer : $partition_size"
 
     # Vérifier la validité de la taille entrée
     if [[ "$partition_size" =~ ^[0-9]+[MmGg][IiBb]?$ || "$partition_size" == "100%" ]]; then
