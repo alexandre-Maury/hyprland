@@ -212,6 +212,8 @@ for ((i = 1; i <= num_partitions; i++)); do
   start_point=$(parted /dev/"${DISK}" print | tail -1 | awk '{print $3}')  # Récupérer la fin de la dernière partition
 
   log_prompt "SUCCESS" && echo "Partition /dev/${DISK}${i} créée avec succès."
-  
+
+  echo "le point de depart : $start_point"
+
 done
 
