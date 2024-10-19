@@ -20,7 +20,7 @@ chmod +x *.sh # Rendre les scripts exécutables.
 log_prompt "INFO" && echo "Mode de démarrage détecté : $MODE" && echo ""
 
 ##############################################################################
-##  Check if the disk exists                                                    
+##  Check si le disque existe                                                    
 ##############################################################################
 if [ ! -b "/dev/$DISK" ]; then
   log_prompt "ERROR" && echo "Le disque /dev/$DISK n'existe pas."
@@ -28,7 +28,7 @@ if [ ! -b "/dev/$DISK" ]; then
 fi
 
 ##############################################################################
-## Formatting disk                                                       
+## Formatage du disque                                                     
 ##############################################################################
 if prompt_confirm "Souhaitez-vous nettoyer le disque ? (Y/n)"; then
   
@@ -82,7 +82,7 @@ fi
 echo ""
 
 ##############################################################################
-## Initialize the partition table with parted                                                         
+## Création des tables de partition                                                       
 ##############################################################################
 log_prompt "INFO" && echo "Création de table de partition ${MODE} pour /dev/${DISK}" && echo ""
 
@@ -95,7 +95,7 @@ fi
 log_prompt "SUCCESS" && echo "Table de partition créée avec succès." && echo ""
 
 ##############################################################################
-## Ask the user how many additional partitions to create                                                      
+## Création des partition + Formatage                                                     
 ##############################################################################
 clear && parted /dev/"${DISK}" print
 
@@ -216,6 +216,7 @@ for ((i = 1; i <= num_partitions; i++)); do
 
   elif [[ "$partition_size_unit" == "%" ]]; then
     parted --script -a optimal /dev/"${DISK}" mkpart primary $partition_type ${start_point}MiB 100%
+    mkfs."${partition_type}" "/dev/${DISK}${i}"
     break  # Arrêter la boucle car tout l'espace est utilisé
 
   else
@@ -230,7 +231,7 @@ for ((i = 1; i <= num_partitions; i++)); do
 
     start_point=$end_point
     
-    # mkfs.fat -F32 "/dev/${DISK}${i}"
+    mkfs.fat -F32 "/dev/${DISK}${i}"
 
   else
 
@@ -239,12 +240,12 @@ for ((i = 1; i <= num_partitions; i++)); do
     # Mettre à jour le point de départ pour la prochaine partition
     start_point=$((start_point + end_point))
   
-    # if [[ "$partition_type" == "linux-swap" ]]; then
-    #   mkswap "/dev/${DISK}${i}"
-    #   swapon "/dev/${DISK}${i}"
-    # else
-    #   mkfs."${partition_type}" "/dev/${DISK}${i}"
-    # fi
+    if [[ "$partition_type" == "linux-swap" ]]; then
+      mkswap "/dev/${DISK}${i}"
+      swapon "/dev/${DISK}${i}"
+    else
+      mkfs."${partition_type}" "/dev/${DISK}${i}"
+    fi
 
   fi
 
@@ -260,5 +261,5 @@ for ((i = 1; i <= num_partitions; i++)); do
 done
 
 ##############################################################################
-## Mounting of the different partitions                                                 
+## Montage des partition                                                
 ##############################################################################
