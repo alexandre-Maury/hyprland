@@ -302,21 +302,24 @@ if [ "$mount_more" = "y" ]; then
       # Vérifier que le nom du point de montage ne commence pas par un "/"
       if [[ "$partition_name" =~ ^/ ]]; then
         log_prompt "ERROR" && echo "Le point de montage ne doit pas commencer par '/'. Essayez à nouveau." && echo ""
+        continue  # Recommence la boucle si le nom est invalide
       elif [ -z "$partition_name" ]; then
         log_prompt "ERROR" && echo "Le point de montage ne peut pas être vide. Essayez à nouveau." && echo ""
-      else
-        break  # Sortir de la boucle si le point de montage est valide
+        continue  # Recommence la boucle si le nom est vide
       fi
 
-      if [ -n "$partition_name" ] && [[ "$partition_name" =~ ^[a-zA-Z0-9_-]+$ ]]; then
-        mkdir -p "$MOUNT_POINT/$partition_name"
+      # Vérifier si le nom du point de montage est valide (lettres, chiffres, underscores, tirets)
+      if [[ "$partition_name" =~ ^[a-zA-Z0-9_-]+$ ]]; then
+        mkdir -p "$MOUNT_POINT/$partition_name" && log_prompt "SUCCESS" && echo "$MOUNT_POINT/$partition_name créé avec succès"
+
         if mount "${partition}" "$MOUNT_POINT/$partition_name"; then
           log_prompt "SUCCESS" && echo "Partition $partition montée sur $MOUNT_POINT/$partition_name."
         else
           log_prompt "ERROR" && echo "Échec du montage de $partition."
         fi
+
         echo ""
-        break
+        break  # Sortir de la boucle si tout est correct
       else
         log_prompt "ERROR" && echo "Le nom du point de montage est invalide. Essayez à nouveau." && echo ""
       fi
