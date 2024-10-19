@@ -286,7 +286,8 @@ log_prompt "INFO" && read -p "Souhaitez-vous monter d'autres partitions ? (y/n) 
 
 if [ "$mount_more" = "y" ]; then
   # Obtenir toutes les partitions sauf celle de root
-  partitions=($(lsblk -lnp -o NAME | grep "^/dev/${DISK}" | grep -v "/dev/${DISK}${root_partition_num}"))
+  partitions=($(lsblk -lnp -o NAME | grep "^/dev/${DISK}[0-9]" | grep -v "/dev/${DISK}${root_partition_num}"))
+
 
   for partition in "${partitions[@]}"; do
 
