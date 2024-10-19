@@ -190,6 +190,9 @@ for ((i = 1; i <= num_partitions; i++)); do
   partition_size_value=$(echo "$partition_size" | sed 's/[^0-9]//g')  # Extraction de la valeur numérique
   partition_size_unit=$(echo "$partition_size" | sed 's/[0-9]//g')    # Extraction de l'unité (G ou M)
 
+  echo "Extraction de la valeur numérique : $partition_size_value"
+  echo "Extraction de l'unité (G ou M) : $partition_size_unit"
+
   # Ajouter la taille de la partition à l'espace utilisé
   if [[ "$partition_size_unit" == "GiB" || "$partition_size_unit" == "G" ]]; then
     used_space=$(echo "$used_space + $partition_size_value" | bc)
@@ -198,7 +201,9 @@ for ((i = 1; i <= num_partitions; i++)); do
     used_space=$(echo "$used_space + $partition_size_value / 1024" | bc)
   fi
 
-  log_prompt "INFO" && echo "Taille restante sur le disque : $remaining_space" && echo ""
+  log_prompt "WARNING" && echo "Taille du disque dur : $remaining_space $partition_size_unit" && echo ""
+
+  echo "valeur used_space : $used_space"
 
   # Validation de la taille de la partition
   while true; do
