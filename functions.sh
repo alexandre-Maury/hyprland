@@ -44,7 +44,7 @@ prompt_confirm() {
     # Appliquer la couleur LIGHT_CYAN au prompt et réinitialiser après la saisie
     # read -r -p "${LIGHT_CYAN}${prompt}${RESET} " response
 
-    echo -ne "${LIGHT_CYAN} [ INFO ] $(date +"%Y-%m-%d %H:%M:%S") ==> ${RESET} ${prompt} "
+    echo -ne "${LIGHT_CYAN} [ INFO ] $(date +"%Y-%m-%d %H:%M:%S") ==> ${RESET} ${prompt}"
     read response
 
     [[ "$response" =~ ^(y|Y|yes|YES)$ ]]

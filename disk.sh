@@ -310,10 +310,10 @@ if [ "$mount_more" = "y" ]; then
 
       # Vérifier si le nom du point de montage est valide (lettres, chiffres, underscores, tirets)
       if [[ "$partition_name" =~ ^[a-zA-Z0-9_-]+$ ]]; then
-        mkdir -p "$MOUNT_POINT/$partition_name" && log_prompt "SUCCESS" && echo "$MOUNT_POINT/$partition_name créé avec succès"
+        mkdir -p "$MOUNT_POINT/$partition_name" && log_prompt "SUCCESS" && echo "$MOUNT_POINT/$partition_name créé avec succès" && echo ""
 
         if mount "${partition}" "$MOUNT_POINT/$partition_name"; then
-          log_prompt "SUCCESS" && echo "Partition $partition montée sur $MOUNT_POINT/$partition_name."
+          log_prompt "SUCCESS" && echo "Partition $partition montée sur $MOUNT_POINT/$partition_name." && echo ""
         else
           log_prompt "ERROR" && echo "Échec du montage de $partition."
         fi

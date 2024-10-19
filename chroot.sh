@@ -180,31 +180,35 @@ log_prompt "SUCCESS" && echo "Terminée"
 ##############################################################################
 ## Configuration de PAM                                  
 ##############################################################################
-# log_prompt "INFO" && echo "Configuration de PAM" && echo ""
+log_prompt "INFO" && echo "Configuration de passwdqc.conf" && echo ""
 
-# # Modifier /etc/pam.d/system-auth pour ajouter la politique pam_pwquality
-# PAM_FILE="/etc/pam.d/system-auth"
+# Sauvegarde de l'ancien fichier passwdqc.conf
+if [ -f "$PASSWDQC_CONF" ]; then
+    cp "$PASSWDQC_CONF" "$PASSWDQC_CONF.bak"
+    log_prompt "INFO" && echo "Sauvegarde du fichier existant passwdqc.conf en $PASSWDQC_CONF.bak" && echo ""
+fi
 
-# if grep -q "pam_pwquality.so" "$PAM_FILE"; then
-#     log_prompt "INFO" && echo "Le module pam_pwquality est déjà configuré dans $PAM_FILE"
-# else
-#     log_prompt "INFO" && echo "Ajout de la configuration pam_pwquality dans $PAM_FILE"
-#     # Ajoute la ligne pour forcer une longueur minimale et d'autres options de sécurité
-#     echo "password requisite pam_pwquality.so retry=3 minlen=${PASSWORD_MIN_LEN} difok=3" >> "$PAM_FILE"
-# fi
+# Génération du nouveau contenu de passwdqc.conf
+cat <<EOF > "$PASSWDQC_CONF"
+min=$MIN
+max=$MAX
+passphrase=$PASSPHRASE
+match=$MATCH
+similar=$SIMILAR
+random=$RANDOM
+enforce=$ENFORCE
+retry=$RETRY
+EOF
 
-# # Créer ou modifier le fichier /etc/security/pwquality.conf pour définir minlen
-# PWQUALITY_FILE="/etc/security/pwquality.conf"
+# Vérification du succès
+if [ $? -eq 0 ]; then
+    log_prompt "INFO" && echo "Fichier passwdqc.conf mis à jour avec succès." && echo ""
+    cat "$PASSWDQC_CONF"
+    log_prompt "SUCCESS" && echo "Terminée" && echo ""
 
-# if [[ -f "$PWQUALITY_FILE" ]]; then
-#     log_prompt "INFO" && echo "Le fichier $PWQUALITY_FILE existe déjà, mise à jour de la valeur minlen"
-#     sed -i "/^minlen/c\minlen = ${PASSWORD_MIN_LEN}" "$PWQUALITY_FILE"
-# else
-#     log_prompt "INFO" && echo "Création du fichier $PWQUALITY_FILE avec la politique de mot de passe"
-#     echo "minlen = ${PASSWORD_MIN_LEN}" > "$PWQUALITY_FILE"
-# fi
-
-# log_prompt "SUCCESS" && echo "Terminée"
+else
+    log_prompt "ERROR" && echo "Erreur lors de la mise à jour du fichier passwdqc.conf." && echo ""
+fi
 
 ##############################################################################
 ## Set root and password                                               
