@@ -209,7 +209,9 @@ for ((i = 1; i <= num_partitions; i++)); do
     parted --script -a optimal /dev/"${DISK}" set "$i" esp on || { log_prompt "ERROR" && echo "Échec de la configuration de la partition EFI."; exit 1; }
     
     # mkfs.fat -F32 "/dev/${DISK}${i}"
+
   else
+
     parted --script -a optimal /dev/"${DISK}" mkpart primary "$partition_type" "$start_point" "$partition_size" || { log_prompt "ERROR" && echo "Échec de la création de la partition."; exit 1; }
   
     # if [[ "$partition_type" == "linux-swap" ]]; then
@@ -221,7 +223,8 @@ for ((i = 1; i <= num_partitions; i++)); do
   fi
 
   # Mettre à jour le point de départ pour la prochaine partition
-  start_point=$(parted /dev/"${DISK}" print | grep "^ " | tail -1 | awk '{print $3}')  # Récupérer la fin de la dernière partition
+  # start_point=$(parted /dev/"${DISK}" print | grep "^ " | tail -1 | awk '{print $3}')  # Récupérer la fin de la dernière partition
+  start_point=$(parted /dev/"${DISK}" print free | grep 'Free Space' | tail -1 | awk '{print $1}')
 
   log_prompt "SUCCESS" && echo "Partition /dev/${DISK}${i} créée avec succès." && echo ""
 
@@ -230,8 +233,6 @@ for ((i = 1; i <= num_partitions; i++)); do
   fi
 
 done
-
-
 
 ##############################################################################
 ## Mounting of the different partitions                                                 
