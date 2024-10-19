@@ -228,7 +228,7 @@ for ((i = 1; i <= num_partitions; i++)); do
 
     start_point=$end_point
     
-    mkfs.fat -F32 "/dev/${DISK}${i}"
+    # mkfs.fat -F32 "/dev/${DISK}${i}"
 
   else
 
@@ -237,12 +237,12 @@ for ((i = 1; i <= num_partitions; i++)); do
     # Mettre à jour le point de départ pour la prochaine partition
     start_point=$((start_point + end_point))
   
-    if [[ "$partition_type" == "linux-swap" ]]; then
-      mkswap "/dev/${DISK}${i}"
-      swapon "/dev/${DISK}${i}"
-    else
-      mkfs."${partition_type}" "/dev/${DISK}${i}"
-    fi
+    # if [[ "$partition_type" == "linux-swap" ]]; then
+    #   mkswap "/dev/${DISK}${i}"
+    #   swapon "/dev/${DISK}${i}"
+    # else
+    #   mkfs."${partition_type}" "/dev/${DISK}${i}"
+    # fi
 
   fi
 
@@ -294,7 +294,7 @@ if [ "$mount_more" = "y" ]; then
 
     # Vérifier si la partition est une partition swap
     if blkid "$partition" | grep -q "TYPE=\"swap\""; then
-      log_prompt "WARNING" && echo "La partition $partition est une partition swap, elle sera activée automatiquement." && echo ""
+      log_prompt "WARNING" && echo "La partition ${partition##*/} est une partition swap, elle sera activée automatiquement." && echo ""
       continue  # Passer à la partition suivante sans demander de point de montage
     fi
 
@@ -303,7 +303,7 @@ if [ "$mount_more" = "y" ]; then
 
       if [ -n "$partition_name" ] && [[ "$partition_name" =~ ^[a-zA-Z0-9_-]+$ ]]; then
         mkdir -p "$MOUNT_POINT/$partition_name"
-        if mount "$partition" "$MOUNT_POINT/$partition_name"; then
+        if mount "${partition##*/}" "$MOUNT_POINT/$partition_name"; then
           log_prompt "SUCCESS" && echo "Partition $partition montée sur $MOUNT_POINT/$partition_name."
         else
           log_prompt "ERROR" && echo "Échec du montage de $partition."
