@@ -202,7 +202,7 @@ for ((i = 1; i <= num_partitions; i++)); do
     used_space=$(echo "$used_space + $partition_size_value / 1024" | bc)
   fi
 
-  log_prompt "WARNING" && echo "Taille du disque dur : $remaining_space $partition_size_unit" && echo ""
+  log_prompt "WARNING" && echo "Taille du disque dur : $remaining_space" && echo ""
 
   echo "valeur used_space : $used_space"
 
@@ -259,3 +259,6 @@ done
 
 
 
+##############################################################################
+## Mounting of the different partitions                                                 
+##############################################################################
