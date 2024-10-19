@@ -261,7 +261,7 @@ done
 clear
 parted /dev/"${DISK}" print && echo ""
 
-log_prompt "WARNING" && echo "La partition sera monté sur /mnt/gentoo : " && echo ""
+log_prompt "WARNING" && echo "La partition sera monté sur /mnt/gentoo : "
 log_prompt "INFO" && read -p "Choisissez sur quelle partition sera installé le système (ex: 3 pour /dev/sda3) : " root_partition_num && echo ""
 
 # Vérifier que la partition spécifiée existe
