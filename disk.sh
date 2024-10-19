@@ -123,12 +123,9 @@ for ((i = 1; i <= num_partitions; i++)); do
     log_prompt "INFO" && echo "2) BTRFS"
     log_prompt "INFO" && echo "3) XFS"
 
-    # Option spécifique à UEFI
     if [[ "$MODE" == "UEFI" ]]; then
       log_prompt "INFO" && echo "4) ESP [UEFI BOOT]" # Option efi seulement en mode UEFI
     fi
-
-    # Option partition swap si SWAP_FILE est désactivé
     if [[ "$SWAP_FILE" == "Off" ]]; then
       log_prompt "INFO" && echo "$(( $MODE == "UEFI" ? 5 : 4 ))) LINUX-SWAP" # Option swap seulement si SWAP_FILE = "Off"
     fi
@@ -254,12 +251,69 @@ for ((i = 1; i <= num_partitions; i++)); do
 
   log_prompt "SUCCESS" && echo "Partition /dev/${DISK}${i} créée avec succès." && echo ""
 
-  if [ "$partition_size" = "100%" ]; then
-    break  # Arrêter la boucle car tout l'espace est utilisé
-  fi
-
 done
 
 ##############################################################################
 ## Montage des partition                                                
 ##############################################################################
+clear && parted /dev/"${DISK}" print && echo ""
+
+log_prompt "INFO" && read -p "Choisissez sur quel partition sera installé le systeme (ex: 3) pour /dev/sda3 : " root_partition_num && echo ""
+
+# Vérifier que la partition spécifiée existe
+if [ ! -b "/dev/${DISK}${root_partition_num}" ]; then
+  log_prompt "ERROR" && echo "La partition /dev/${DISK}${root_partition_num} n'existe pas."
+  exit 1
+fi
+
+# Monter la partition root
+mkdir -p $MOUNT_POINT
+mount "/dev/${DISK}${root_partition_num}" $MOUNT_POINT
+
+log_prompt "SUCCESS" && echo "Terminée" && echo ""
+
+# Demander à l'utilisateur s'il souhaite monter des partitions supplémentaires
+log_prompt "INFO" && read -p "Souhaitez-vous monter d'autres partitions ? (y/n) : " mount && echo ""
+
+if [ "$mount" = "y" ]; then
+  for ((i = 1; i <= num_partitions; i++)); do
+
+    if [[ "${root_partition_num}" != "${i}" ]]; then
+
+      # Vérifier si la partition est une partition swap
+      if blkid "/dev/${DISK}${i}" | grep -q "TYPE=\"swap\""; then
+        log_prompt "WARNING" && echo "La partition /dev/${DISK}${i} est une partition swap, elle sera activée automatiquement."
+        echo ""
+        continue  # Passer à la partition suivante sans demander de point de montage
+      fi
+
+      log_prompt "INFO" && read -p "Voulez-vous monter la partition /dev/${DISK}${i} ? (y/n) : " mount_choice
+      echo ""
+
+      if [ "$mount_choice" = "y" ]; then
+        log_prompt "INFO" && read -p "Nommer le point de montage de la partition /dev/${DISK}${i} (ex. efi - [ sans le "/" ]): " partition_name 
+        echo ""
+
+        mkdir -p "$MOUNT_POINT/$partition_name"
+        mount "/dev/${DISK}${i}" "$MOUNT_POINT/$partition_name"
+
+        log_prompt "SUCCESS" && echo "Terminée" && echo ""
+      fi
+    fi
+
+  done
+fi
+
+##############################################################################
+## Creation of the swap file                                                
+##############################################################################
+if [ "$SWAP_FILE" = "On" ]; then
+    log_prompt "INFO" && echo "création du fichier swap" && echo ""
+    mkdir --parents $MOUNT_POINT/swap
+    fallocate -l "${SWAP_FILE_SIZE}MiB" $MOUNT_POINT/swap/swapfile
+    # dd if=/dev/zero of=$MOUNT_POINT/swap bs=1M count=${SWAP_FILE_SIZE}  
+    chmod 600 $MOUNT_POINT/swap/swapfile                            
+    mkswap $MOUNT_POINT/swap/swapfile                                
+    swapon $MOUNT_POINT/swap/swapfile  
+    log_prompt "SUCCESS" && echo "Terminée" && echo ""
+fi
