@@ -203,16 +203,41 @@ for ((i = 1; i <= num_partitions; i++)); do
   # Création de la partition
   log_prompt "INFO" && echo "Création de la partition /dev/${DISK}${i} de type $partition_type avec une taille de $partition_size" && echo ""
 
+  partition_size_unit=$(echo "$partition_size" | sed 's/[0-9]//g' | xargs)
+  partition_size_value=$(echo "$partition_size" | sed 's/[^\0-9]//g')
+
+  if [[ "$partition_size_unit" == "MiB" ]]; then
+    end_point=$partition_size_value # Valeur deja en MiB
+
+
+  elif [[ "$partition_size_unit" == "GiB" ]]; then
+    end_point=$((partition_size_value * 1024))  # Conversion GiB en MiB
+    
+
+  elif [[ "$partition_size_unit" == "%" ]]; then
+    parted --script -a optimal /dev/"${DISK}" mkpart primary $partition_type ${start_point}MiB 100%
+    break  # Arrêter la boucle car tout l'espace est utilisé
+
+  else
+    echo "Erreur : unité invalide. Veuillez entrer 'MiB' ou 'GiB'."
+    exit 1
+  fi
+
   # Si c'est la première partition EFI, définir l'option esp
   if [[ "$partition_type" == "ESP" ]]; then
-    parted --script -a optimal /dev/"${DISK}" mkpart "$partition_type" fat32 "$start_point" "$partition_size" || { log_prompt "ERROR" && echo "Échec de la création de la partition EFI."; exit 1; }
+    parted --script -a optimal /dev/"${DISK}" mkpart "$partition_type" fat32 1MiB ${end_point}MiB || { log_prompt "ERROR" && echo "Échec de la création de la partition EFI."; exit 1; }
     parted --script -a optimal /dev/"${DISK}" set "$i" esp on || { log_prompt "ERROR" && echo "Échec de la configuration de la partition EFI."; exit 1; }
+
+    start_point=$end_point
     
     # mkfs.fat -F32 "/dev/${DISK}${i}"
 
   else
 
-    parted --script -a optimal /dev/"${DISK}" mkpart primary "$partition_type" "$start_point" "$partition_size" || { log_prompt "ERROR" && echo "Échec de la création de la partition."; exit 1; }
+    parted --script -a optimal /dev/"${DISK}" mkpart primary "$partition_type" ${start_point}MiB ${end_point}MiB || { log_prompt "ERROR" && echo "Échec de la création de la partition."; exit 1; }
+
+    # Mettre à jour le point de départ pour la prochaine partition
+    start_point=$((start_point + end_point))
   
     # if [[ "$partition_type" == "linux-swap" ]]; then
     #   mkswap "/dev/${DISK}${i}"
@@ -220,11 +245,11 @@ for ((i = 1; i <= num_partitions; i++)); do
     # else
     #   mkfs."${partition_type}" "/dev/${DISK}${i}"
     # fi
+
   fi
 
   # Mettre à jour le point de départ pour la prochaine partition
-  # start_point=$(parted /dev/"${DISK}" print | grep "^ " | tail -1 | awk '{print $3}')  # Récupérer la fin de la dernière partition
-  start_point=$(parted /dev/"${DISK}" print free | grep 'Free Space' | tail -1 | awk '{print $1}')
+  # start_point=$(parted /dev/"${DISK}" print free | grep 'Free Space' | tail -1 | awk '{print $1}')
 
   log_prompt "SUCCESS" && echo "Partition /dev/${DISK}${i} créée avec succès." && echo ""
 
