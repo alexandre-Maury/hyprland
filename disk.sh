@@ -2,9 +2,6 @@
 
 # script disk.sh
 
-# Mettre un mode verbose pour la création de partition et le formatage pour que l'utilisateur sache ou il en ait ...
-# Fusionner partitionning + formating
-
 set -e  # Quitte immédiatement en cas d'erreur.
 
 source functions.sh  # Charge les fonctions définies dans le fichier fonction.sh.
