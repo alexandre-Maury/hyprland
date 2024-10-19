@@ -107,15 +107,18 @@ if ! [[ "$num_partitions" =~ ^[0-9]+$ ]] || [ "$num_partitions" -le 0 ]; then
   log_prompt "ERROR" && echo "Veuillez entrer un nombre entier positif." && exit 1
 fi
 
-# Initialisation du point de départ
-start_point="1MiB"
+
+disk_size=$(parted /dev/"${DISK}" print | grep "Disk /dev/${DISK}" | awk '{print $3}') # Obtenir la taille totale du disque
+start_point="1MiB" # Initialisation du point de départ
+used_space=0 # Initialiser la taille utilisée à 0
 
 # Validation de la taille de la partition avec recommandation pour EFI/Boot
 for ((i = 1; i <= num_partitions; i++)); do
 
-  clear && parted /dev/"${DISK}" print
+  # Calculer la taille restante du disque à partir de la taille totale et de l'espace utilisé
+  remaining_space=$(echo "$disk_size - $used_space" | bc)
 
-  echo "le point de depart : $start_point"
+  clear && parted /dev/"${DISK}" print
 
   while true; do
 
@@ -181,6 +184,20 @@ for ((i = 1; i <= num_partitions; i++)); do
 
   echo "Type de partition sélectionné : $partition_type"
 
+  # Calculer la taille de la partition pour l'ajouter à l'espace utilisé
+  partition_size_value=$(echo "$partition_size" | sed 's/[^0-9]//g')  # Extraction de la valeur numérique
+  partition_size_unit=$(echo "$partition_size" | sed 's/[0-9]//g')    # Extraction de l'unité (G ou M)
+
+  # Ajouter la taille de la partition à l'espace utilisé
+  if [[ "$partition_size_unit" == "GiB" || "$partition_size_unit" == "G" ]]; then
+    used_space=$(echo "$used_space + $partition_size_value" | bc)
+  elif [[ "$partition_size_unit" == "MiB" || "$partition_size_unit" == "M" ]]; then
+    # Convertir la taille en GiB avant d'ajouter (1 GiB = 1024 MiB)
+    used_space=$(echo "$used_space + $partition_size_value / 1024" | bc)
+  fi
+
+  log_prompt "INFO" && echo "Taille restante sur le disque : $remaining_space"
+
   # Validation de la taille de la partition
   while true; do
     if [[ "$partition_type" == "ESP" ]]; then
@@ -221,15 +238,16 @@ for ((i = 1; i <= num_partitions; i++)); do
     # else
     #   mkfs."${partition_type}" "/dev/${DISK}${i}"
     # fi
-
   fi
 
   # Mettre à jour le point de départ pour la prochaine partition
-  	start_point=$(parted /dev/"${DISK}" print | grep "^ " | tail -1 | awk '{print $3}')  # Récupérer la fin de la dernière partition
+  start_point=$(parted /dev/"${DISK}" print | grep "^ " | tail -1 | awk '{print $3}')  # Récupérer la fin de la dernière partition
 
   log_prompt "SUCCESS" && echo "Partition /dev/${DISK}${i} créée avec succès."
 
-  
+  if [ "$partition_size" = "100%" ]; then
+    break  # Arrêter la boucle car tout l'espace est utilisé
+  fi
 
 done
 
