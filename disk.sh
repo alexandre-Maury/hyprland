@@ -228,7 +228,7 @@ for ((i = 1; i <= num_partitions; i++)); do
 
     start_point=$end_point
     
-    # mkfs.fat -F32 "/dev/${DISK}${i}"
+    mkfs.fat -F32 "/dev/${DISK}${i}"
 
   else
 
@@ -237,12 +237,12 @@ for ((i = 1; i <= num_partitions; i++)); do
     # Mettre à jour le point de départ pour la prochaine partition
     start_point=$((start_point + end_point))
   
-    # if [[ "$partition_type" == "linux-swap" ]]; then
-    #   mkswap "/dev/${DISK}${i}"
-    #   swapon "/dev/${DISK}${i}"
-    # else
-    #   mkfs."${partition_type}" "/dev/${DISK}${i}"
-    # fi
+    if [[ "$partition_type" == "linux-swap" ]]; then
+      mkswap "/dev/${DISK}${i}"
+      swapon "/dev/${DISK}${i}"
+    else
+      mkfs."${partition_type}" "/dev/${DISK}${i}"
+    fi
 
   fi
 
