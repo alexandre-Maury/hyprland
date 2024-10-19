@@ -186,9 +186,10 @@ for ((i = 1; i <= num_partitions; i++)); do
 
   log_prompt "INFO" && echo "Type de partition sélectionné : $partition_type" && echo ""
 
-  # Calculer la taille de la partition pour l'ajouter à l'espace utilisé
-  partition_size_value=$(echo "$partition_size" | sed 's/[^0-9]//g')  # Extraction de la valeur numérique
-  partition_size_unit=$(echo "$partition_size" | sed 's/[0-9]//g')    # Extraction de l'unité (G ou M)
+
+  partition_size_value=$(echo "$partition_size" | grep -oP '^\d+')  # Extraction de la partie numérique
+  partition_size_unit=$(echo "$partition_size" | grep -oP '[MmGg][IiBb]?')  # Extraction de l'unité (MiB, GiB, etc.)
+
 
   echo "Extraction de la valeur numérique : $partition_size_value"
   echo "Extraction de l'unité (G ou M) : $partition_size_unit"
