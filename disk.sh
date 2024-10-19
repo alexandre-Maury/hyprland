@@ -302,6 +302,15 @@ if [ "$mount_more" = "y" ]; then
     while true; do
       log_prompt "INFO" && read -p "Nommer le point de montage de la partition ${partition##*/} (ex. efi - [sans le /]) : " partition_name && echo ""
 
+      # Vérifier que le nom du point de montage ne commence pas par un "/"
+      if [[ "$partition_name" =~ ^/ ]]; then
+        log_prompt "ERROR" && echo "Le point de montage ne doit pas commencer par '/'. Essayez à nouveau." && echo ""
+      elif [ -z "$partition_name" ]; then
+        log_prompt "ERROR" && echo "Le point de montage ne peut pas être vide. Essayez à nouveau." && echo ""
+      else
+        break  # Sortir de la boucle si le point de montage est valide
+      fi
+
       if [ -n "$partition_name" ] && [[ "$partition_name" =~ ^[a-zA-Z0-9_-]+$ ]]; then
         mkdir -p "$MOUNT_POINT/$partition_name"
         if mount "${partition##*/}" "$MOUNT_POINT/$partition_name"; then
