@@ -107,16 +107,10 @@ if ! [[ "$num_partitions" =~ ^[0-9]+$ ]] || [ "$num_partitions" -le 0 ]; then
   log_prompt "ERROR" && echo "Veuillez entrer un nombre entier positif." && exit 1
 fi
 
-
-disk_size=$(parted /dev/"${DISK}" print | grep "Disk /dev/${DISK}" | awk '{print $3}') # Obtenir la taille totale du disque
 start_point="1MiB" # Initialisation du point de départ
-used_space=0 # Initialiser la taille utilisée à 0
 
 # Validation de la taille de la partition avec recommandation pour EFI/Boot
 for ((i = 1; i <= num_partitions; i++)); do
-
-  # Calculer la taille restante du disque à partir de la taille totale et de l'espace utilisé
-  remaining_space=$(echo "$disk_size - $used_space" | bc)
 
   clear && parted /dev/"${DISK}" print
 
@@ -185,26 +179,6 @@ for ((i = 1; i <= num_partitions; i++)); do
   done
 
   log_prompt "INFO" && echo "Type de partition sélectionné : $partition_type" && echo ""
-
-
-  partition_size_value=$(echo "$partition_size" | grep -oP '^\d+')  # Extraction de la partie numérique
-  partition_size_unit=$(echo "$partition_size" | grep -oP '[MmGg][IiBb]?')  # Extraction de l'unité (MiB, GiB, etc.)
-
-
-  echo "Extraction de la valeur numérique : $partition_size_value"
-  echo "Extraction de l'unité (G ou M) : $partition_size_unit"
-
-  # Ajouter la taille de la partition à l'espace utilisé
-  if [[ "$partition_size_unit" == "GiB" || "$partition_size_unit" == "G" ]]; then
-    used_space=$(echo "$used_space + $partition_size_value" | bc)
-  elif [[ "$partition_size_unit" == "MiB" || "$partition_size_unit" == "M" ]]; then
-    # Convertir la taille en GiB avant d'ajouter (1 GiB = 1024 MiB)
-    used_space=$(echo "$used_space + $partition_size_value / 1024" | bc)
-  fi
-
-  log_prompt "WARNING" && echo "Taille du disque dur : $remaining_space" && echo ""
-
-  echo "valeur used_space : $used_space"
 
   # Validation de la taille de la partition
   while true; do
