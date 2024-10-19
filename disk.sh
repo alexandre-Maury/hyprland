@@ -122,7 +122,7 @@ for ((i = 1; i <= num_partitions; i++)); do
 
   while true; do
 
-    log_prompt "INFO" && echo "Choisissez le type de partition pour /dev/${DISK}${i} :"
+    log_prompt "INFO" && echo "Choisissez le type de partition pour /dev/${DISK}${i} :" && echo ""
 
     # Options communes
     log_prompt "INFO" && echo "1) EXT4"
@@ -139,8 +139,10 @@ for ((i = 1; i <= num_partitions; i++)); do
       log_prompt "INFO" && echo "$(( $MODE == "UEFI" ? 5 : 4 ))) LINUX-SWAP" # Option swap seulement si SWAP_FILE = "Off"
     fi
 
+    echo ""
+
     # Demande du choix utilisateur
-    log_prompt "INFO" && read -p "Votre choix : " format_choice
+    log_prompt "INFO" && read -p "Votre choix : " format_choice && echo ""
 
     # Validation du choix
     case $format_choice in
@@ -164,7 +166,7 @@ for ((i = 1; i <= num_partitions; i++)); do
           partition_type="linux-swap"
           break
         else
-          log_prompt "WARNING" && echo "L'option linux-swap n'est pas disponible car un fichier swap est activé."
+          log_prompt "WARNING" && echo "L'option linux-swap n'est pas disponible car un fichier swap est activé." && echo ""
         fi
         ;;
       5)
@@ -172,17 +174,17 @@ for ((i = 1; i <= num_partitions; i++)); do
           partition_type="linux-swap"
           break
         else
-          log_prompt "ERROR" && echo "Choix invalide. Veuillez entrer un numéro valide."
+          log_prompt "ERROR" && echo "Choix invalide. Veuillez entrer un numéro valide." && echo ""
         fi
         ;;
       *)
-        log_prompt "ERROR" && echo "Choix invalide. Veuillez entrer un numéro valide."
+        log_prompt "ERROR" && echo "Choix invalide. Veuillez entrer un numéro valide." && echo ""
         ;;
     esac
-    echo "Veuillez faire un choix valide."
+    echo "Veuillez faire un choix valide." && echo ""
   done
 
-  echo "Type de partition sélectionné : $partition_type"
+  log_prompt "INFO" && echo "Type de partition sélectionné : $partition_type" && echo ""
 
   # Calculer la taille de la partition pour l'ajouter à l'espace utilisé
   partition_size_value=$(echo "$partition_size" | sed 's/[^0-9]//g')  # Extraction de la valeur numérique
@@ -196,7 +198,7 @@ for ((i = 1; i <= num_partitions; i++)); do
     used_space=$(echo "$used_space + $partition_size_value / 1024" | bc)
   fi
 
-  log_prompt "INFO" && echo "Taille restante sur le disque : $remaining_space"
+  log_prompt "INFO" && echo "Taille restante sur le disque : $remaining_space" && echo ""
 
   # Validation de la taille de la partition
   while true; do
@@ -214,12 +216,12 @@ for ((i = 1; i <= num_partitions; i++)); do
     if [[ "$partition_size" =~ ^[0-9]+(MiB|GiB)$ || "$partition_size" == "100%" ]]; then
       break
     else
-      log_prompt "ERROR" && echo "Taille de partition invalide. Veuillez entrer une taille valide (ex: 10GiB, 512MiB ou 100%)."
+      log_prompt "ERROR" && echo "Taille de partition invalide. Veuillez entrer une taille valide (ex: 10GiB, 512MiB ou 100%)." && echo ""
     fi
   done
 
   # Création de la partition
-  log_prompt "INFO" && echo "Création de la partition /dev/${DISK}${i} de type $partition_type avec une taille de $partition_size"
+  log_prompt "INFO" && echo "Création de la partition /dev/${DISK}${i} de type $partition_type avec une taille de $partition_size" && echo ""
 
   # Si c'est la première partition EFI, définir l'option esp
   if [[ "$partition_type" == "ESP" ]]; then
@@ -227,8 +229,6 @@ for ((i = 1; i <= num_partitions; i++)); do
     parted --script -a optimal /dev/"${DISK}" set "$i" esp on || { log_prompt "ERROR" && echo "Échec de la configuration de la partition EFI."; exit 1; }
     
     # mkfs.fat -F32 "/dev/${DISK}${i}"
-    
-    echo "test ok"
   else
     parted --script -a optimal /dev/"${DISK}" mkpart primary "$partition_type" "$start_point" "$partition_size" || { log_prompt "ERROR" && echo "Échec de la création de la partition."; exit 1; }
   
@@ -243,7 +243,7 @@ for ((i = 1; i <= num_partitions; i++)); do
   # Mettre à jour le point de départ pour la prochaine partition
   start_point=$(parted /dev/"${DISK}" print | grep "^ " | tail -1 | awk '{print $3}')  # Récupérer la fin de la dernière partition
 
-  log_prompt "SUCCESS" && echo "Partition /dev/${DISK}${i} créée avec succès."
+  log_prompt "SUCCESS" && echo "Partition /dev/${DISK}${i} créée avec succès." && echo ""
 
   if [ "$partition_size" = "100%" ]; then
     break  # Arrêter la boucle car tout l'espace est utilisé
