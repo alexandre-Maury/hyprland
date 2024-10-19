@@ -291,16 +291,16 @@ if [ "$mount_more" = "y" ]; then
 
   for partition in "${partitions[@]}"; do
 
-    partition_num=${partition##*/}
+    # partition_num=${partition##*/}
 
     # Vérifier si la partition est une partition swap
     if blkid "$partition" | grep -q "TYPE=\"swap\""; then
-      log_prompt "WARNING" && echo "La partition ${partition##*/} est une partition swap, elle sera activée automatiquement." && echo ""
+      log_prompt "WARNING" && echo "La partition ${partition} est une partition swap, elle sera activée automatiquement." && echo ""
       continue  # Passer à la partition suivante sans demander de point de montage
     fi
 
     while true; do
-      log_prompt "INFO" && read -p "Nommer le point de montage de la partition ${partition##*/} (ex. efi - [sans le /]) : " partition_name && echo ""
+      log_prompt "INFO" && read -p "Nommer le point de montage de la partition ${partition} (ex. efi - [sans le /]) : " partition_name && echo ""
 
       # Vérifier que le nom du point de montage ne commence pas par un "/"
       if [[ "$partition_name" =~ ^/ ]]; then
@@ -313,7 +313,7 @@ if [ "$mount_more" = "y" ]; then
 
       if [ -n "$partition_name" ] && [[ "$partition_name" =~ ^[a-zA-Z0-9_-]+$ ]]; then
         mkdir -p "$MOUNT_POINT/$partition_name"
-        if mount "${partition##*/}" "$MOUNT_POINT/$partition_name"; then
+        if mount "${partition}" "$MOUNT_POINT/$partition_name"; then
           log_prompt "SUCCESS" && echo "Partition $partition montée sur $MOUNT_POINT/$partition_name."
         else
           log_prompt "ERROR" && echo "Échec du montage de $partition."
