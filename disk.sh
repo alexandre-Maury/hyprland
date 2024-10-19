@@ -256,9 +256,12 @@ done
 ##############################################################################
 ## Montage des partition                                                
 ##############################################################################
-clear && parted /dev/"${DISK}" print && echo ""
+#!/bin/bash
 
-log_prompt "INFO" && read -p "Choisissez sur quel partition sera installé le systeme (ex: 3) pour /dev/sda3 : " root_partition_num && echo ""
+clear
+parted /dev/"${DISK}" print && echo ""
+
+log_prompt "INFO" && read -p "Choisissez sur quelle partition sera installé le système (ex: 3 pour /dev/sda3) : " root_partition_num && echo ""
 
 # Vérifier que la partition spécifiée existe
 if [ ! -b "/dev/${DISK}${root_partition_num}" ]; then
@@ -267,42 +270,52 @@ if [ ! -b "/dev/${DISK}${root_partition_num}" ]; then
 fi
 
 # Monter la partition root
-mkdir -p $MOUNT_POINT
-mount "/dev/${DISK}${root_partition_num}" $MOUNT_POINT
+mkdir -p "$MOUNT_POINT"
+if mount "/dev/${DISK}${root_partition_num}" "$MOUNT_POINT"; then
+  log_prompt "SUCCESS" && echo "Partition root montée avec succès."
+else
+  log_prompt "ERROR" && echo "Échec du montage de la partition root."
+  exit 1
+fi
 
-log_prompt "SUCCESS" && echo "Terminée" && echo ""
+echo ""
 
 # Demander à l'utilisateur s'il souhaite monter des partitions supplémentaires
-log_prompt "INFO" && read -p "Souhaitez-vous monter d'autres partitions ? (y/n) : " mount && echo ""
+log_prompt "INFO" && read -p "Souhaitez-vous monter d'autres partitions ? (y/n) : " mount_more && echo ""
 
-if [ "$mount" = "y" ]; then
-  for ((i = 1; i <= num_partitions; i++)); do
+if [ "$mount_more" = "y" ]; then
+  # Obtenir toutes les partitions sauf celle de root
+  partitions=($(lsblk -lnp -o NAME | grep "^/dev/${DISK}" | grep -v "/dev/${DISK}${root_partition_num}"))
 
-    if [[ "${root_partition_num}" != "${i}" ]]; then
+  for partition in "${partitions[@]}"; do
+    partition_num=${partition##*/}
 
-      # Vérifier si la partition est une partition swap
-      if blkid "/dev/${DISK}${i}" | grep -q "TYPE=\"swap\""; then
-        log_prompt "WARNING" && echo "La partition /dev/${DISK}${i} est une partition swap, elle sera activée automatiquement."
-        echo ""
-        continue  # Passer à la partition suivante sans demander de point de montage
-      fi
-
-      log_prompt "INFO" && read -p "Voulez-vous monter la partition /dev/${DISK}${i} ? (y/n) : " mount_choice
-      echo ""
-
-      if [ "$mount_choice" = "y" ]; then
-        log_prompt "INFO" && read -p "Nommer le point de montage de la partition /dev/${DISK}${i} (ex. efi - [ sans le "/" ]): " partition_name 
-        echo ""
-
-        mkdir -p "$MOUNT_POINT/$partition_name"
-        mount "/dev/${DISK}${i}" "$MOUNT_POINT/$partition_name"
-
-        log_prompt "SUCCESS" && echo "Terminée" && echo ""
-      fi
+    # Vérifier si la partition est une partition swap
+    if blkid "$partition" | grep -q "TYPE=\"swap\""; then
+      log_prompt "WARNING" && echo "La partition $partition est une partition swap, elle sera activée automatiquement." && echo ""
+      continue  # Passer à la partition suivante sans demander de point de montage
     fi
 
+    while true; do
+      log_prompt "INFO" && read -p "Nommer le point de montage de la partition $partition (ex. efi - [sans le /]) : " partition_name && echo ""
+
+      if [ -n "$partition_name" ] && [[ "$partition_name" =~ ^[a-zA-Z0-9_-]+$ ]]; then
+        mkdir -p "$MOUNT_POINT/$partition_name"
+        if mount "$partition" "$MOUNT_POINT/$partition_name"; then
+          log_prompt "SUCCESS" && echo "Partition $partition montée sur $MOUNT_POINT/$partition_name."
+        else
+          log_prompt "ERROR" && echo "Échec du montage de $partition."
+        fi
+        echo ""
+        break
+      else
+        log_prompt "ERROR" && echo "Le nom du point de montage est invalide. Essayez à nouveau." && echo ""
+      fi
+    done
+    
   done
 fi
+
 
 ##############################################################################
 ## Creation of the swap file                                                
