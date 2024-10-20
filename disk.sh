@@ -83,7 +83,7 @@ echo ""
 ##############################################################################
 log_prompt "INFO" && echo "Création de table de partition ${MODE} pour /dev/${DISK}" && echo ""
 
-if [ "$MODE" = "UEFI" ]; then
+if [[ "$MODE" == "UEFI" ]]; then
   parted --script -a optimal /dev/"${DISK}" mklabel gpt || { log_prompt "ERROR" && echo "Échec de la création de la table de partition GPT."; exit 1; }
 else
   parted --script -a optimal /dev/"${DISK}" mklabel msdos || { log_prompt "ERROR" && echo "Échec de la création de la table de partition MBR."; exit 1; }
@@ -281,7 +281,7 @@ echo ""
 # Demander à l'utilisateur s'il souhaite monter des partitions supplémentaires
 log_prompt "INFO" && read -p "Souhaitez-vous monter d'autres partitions ? (y/n) : " mount_more && echo ""
 
-if [ "$mount_more" = "y" ]; then
+if [[ "$mount_more" == "y" ]]; then
   # Obtenir toutes les partitions sauf celle de root
   partitions=($(lsblk -lnp -o NAME | grep "^/dev/${DISK}[0-9]" | grep -v "/dev/${DISK}${root_partition_num}"))
 
@@ -332,7 +332,7 @@ fi
 ##############################################################################
 ## Creation of the swap file                                                
 ##############################################################################
-if [ "$SWAP_FILE" = "On" ]; then
+if [[ "$SWAP_FILE" == "On" ]]; then
     log_prompt "INFO" && echo "création du fichier swap" && echo ""
     mkdir --parents $MOUNT_POINT/swap
     fallocate -l "${SWAP_FILE_SIZE}MiB" $MOUNT_POINT/swap/swapfile
