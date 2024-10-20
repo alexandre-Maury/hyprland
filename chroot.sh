@@ -195,7 +195,6 @@ max=$MAX
 passphrase=$PASSPHRASE
 match=$MATCH
 similar=$SIMILAR
-random=$RANDOM
 enforce=$ENFORCE
 retry=$RETRY
 EOF
