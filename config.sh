@@ -24,7 +24,8 @@ SWAP_FILE_SIZE="4096"
 packages=("git" "tar" "curl" "wget")
 
 #Gentoo Base
-GENTOO_BASE="https://distfiles.gentoo.org/releases/amd64/autobuilds/20240929T163611Z/stage3-amd64-systemd-20240929T163611Z.tar.xz"
+# GENTOO_BASE="https://distfiles.gentoo.org/releases/amd64/autobuilds/20240929T163611Z/stage3-amd64-systemd-20240929T163611Z.tar.xz"
+GENTOO_BASE="https://distfiles.gentoo.org/releases/amd64/autobuilds/20241013T160327Z/stage3-amd64-desktop-systemd-20241013T160327Z.tar.xz"
 MOUNT_POINT="/mnt/gentoo"
 
 
@@ -38,7 +39,7 @@ KEYMAP="fr"
 COMMON_FLAGS="-O2 -pipe -march=native"
 CPU_FLAGS=$(grep -m1 "flags" /proc/cpuinfo | cut -d' ' -f2-) # Automatique
 MAKEOPTS="-j$(nproc) -l$(nproc)" # Automatique
-USE="systemd pam git curl wget tar"
+USE="systemd pam git curl wget tar wayland"
 L10N="fr"
 INPUT_DEVICES="libinput synaptics keyboard mouse joystick wacom"
 

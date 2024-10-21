@@ -177,6 +177,7 @@ log_prompt "INFO" && echo "Installation de sudo" && echo ""
 emerge --quiet app-admin/sudo
 log_prompt "SUCCESS" && echo "Terminée"
 
+
 ##############################################################################
 ## Configuration de PAM                                  
 ##############################################################################

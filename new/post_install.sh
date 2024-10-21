@@ -23,3 +23,12 @@ log_prompt "SUCCESS" "Terminée"
 # echo "    Option "XkbLayout" "fr"" >> /etc/X11/xorg.conf.d/00-keyboard.conf
 # echo "    Option "XkbModel" "pc105"" >> /etc/X11/xorg.conf.d/00-keyboard.conf
 # echo " EndSection" >> /etc/X11/xorg.conf.d/00-keyboard.conf
+
+
+##############################################################################
+## Installation Hyprland                                                  
+##############################################################################
+
+
+
+
